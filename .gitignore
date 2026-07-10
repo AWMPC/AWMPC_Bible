@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /.vinext/
+/.vite/
 /out/
 
 # misc
@@ -40,3 +41,6 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+
+# Local structured-text datasets (never commit source content)
+**/bible-*.json
