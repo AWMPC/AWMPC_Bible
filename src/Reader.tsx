@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import DataWorker from "./data/data.worker?worker";
 import type { Book, Verse, WorkerRequest, WorkerResponse } from "./data/contracts";
-import { FeatureOverlay } from "./ui/FeatureOverlay";
+import { LocalHistoryStore, type HistoryEntry, type HistoryStore } from "./history/HistoryStore";
+import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
 import type { FeatureId, OverlayOrigin } from "./ui/features";
 
 export function Reader() {
   const workerRef = useRef<Worker | null>(null);
   const requestRef = useRef(0);
+  const overlayRef = useRef<FeatureOverlayHandle>(null);
+  const historyStoreRef = useRef<HistoryStore | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [book, setBook] = useState("");
   const [chapter, setChapter] = useState("");
@@ -16,6 +19,7 @@ export function Reader() {
   const [error, setError] = useState("");
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
   const [overlayOrigin, setOverlayOrigin] = useState<OverlayOrigin | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const send = useCallback((message: WorkerRequest) => workerRef.current?.postMessage(message), []);
   const requestChapter = useCallback((nextBook: string, nextChapter: string) => {
@@ -55,6 +59,17 @@ export function Reader() {
     };
   }, [requestChapter, send]);
 
+  useEffect(() => {
+    try {
+      const store = new LocalHistoryStore(window.localStorage);
+      historyStoreRef.current = store;
+      void store.list().then(setHistory);
+    } catch {
+      historyStoreRef.current = null;
+    }
+    return () => { historyStoreRef.current = null; };
+  }, []);
+
   const chapters = books.find((item) => item.name === book)?.chapters ?? [];
 
   function chooseBook(nextBook: string) {
@@ -67,7 +82,20 @@ export function Reader() {
   function chooseChapter(nextChapter: string) {
     setChapter(nextChapter);
     requestChapter(book, nextChapter);
-    document.querySelector("main")?.focus();
+  }
+
+  async function chooseVerse(verse: string) {
+    const store = historyStoreRef.current;
+    if (store) {
+      const entry = await store.add({ book, chapter, verse });
+      setHistory((current) => [entry, ...current].slice(0, 200));
+    }
+    await overlayRef.current?.close();
+    requestAnimationFrame(() => {
+      const target = document.getElementById(`verse-${chapter}-${verse}`);
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
   }
 
   return (
@@ -81,17 +109,17 @@ export function Reader() {
                 <div><p className="eyebrow">Now reading</p><h1>{book || "Preparing your library"}</h1></div>
                 {chapter && <p className="chapter-indicator">Chapter <strong>{chapter}</strong></p>}
               </div>
-              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><h2>Chapter {chapter}</h2><ol className="verses">{verses.map((verse) => <li key={verse.number}><span aria-label={`Verse ${verse.number}`}>{verse.number}</span><p>{verse.text}</p></li>)}</ol></article>}
+              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><h2>Chapter {chapter}</h2><ol className="verses">{verses.map((verse) => <li id={`verse-${chapter}-${verse.number}`} tabIndex={-1} key={verse.number}><span aria-label={`Verse ${verse.number}`}>{verse.number}</span><p>{verse.text}</p></li>)}</ol></article>}
             </>
           )}
         </main>
       </div>
       <FloatingDock activeFeature={activeFeature} onOpen={(feature, origin) => { setOverlayOrigin(origin); setActiveFeature(feature); }} />
-      <FeatureOverlay activeFeature={activeFeature} origin={overlayOrigin} onClose={() => setActiveFeature(null)}>
+      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={() => { setActiveFeature(null); setOverlayOrigin(null); }}>
         {activeFeature === "navigation" && (
-          <NavigationPanel books={books} book={book} chapters={chapters} chapter={chapter} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} />
+          <NavigationPanel books={books} book={book} chapters={chapters} chapter={chapter} verses={verses} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} onVerse={(verse) => void chooseVerse(verse)} />
         )}
-        {activeFeature === "history" && <EmptyFeature title="Your reading trail will appear here" detail="Recently opened books and chapters will stay private to your account." />}
+        {activeFeature === "history" && <HistoryPanel entries={history} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}
         {activeFeature === "profile" && <EmptyFeature title="Profile and preferences" detail="Sign-in, reading preferences, and data controls will live here." />}
       </FeatureOverlay>
@@ -104,12 +132,14 @@ type NavigationPanelProps = {
   book: string;
   chapters: string[];
   chapter: string;
+  verses: Verse[];
   loading: boolean;
   onBook: (book: string) => void;
   onChapter: (chapter: string) => void;
+  onVerse: (verse: string) => void;
 };
 
-function NavigationPanel({ books, book, chapters, chapter, loading, onBook, onChapter }: NavigationPanelProps) {
+function NavigationPanel({ books, book, chapters, chapter, verses, loading, onBook, onChapter, onVerse }: NavigationPanelProps) {
   if (loading) return <Skeleton rows={8} />;
   return (
     <div className="navigation-panel">
@@ -125,8 +155,24 @@ function NavigationPanel({ books, book, chapters, chapter, loading, onBook, onCh
           <button key={item} type="button" aria-current={chapter === item ? "page" : undefined} onClick={() => onChapter(item)}>{item}</button>
         ))}</div>
       </section>
+      <section aria-labelledby="verses-title">
+        <h3 id="verses-title">Verses</h3>
+        <div className="choice-grid verse-grid">{verses.map((item) => (
+          <button key={item.number} type="button" onClick={() => onVerse(item.number)}>{item.number}</button>
+        ))}</div>
+      </section>
     </div>
   );
+}
+
+function HistoryPanel({ entries }: { entries: HistoryEntry[] }) {
+  if (!entries.length) return <EmptyFeature title="No reading history yet" detail="Verses selected through Navigate will appear here on this device." />;
+  return <ol className="history-list">{entries.map((entry) => (
+    <li key={entry.id}>
+      <p><strong>{entry.book}</strong> {entry.chapter}:{entry.verse}</p>
+      <time dateTime={entry.visitedAt}>{new Date(entry.visitedAt).toLocaleString()}</time>
+    </li>
+  ))}</ol>;
 }
 
 function EmptyFeature({ title, detail }: { title: string; detail: string }) {

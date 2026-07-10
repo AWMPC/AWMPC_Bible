@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { isRetryableStatus, listBooks, parseLibrary, readChapter } from "../src/data/library.ts";
 import { createOverlayOrigin } from "../src/ui/features.ts";
+import { LocalHistoryStore } from "../src/history/HistoryStore.ts";
 
 const fixture = JSON.stringify({ Example: { "1": { "1": "A generic test sentence.", "2": "Another sentence." }, "10": { "1": "Later." } } });
 
@@ -57,9 +58,31 @@ test("reader uses one scalable dock and native overlay host", async () => {
   assert.match(dock, /aria-haspopup="dialog"/);
   assert.match(sheet, /<dialog/);
   assert.match(sheet, /showModal\(\)/);
-  assert.match(sheet, /animateFromOrigin/);
+  assert.match(sheet, /overlayFrames/);
+  assert.match(sheet, /direction: reverse \? "reverse"/);
+  assert.match(sheet, /onCancel/);
   assert.match(sheet, /aria-labelledby/);
   for (const feature of ["history", "search", "navigation", "profile"]) assert.match(features, new RegExp(feature));
+});
+
+test("history records every verse selection with a timestamp and stays bounded", async () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+  const store = new LocalHistoryStore(storage, 2, () => new Date("2026-07-10T20:30:00.000Z"), () => `entry-${values.size}`);
+  await store.add({ book: "Example", chapter: "1", verse: "1" });
+  await store.add({ book: "Example", chapter: "1", verse: "2" });
+  await store.add({ book: "Example", chapter: "1", verse: "3" });
+  const entries = await store.list();
+  assert.equal(entries.length, 2);
+  assert.deepEqual(entries[0], { id: "entry-1", book: "Example", chapter: "1", verse: "3", visitedAt: "2026-07-10T20:30:00.000Z" });
+  assert.equal("text" in entries[0], false);
+});
+
+test("history recovers from malformed or unavailable storage", async () => {
+  const malformed = new LocalHistoryStore({ getItem: () => "not json", setItem: () => {} });
+  assert.deepEqual(await malformed.list(), []);
+  const unavailable = new LocalHistoryStore({ getItem: () => null, setItem: () => { throw new Error("quota"); } }, 2, () => new Date(0), () => "safe-id");
+  assert.deepEqual(await unavailable.add({ book: "Example", chapter: "1", verse: "1" }), { id: "safe-id", book: "Example", chapter: "1", verse: "1", visitedAt: "1970-01-01T00:00:00.000Z" });
 });
 
 test("overlay geometry starts at its trigger and stops above the dock", () => {
