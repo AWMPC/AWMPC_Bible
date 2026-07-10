@@ -49,6 +49,17 @@ test("reader has one resilient Liquid Glass presentation", async () => {
   assert.match(styles, /forced-colors/);
 });
 
+test("pointer interaction never introduces borders while keyboard focus remains visible", async () => {
+  const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /:focus:not\(:focus-visible\)/);
+  assert.match(styles, /button:focus-visible/);
+  assert.match(styles, /\.verses li:focus-visible/);
+  const currentRule = styles.match(/\.choice-grid button\[aria-current="page"\]\s*\{([^}]*)\}/)?.[1] ?? "";
+  assert.equal(currentRule.includes("border"), false);
+  const forcedColors = styles.match(/@media \(forced-colors: active\)\s*\{([\s\S]*)\}\s*$/)?.[1] ?? "";
+  assert.equal(forcedColors.includes("outline: 2px solid Highlight"), false);
+});
+
 test("reader uses one scalable dock and native overlay host", async () => {
   const [reader, dock, sheet, features] = await Promise.all([
     readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8"),
