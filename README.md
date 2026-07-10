@@ -3,10 +3,13 @@
 Quiet Reader is a web-only, lightweight interface for reading deeply nested
 JSON text. The current dataset uses a book → chapter → verse hierarchy.
 
+The application is a static React SPA built with Vite. It requires no application
+server and can be served from a VM, CDN, or any static web host.
+
 ## Design
 
 - The application shell renders immediately with an accessible loading skeleton.
-- A dedicated Web Worker fetches, validates, parses, and retains the full dataset.
+- A typed Vite module worker fetches, validates, parses, and retains the full dataset.
 - The main thread receives only navigation metadata and the selected chapter.
 - A focused Liquid Glass interface uses native CSS effects with graceful fallbacks.
 - The acceleration boundary leaves room for WASM search/indexing and optional
@@ -30,6 +33,20 @@ Quality checks:
 npm test
 npm run build
 ```
+
+The deployable static output is written to `dist/`. In production, serve that
+directory with a static server such as Caddy or nginx. `npm start` is intended
+only for local previewing of a completed build.
+
+The local dataset belongs at `public/data/bible-*.json`. Those files are ignored
+at every directory depth and must be provisioned separately during deployment.
+
+## Persistence direction
+
+Reading history, search history, preferences, and identity are intentionally not
+coupled to a server database. Future persistence should use small application
+interfaces with a Firebase adapter, user-scoped security rules, bounded retention,
+and explicit clear/export controls.
 
 ## Dataset licensing
 
