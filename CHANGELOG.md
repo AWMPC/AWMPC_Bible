@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0 - 2026-07-10
+
+- Stage book and chapter navigation inside the overlay without changing the verse view.
+- Commit the staged passage and history entry only when the user selects a verse.
+- Route worker responses independently so stale navigation loads cannot replace reader content.
+
 ## 0.12.1 - 2026-07-10
 
 - Slow overlay closing slightly and keep its content visibly shrinking into the trigger.

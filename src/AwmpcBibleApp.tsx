@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import DataWorker from "./data/data.worker?worker";
-import type { Book, Verse, WorkerRequest, WorkerResponse } from "./data/contracts";
+import type { Book, ChapterTarget, Verse, WorkerRequest, WorkerResponse } from "./data/contracts";
 import { LocalHistoryStore, type HistoryEntry, type HistoryStore } from "./history/HistoryStore";
 import { LocalSettingsStore, type SettingsStore } from "./settings/SettingsStore";
 import { DEFAULT_TEXT_SCALE, type TextScale } from "./settings/textScale";
@@ -16,13 +16,18 @@ import { useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
 export function AwmpcBibleApp() {
   const workerRef = useRef<Worker | null>(null);
   const requestRef = useRef(0);
+  const latestChapterRequestRef = useRef<Record<ChapterTarget, number>>({ reader: 0, navigation: 0 });
   const overlayRef = useRef<FeatureOverlayHandle>(null);
+  const navigationSelectionRef = useRef(false);
   const historyStoreRef = useRef<HistoryStore | null>(null);
   const settingsStoreRef = useRef<SettingsStore | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [book, setBook] = useState("");
   const [chapter, setChapter] = useState("");
   const [verses, setVerses] = useState<Verse[]>([]);
+  const [navigationBook, setNavigationBook] = useState("");
+  const [navigationChapter, setNavigationChapter] = useState("");
+  const [navigationVerses, setNavigationVerses] = useState<Verse[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
@@ -33,10 +38,12 @@ export function AwmpcBibleApp() {
   const [appearance, setAppearance] = useState<Appearance>(DEFAULT_APPEARANCE);
 
   const send = useCallback((message: WorkerRequest) => workerRef.current?.postMessage(message), []);
-  const requestChapter = useCallback((nextBook: string, nextChapter: string) => {
+  const requestChapter = useCallback((target: ChapterTarget, nextBook: string, nextChapter: string) => {
     const requestId = ++requestRef.current;
-    setVerses([]);
-    send({ type: "chapter", requestId, book: nextBook, chapter: nextChapter });
+    latestChapterRequestRef.current[target] = requestId;
+    if (target === "reader") setVerses([]);
+    else setNavigationVerses([]);
+    send({ type: "chapter", requestId, target, book: nextBook, chapter: nextChapter });
   }, [send]);
 
   useEffect(() => {
@@ -49,11 +56,12 @@ export function AwmpcBibleApp() {
         if (first) {
           setBook(first.name);
           setChapter(first.chapters[0]);
-          requestChapter(first.name, first.chapters[0]);
+          requestChapter("reader", first.name, first.chapters[0]);
         }
         setStatus("ready");
-      } else if (data.type === "chapter" && data.requestId === requestRef.current) {
-        setVerses(data.verses);
+      } else if (data.type === "chapter" && data.requestId === latestChapterRequestRef.current[data.target]) {
+        if (data.target === "reader") setVerses(data.verses);
+        else setNavigationVerses(data.verses);
       } else if (data.type === "error") {
         setError(data.message);
         setStatus("error");
@@ -105,25 +113,30 @@ export function AwmpcBibleApp() {
     };
   }, [appearance]);
 
-  const chapters = books.find((item) => item.name === book)?.chapters ?? [];
+  const navigationChapters = books.find((item) => item.name === navigationBook)?.chapters ?? [];
   const { visible: dockVisible, toggle: toggleDockVisibility } = useUserScrollDockVisibility(activeFeature === null);
 
   function chooseBook(nextBook: string) {
     const firstChapter = books.find((item) => item.name === nextBook)?.chapters[0] ?? "1";
-    setBook(nextBook);
-    setChapter(firstChapter);
-    requestChapter(nextBook, firstChapter);
+    setNavigationBook(nextBook);
+    setNavigationChapter(firstChapter);
+    requestChapter("navigation", nextBook, firstChapter);
   }
 
   function chooseChapter(nextChapter: string) {
-    setChapter(nextChapter);
-    requestChapter(book, nextChapter);
+    setNavigationChapter(nextChapter);
+    requestChapter("navigation", navigationBook, nextChapter);
   }
 
   async function chooseVerse(verse: string) {
+    if (navigationSelectionRef.current || !navigationVerses.some((item) => item.number === verse)) return;
+    navigationSelectionRef.current = true;
+    setBook(navigationBook);
+    setChapter(navigationChapter);
+    setVerses(navigationVerses);
     const store = historyStoreRef.current;
     if (store) {
-      const entry = await store.add({ book, chapter, verse });
+      const entry = await store.add({ book: navigationBook, chapter: navigationChapter, verse });
       setHistory((current) => [entry, ...current].slice(0, 200));
     }
     await overlayRef.current?.close();
@@ -142,6 +155,25 @@ export function AwmpcBibleApp() {
   function chooseAppearance(nextAppearance: Appearance) {
     setAppearance(nextAppearance);
     settingsStoreRef.current?.save({ textScale, verseFont, appearance: nextAppearance });
+  }
+
+  function openFeature(feature: FeatureId, origin: OverlayOrigin) {
+    if (feature === "navigation") {
+      latestChapterRequestRef.current.navigation = ++requestRef.current;
+      navigationSelectionRef.current = false;
+      setNavigationBook(book);
+      setNavigationChapter(chapter);
+      setNavigationVerses(verses);
+    }
+    setOverlayOrigin(origin);
+    setActiveFeature(feature);
+  }
+
+  function finishOverlayClose() {
+    latestChapterRequestRef.current.navigation = ++requestRef.current;
+    navigationSelectionRef.current = false;
+    setActiveFeature(null);
+    setOverlayOrigin(null);
   }
 
   return (
@@ -165,10 +197,10 @@ export function AwmpcBibleApp() {
           )}
         </main>
       </div>
-      <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={(feature, origin) => { setOverlayOrigin(origin); setActiveFeature(feature); }} />
-      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={() => { setActiveFeature(null); setOverlayOrigin(null); }}>
+      <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={openFeature} />
+      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (
-          <NavigationPanel books={books} book={book} chapters={chapters} chapter={chapter} verses={verses} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} onVerse={(verse) => void chooseVerse(verse)} />
+          <NavigationPanel books={books} book={navigationBook} chapters={navigationChapters} chapter={navigationChapter} verses={navigationVerses} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} onVerse={(verse) => void chooseVerse(verse)} />
         )}
         {activeFeature === "history" && <HistoryPanel entries={history} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}

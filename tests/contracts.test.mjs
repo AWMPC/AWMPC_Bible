@@ -222,6 +222,26 @@ test("navigation separates testaments and groups every button grid into three co
   assert.doesNotMatch(styles, /auto-fill/);
 });
 
+test("navigation stages books and chapters until a verse selection commits the reader", async () => {
+  const [appSource, contracts] = await Promise.all([
+    readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/data/contracts.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(contracts, /ChapterTarget = "reader" \| "navigation"/);
+  assert.match(appSource, /latestChapterRequestRef/);
+  assert.match(appSource, /setNavigationBook\(nextBook\)/);
+  assert.match(appSource, /setNavigationChapter\(nextChapter\)/);
+  assert.doesNotMatch(appSource.match(/function chooseBook[\s\S]*?\n  }/)?.[0] ?? "", /setBook\(/);
+  assert.doesNotMatch(appSource.match(/function chooseChapter[\s\S]*?\n  }/)?.[0] ?? "", /setChapter\(/);
+  const verseSelection = appSource.match(/async function chooseVerse[\s\S]*?\n  }/)?.[0] ?? "";
+  assert.match(verseSelection, /setBook\(navigationBook\)/);
+  assert.match(verseSelection, /setChapter\(navigationChapter\)/);
+  assert.match(verseSelection, /setVerses\(navigationVerses\)/);
+  assert.match(verseSelection, /book: navigationBook, chapter: navigationChapter, verse/);
+  assert.match(verseSelection, /navigationSelectionRef\.current/);
+  assert.match(appSource, /function finishOverlayClose\(\)[\s\S]*?latestChapterRequestRef\.current\.navigation = \+\+requestRef\.current/);
+});
+
 test("document scroll lock restores styles without issuing a scroll", () => {
   const bodyStyle = { overflow: "visible" };
   const rootStyle = { overflow: "clip", overscrollBehavior: "auto" };
