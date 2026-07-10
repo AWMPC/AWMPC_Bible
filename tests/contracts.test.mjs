@@ -204,6 +204,23 @@ test("navigation stays vertically ordered in one contained scroll view", async (
   assert.doesNotMatch(styles, /\.navigation-panel section\s*\{[^}]*overflow-y:\s*auto/);
 });
 
+test("navigation separates testaments and groups every button grid into three columns", async () => {
+  const [appSource, testamentSource, styles] = await Promise.all([
+    readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/ui/testaments.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(appSource, /title="Old Testament"/);
+  assert.match(appSource, /title="New Testament"/);
+  assert.match(appSource, /title="Other Books"/);
+  assert.match(appSource, /groupBooksByTestament\(books\)/);
+  assert.match(testamentSource, /OLD_TESTAMENT_BOOKS/);
+  assert.match(testamentSource, /NEW_TESTAMENT_BOOKS/);
+  assert.match(testamentSource, /else other\.push\(book\)/);
+  assert.match(styles, /\.choice-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.doesNotMatch(styles, /auto-fill/);
+});
+
 test("document scroll lock restores styles without issuing a scroll", () => {
   const bodyStyle = { overflow: "visible" };
   const rootStyle = { overflow: "clip", overscrollBehavior: "auto" };

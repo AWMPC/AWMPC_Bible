@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0 - 2026-07-10
+
+- Separate Old and New Testament books in the navigation overlay.
+- Arrange all navigation button groups in fixed three-column rows.
+
 ## 0.11.5 - 2026-07-10
 
 - Remove the “Now reading” eyebrow and redundant chapter heading from the verse view.

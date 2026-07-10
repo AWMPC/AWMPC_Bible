@@ -110,10 +110,10 @@ article { max-width: 800px; margin: 3rem auto 0; }
 .navigation-panel { display: grid; grid-template-columns: 1fr; gap: 2rem; min-height: 100%; }
 .navigation-panel section { min-height: 0; overflow: visible; }
 .navigation-panel h3 { margin: 0 0 .8rem; padding: .3rem 0 .65rem; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; }
-.choice-grid { display: grid; gap: .35rem; }
-.books-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
-.chapter-grid, .verse-grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
-.choice-grid button { min-height: 44px; padding: .7rem; border: 0; border-radius: 13px; background: var(--card); cursor: pointer; text-align: left; }
+.testament-group + .testament-group { margin-top: 1.25rem; }
+.testament-group h4 { margin: 0 0 .55rem; color: var(--muted); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+.choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; }
+.choice-grid button { min-height: 44px; padding: .7rem; overflow-wrap: anywhere; border: 0; border-radius: 13px; background: var(--card); cursor: pointer; text-align: left; }
 .chapter-grid button, .verse-grid button { text-align: center; }
 .choice-grid button:hover { background: var(--surface-strong); }
 .choice-grid button[aria-current="page"] { color: var(--accent); background: var(--surface-strong); box-shadow: var(--inner-highlight), 0 5px 16px rgba(54,93,108,.09); font-weight: 800; }

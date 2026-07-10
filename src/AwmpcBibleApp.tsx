@@ -10,6 +10,7 @@ import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import type { FeatureId, OverlayOrigin } from "./ui/features";
+import { groupBooksByTestament } from "./ui/testaments";
 import { useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
 
 export function AwmpcBibleApp() {
@@ -191,13 +192,14 @@ type NavigationPanelProps = {
 
 function NavigationPanel({ books, book, chapters, chapter, verses, loading, onBook, onChapter, onVerse }: NavigationPanelProps) {
   if (loading) return <Skeleton rows={8} />;
+  const testamentBooks = groupBooksByTestament(books);
   return (
     <div className="navigation-panel">
       <section aria-labelledby="books-title">
         <h3 id="books-title">Books</h3>
-        <div className="choice-grid books-grid">{books.map((item) => (
-          <button key={item.name} type="button" aria-current={book === item.name ? "page" : undefined} onClick={() => onBook(item.name)}>{item.name}</button>
-        ))}</div>
+        <TestamentBookGroup id="old-testament-title" title="Old Testament" books={testamentBooks.old} currentBook={book} onBook={onBook} />
+        <TestamentBookGroup id="new-testament-title" title="New Testament" books={testamentBooks.new} currentBook={book} onBook={onBook} />
+        {testamentBooks.other.length > 0 && <TestamentBookGroup id="other-books-title" title="Other Books" books={testamentBooks.other} currentBook={book} onBook={onBook} />}
       </section>
       <section aria-labelledby="chapters-title">
         <h3 id="chapters-title">Chapters</h3>
@@ -212,6 +214,17 @@ function NavigationPanel({ books, book, chapters, chapter, verses, loading, onBo
         ))}</div>
       </section>
     </div>
+  );
+}
+
+function TestamentBookGroup({ id, title, books, currentBook, onBook }: { id: string; title: string; books: Book[]; currentBook: string; onBook: (book: string) => void }) {
+  return (
+    <section className="testament-group" aria-labelledby={id}>
+      <h4 id={id}>{title}</h4>
+      <div className="choice-grid books-grid">{books.map((item) => (
+        <button key={item.name} type="button" aria-current={currentBook === item.name ? "page" : undefined} onClick={() => onBook(item.name)}>{item.name}</button>
+      ))}</div>
+    </section>
   );
 }
 
