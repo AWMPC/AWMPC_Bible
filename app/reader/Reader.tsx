@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isThemeId, THEMES, type ThemeId } from "./contracts";
 
 type Book = { name: string; chapters: string[] };
 type Verse = { number: string; text: string };
@@ -10,12 +9,6 @@ type WorkerMessage =
   | { type: "chapter"; requestId: number; book: string; chapter: string; verses: Verse[] }
   | { type: "error"; message: string };
 
-function initialTheme(): ThemeId {
-  if (typeof window === "undefined") return "glass";
-  const saved = window.localStorage.getItem("reader-theme");
-  return isThemeId(saved) ? saved : "glass";
-}
-
 export function Reader() {
   const workerRef = useRef<Worker | null>(null);
   const requestRef = useRef(0);
@@ -23,7 +16,6 @@ export function Reader() {
   const [book, setBook] = useState("");
   const [chapter, setChapter] = useState("");
   const [verses, setVerses] = useState<Verse[]>([]);
-  const [theme, setTheme] = useState<ThemeId>(initialTheme);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
 
@@ -64,11 +56,6 @@ export function Reader() {
     };
   }, [requestChapter]);
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    window.localStorage.setItem("reader-theme", theme);
-  }, [theme]);
-
   const chapters = books.find((item) => item.name === book)?.chapters ?? [];
 
   function chooseBook(nextBook: string) {
@@ -89,11 +76,7 @@ export function Reader() {
       <a className="skip-link" href="#reading-pane">Skip to text</a>
       <header className="topbar">
         <div className="brand"><span className="brand-mark" aria-hidden="true">Q</span><span>Quiet Reader</span></div>
-        <div className="theme-switcher" aria-label="Visual style">
-          {THEMES.map((item) => (
-            <button key={item.id} aria-pressed={theme === item.id} onClick={() => setTheme(item.id)}>{item.label}</button>
-          ))}
-        </div>
+        <p className="privacy-note"><span aria-hidden="true" />Private by design</p>
       </header>
       <div className="workspace">
         <nav className="library" aria-label="Books">

@@ -20,6 +20,21 @@ test("worker never injects dataset text as HTML", async () => {
   assert.equal(source.includes("innerHTML"), false);
 });
 
+test("reader has one resilient Liquid Glass presentation", async () => {
+  const [component, styles] = await Promise.all([
+    readFile(new URL("../app/reader/Reader.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  const source = `${component}\n${styles}`.toLowerCase();
+  for (const removedPath of ["material", "expressive", "theme-switcher", "data-theme", "reader-theme"]) {
+    assert.equal(source.includes(removedPath), false, `unexpected theme path: ${removedPath}`);
+  }
+  assert.match(styles, /backdrop-filter:/);
+  assert.match(styles, /@supports not/);
+  assert.match(styles, /prefers-reduced-motion/);
+  assert.match(styles, /forced-colors/);
+});
+
 test("worker enforces resource limits and retry backoff", async () => {
   const source = await readFile(new URL("../public/data.worker.js", import.meta.url), "utf8");
   assert.match(source, /LIMITS\s*=/);
