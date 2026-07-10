@@ -1,7 +1,8 @@
 import { DEFAULT_TEXT_SCALE, isTextScale, type TextScale } from "./textScale.ts";
 import { DEFAULT_VERSE_FONT, isVerseFont, type VerseFont } from "./verseFont.ts";
+import { DEFAULT_APPEARANCE, isAppearance, type Appearance } from "./appearance.ts";
 
-export type ReaderSettings = Readonly<{ textScale: TextScale; verseFont: VerseFont }>;
+export type ReaderSettings = Readonly<{ textScale: TextScale; verseFont: VerseFont; appearance: Appearance }>;
 
 export interface SettingsStore {
   load(): ReaderSettings;
@@ -25,11 +26,12 @@ export class LocalSettingsStore implements SettingsStore {
       return {
         textScale: isTextScale(settings.textScale) ? settings.textScale : DEFAULT_TEXT_SCALE,
         verseFont: isVerseFont(settings.verseFont) ? settings.verseFont : DEFAULT_VERSE_FONT,
+        appearance: isAppearance(settings.appearance) ? settings.appearance : DEFAULT_APPEARANCE,
       };
     } catch {
       // Invalid or unavailable device storage falls back to a safe default.
     }
-    return { textScale: DEFAULT_TEXT_SCALE, verseFont: DEFAULT_VERSE_FONT };
+    return { textScale: DEFAULT_TEXT_SCALE, verseFont: DEFAULT_VERSE_FONT, appearance: DEFAULT_APPEARANCE };
   }
 
   save(settings: ReaderSettings): void {

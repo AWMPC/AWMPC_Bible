@@ -7,6 +7,7 @@ import { LocalHistoryStore } from "../src/history/HistoryStore.ts";
 import { LocalSettingsStore } from "../src/settings/SettingsStore.ts";
 import { DEFAULT_TEXT_SCALE, TEXT_SCALES, textScaleAt } from "../src/settings/textScale.ts";
 import { DEFAULT_VERSE_FONT, VERSE_FONTS, isVerseFont } from "../src/settings/verseFont.ts";
+import { APPEARANCES, DEFAULT_APPEARANCE, isAppearance } from "../src/settings/appearance.ts";
 import { lockDocumentScroll } from "../src/ui/scrollLock.ts";
 import { nextDockVisibility } from "../src/ui/useUserScrollDockVisibility.ts";
 
@@ -113,22 +114,29 @@ test("settings round-trip validated text scale and recover safely", () => {
   const values = new Map();
   const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
   const store = new LocalSettingsStore(storage);
-  store.save({ textScale: "large", verseFont: "system-sans" });
-  assert.deepEqual(store.load(), { textScale: "large", verseFont: "system-sans" });
+  store.save({ textScale: "large", verseFont: "system-sans", appearance: "night" });
+  assert.deepEqual(store.load(), { textScale: "large", verseFont: "system-sans", appearance: "night" });
   values.set("quiet-reader.settings.v1", '{"textScale":"unknown"}');
-  assert.deepEqual(store.load(), { textScale: "standard", verseFont: "system-serif" });
+  assert.deepEqual(store.load(), { textScale: "standard", verseFont: "system-serif", appearance: "auto" });
   const unavailable = new LocalSettingsStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
-  assert.deepEqual(unavailable.load(), { textScale: "standard", verseFont: "system-serif" });
-  assert.doesNotThrow(() => unavailable.save({ textScale: "compact", verseFont: "rounded" }));
+  assert.deepEqual(unavailable.load(), { textScale: "standard", verseFont: "system-serif", appearance: "auto" });
+  assert.doesNotThrow(() => unavailable.save({ textScale: "compact", verseFont: "rounded", appearance: "day" }));
 });
 
 test("old settings preserve scale while font defaults independently", () => {
   const storage = { getItem: () => '{"textScale":"large"}', setItem: () => {} };
-  assert.deepEqual(new LocalSettingsStore(storage).load(), { textScale: "large", verseFont: "system-serif" });
+  assert.deepEqual(new LocalSettingsStore(storage).load(), { textScale: "large", verseFont: "system-serif", appearance: "auto" });
   assert.equal(VERSE_FONTS.length, 4);
   assert.equal(DEFAULT_VERSE_FONT, "system-serif");
   assert.equal(isVerseFont("monospace"), true);
   assert.equal(isVerseFont("remote-font"), false);
+});
+
+test("appearance exposes an exact validated Auto, Day, Night allowlist", () => {
+  assert.deepEqual(APPEARANCES.map((option) => option.id), ["auto", "day", "night"]);
+  assert.equal(DEFAULT_APPEARANCE, "auto");
+  assert.equal(isAppearance("night"), true);
+  assert.equal(isAppearance("custom"), false);
 });
 
 test("profile slider snaps and scales verse text and numbers", async () => {
@@ -155,6 +163,21 @@ test("profile font selector uses only local system stacks for verses and numbers
   assert.match(styles, /\.verses li > span[^}]*font-family:\s*var\(--verse-font-family\)/);
   assert.match(styles, /\.verses p[^}]*var\(--verse-font-family\)/);
   assert.doesNotMatch(styles, /@font-face|url\(/);
+});
+
+test("appearance selector uses CSS-native live system detection", async () => {
+  const [profile, styles, appearanceSource] = await Promise.all([
+    readFile(new URL("../src/ui/ProfilePanel.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../src/settings/appearance.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(profile, /<label[^>]*htmlFor="appearance"/);
+  assert.match(profile, /<select[^>]*id="appearance"/);
+  assert.match(styles, /data-appearance="day"/);
+  assert.match(styles, /data-appearance="night"/);
+  assert.match(styles, /@media \(prefers-color-scheme: dark\)/);
+  assert.match(styles, /data-appearance="auto"/);
+  assert.doesNotMatch(appearanceSource, /matchMedia|addEventListener/);
 });
 
 test("navigation stays vertically ordered in one contained scroll view", async () => {

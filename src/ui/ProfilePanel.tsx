@@ -1,14 +1,17 @@
 import { TEXT_SCALES, textScaleAt, textScaleIndex, type TextScale } from "../settings/textScale";
 import { VERSE_FONTS, type VerseFont } from "../settings/verseFont";
+import { APPEARANCES, type Appearance } from "../settings/appearance";
 
 type ProfilePanelProps = {
   textScale: TextScale;
   onTextScaleChange: (scale: TextScale) => void;
   verseFont: VerseFont;
   onVerseFontChange: (font: VerseFont) => void;
+  appearance: Appearance;
+  onAppearanceChange: (appearance: Appearance) => void;
 };
 
-export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange }: ProfilePanelProps) {
+export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange }: ProfilePanelProps) {
   const selected = TEXT_SCALES[textScaleIndex(textScale)];
   return (
     <div className="profile-panel">
@@ -42,6 +45,16 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
         </div>
         <select id="verse-font" className="verse-font-select" value={verseFont} onChange={(event) => onVerseFontChange(event.currentTarget.value as VerseFont)}>
           {VERSE_FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
+        </select>
+      </section>
+      <section className="setting-group font-setting" aria-labelledby="appearance-label">
+        <div>
+          <p className="eyebrow">Interface</p>
+          <label id="appearance-label" htmlFor="appearance">Appearance</label>
+          <p>Auto follows the current operating system or browser setting.</p>
+        </div>
+        <select id="appearance" className="verse-font-select" value={appearance} onChange={(event) => onAppearanceChange(event.currentTarget.value as Appearance)}>
+          {APPEARANCES.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
         </select>
       </section>
     </div>

@@ -5,6 +5,7 @@ import { LocalHistoryStore, type HistoryEntry, type HistoryStore } from "./histo
 import { LocalSettingsStore, type SettingsStore } from "./settings/SettingsStore";
 import { DEFAULT_TEXT_SCALE, type TextScale } from "./settings/textScale";
 import { DEFAULT_VERSE_FONT, type VerseFont } from "./settings/verseFont";
+import { DEFAULT_APPEARANCE, type Appearance } from "./settings/appearance";
 import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
 import { ProfilePanel } from "./ui/ProfilePanel";
@@ -28,6 +29,7 @@ export function Reader() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [textScale, setTextScale] = useState<TextScale>(DEFAULT_TEXT_SCALE);
   const [verseFont, setVerseFont] = useState<VerseFont>(DEFAULT_VERSE_FONT);
+  const [appearance, setAppearance] = useState<Appearance>(DEFAULT_APPEARANCE);
 
   const send = useCallback((message: WorkerRequest) => workerRef.current?.postMessage(message), []);
   const requestChapter = useCallback((nextBook: string, nextChapter: string) => {
@@ -85,11 +87,22 @@ export function Reader() {
       const settings = store.load();
       setTextScale(settings.textScale);
       setVerseFont(settings.verseFont);
+      setAppearance(settings.appearance);
     } catch {
       settingsStoreRef.current = null;
     }
     return () => { settingsStoreRef.current = null; };
   }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const previous = root.dataset.appearance;
+    root.dataset.appearance = appearance;
+    return () => {
+      if (previous) root.dataset.appearance = previous;
+      else delete root.dataset.appearance;
+    };
+  }, [appearance]);
 
   const chapters = books.find((item) => item.name === book)?.chapters ?? [];
   const dockVisible = useUserScrollDockVisibility(activeFeature === null);
@@ -122,12 +135,17 @@ export function Reader() {
 
   function chooseTextScale(scale: TextScale) {
     setTextScale(scale);
-    settingsStoreRef.current?.save({ textScale: scale, verseFont });
+    settingsStoreRef.current?.save({ textScale: scale, verseFont, appearance });
   }
 
   function chooseVerseFont(font: VerseFont) {
     setVerseFont(font);
-    settingsStoreRef.current?.save({ textScale, verseFont: font });
+    settingsStoreRef.current?.save({ textScale, verseFont: font, appearance });
+  }
+
+  function chooseAppearance(nextAppearance: Appearance) {
+    setAppearance(nextAppearance);
+    settingsStoreRef.current?.save({ textScale, verseFont, appearance: nextAppearance });
   }
 
   return (
@@ -153,7 +171,7 @@ export function Reader() {
         )}
         {activeFeature === "history" && <HistoryPanel entries={history} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}
-        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={chooseTextScale} verseFont={verseFont} onVerseFontChange={chooseVerseFont} />}
+        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={chooseTextScale} verseFont={verseFont} onVerseFontChange={chooseVerseFont} appearance={appearance} onAppearanceChange={chooseAppearance} />}
       </FeatureOverlay>
     </div>
   );
