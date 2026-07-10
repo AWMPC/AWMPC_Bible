@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.1 - 2026-07-10
+
+- Keep the reading viewport completely stationary when an overlay closes.
+- Remove post-close verse focus and target scrolling while retaining history recording.
+- Lock background scrolling without positional body transforms or scroll restoration calls.
+
 ## 0.11.0 - 2026-07-10
 
 - Add Auto, Day, and Night appearance selection to Profile.
