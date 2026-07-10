@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { isRetryableStatus, listBooks, parseLibrary, readChapter } from "../src/data/library.ts";
 import { createOverlayOrigin } from "../src/ui/features.ts";
 import { LocalHistoryStore } from "../src/history/HistoryStore.ts";
+import { LocalSettingsStore } from "../src/settings/SettingsStore.ts";
+import { DEFAULT_TEXT_SCALE, TEXT_SCALES, textScaleAt } from "../src/settings/textScale.ts";
 
 const fixture = JSON.stringify({ Example: { "1": { "1": "A generic test sentence.", "2": "Another sentence." }, "10": { "1": "Later." } } });
 
@@ -83,6 +85,40 @@ test("history recovers from malformed or unavailable storage", async () => {
   assert.deepEqual(await malformed.list(), []);
   const unavailable = new LocalHistoryStore({ getItem: () => null, setItem: () => { throw new Error("quota"); } }, 2, () => new Date(0), () => "safe-id");
   assert.deepEqual(await unavailable.add({ book: "Example", chapter: "1", verse: "1" }), { id: "safe-id", book: "Example", chapter: "1", verse: "1", visitedAt: "1970-01-01T00:00:00.000Z" });
+});
+
+test("text scale exposes five exact snap points", () => {
+  assert.equal(TEXT_SCALES.length, 5);
+  assert.equal(textScaleAt(-10), "compact");
+  assert.equal(textScaleAt(1.6), "comfortable");
+  assert.equal(textScaleAt(99), "extra-large");
+  assert.equal(DEFAULT_TEXT_SCALE, "standard");
+});
+
+test("settings round-trip validated text scale and recover safely", () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+  const store = new LocalSettingsStore(storage);
+  store.save({ textScale: "large" });
+  assert.deepEqual(store.load(), { textScale: "large" });
+  values.set("quiet-reader.settings.v1", '{"textScale":"unknown"}');
+  assert.deepEqual(store.load(), { textScale: "standard" });
+  const unavailable = new LocalSettingsStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
+  assert.deepEqual(unavailable.load(), { textScale: "standard" });
+  assert.doesNotThrow(() => unavailable.save({ textScale: "compact" }));
+});
+
+test("profile slider snaps and scales verse text and numbers", async () => {
+  const [profile, styles] = await Promise.all([
+    readFile(new URL("../src/ui/ProfilePanel.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(profile, /type="range"/);
+  assert.match(profile, /step="1"/);
+  assert.match(profile, /aria-valuetext/);
+  assert.match(styles, /--verse-text-size/);
+  assert.match(styles, /--verse-number-size/);
+  assert.match(styles, /data-text-scale="extra-large"/);
 });
 
 test("overlay geometry starts at its trigger and stops above the dock", () => {

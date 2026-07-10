@@ -2,8 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import DataWorker from "./data/data.worker?worker";
 import type { Book, Verse, WorkerRequest, WorkerResponse } from "./data/contracts";
 import { LocalHistoryStore, type HistoryEntry, type HistoryStore } from "./history/HistoryStore";
+import { LocalSettingsStore, type SettingsStore } from "./settings/SettingsStore";
+import { DEFAULT_TEXT_SCALE, type TextScale } from "./settings/textScale";
 import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
+import { ProfilePanel } from "./ui/ProfilePanel";
 import type { FeatureId, OverlayOrigin } from "./ui/features";
 
 export function Reader() {
@@ -11,6 +14,7 @@ export function Reader() {
   const requestRef = useRef(0);
   const overlayRef = useRef<FeatureOverlayHandle>(null);
   const historyStoreRef = useRef<HistoryStore | null>(null);
+  const settingsStoreRef = useRef<SettingsStore | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [book, setBook] = useState("");
   const [chapter, setChapter] = useState("");
@@ -20,6 +24,7 @@ export function Reader() {
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
   const [overlayOrigin, setOverlayOrigin] = useState<OverlayOrigin | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [textScale, setTextScale] = useState<TextScale>(DEFAULT_TEXT_SCALE);
 
   const send = useCallback((message: WorkerRequest) => workerRef.current?.postMessage(message), []);
   const requestChapter = useCallback((nextBook: string, nextChapter: string) => {
@@ -70,6 +75,17 @@ export function Reader() {
     return () => { historyStoreRef.current = null; };
   }, []);
 
+  useEffect(() => {
+    try {
+      const store = new LocalSettingsStore(window.localStorage);
+      settingsStoreRef.current = store;
+      setTextScale(store.load().textScale);
+    } catch {
+      settingsStoreRef.current = null;
+    }
+    return () => { settingsStoreRef.current = null; };
+  }, []);
+
   const chapters = books.find((item) => item.name === book)?.chapters ?? [];
 
   function chooseBook(nextBook: string) {
@@ -98,8 +114,13 @@ export function Reader() {
     });
   }
 
+  function chooseTextScale(scale: TextScale) {
+    setTextScale(scale);
+    settingsStoreRef.current?.save({ textScale: scale });
+  }
+
   return (
-    <div className="reader-shell">
+    <div className="reader-shell" data-text-scale={textScale}>
       <a className="skip-link" href="#reading-pane">Skip to text</a>
       <div className="workspace">
         <main id="reading-pane" className="reading-pane" tabIndex={-1}>
@@ -121,7 +142,7 @@ export function Reader() {
         )}
         {activeFeature === "history" && <HistoryPanel entries={history} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}
-        {activeFeature === "profile" && <EmptyFeature title="Profile and preferences" detail="Sign-in, reading preferences, and data controls will live here." />}
+        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={chooseTextScale} />}
       </FeatureOverlay>
     </div>
   );
