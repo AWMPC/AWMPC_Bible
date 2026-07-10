@@ -1,5 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, type ReactNode } from "react";
 import { featureTitle, type FeatureId, type OverlayOrigin } from "./features";
+import { lockDocumentScroll } from "./scrollLock";
 
 export type FeatureOverlayHandle = { close: () => Promise<void> };
 
@@ -62,7 +63,9 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       const dialog = dialogRef.current;
       if (!dialog) return;
       let animationFrame = 0;
+      let releaseScroll = () => {};
       if (activeFeature && origin && !dialog.open) {
+        releaseScroll = lockDocumentScroll();
         dialog.style.height = `${origin.availableHeight}px`;
         dialog.showModal();
         animationFrame = requestAnimationFrame(() => void animate(dialog, origin));
@@ -70,6 +73,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       return () => {
         cancelAnimationFrame(animationFrame);
         dialog.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
+        releaseScroll();
       };
     }, [activeFeature, origin]);
 

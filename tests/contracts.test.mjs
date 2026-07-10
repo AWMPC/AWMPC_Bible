@@ -6,6 +6,7 @@ import { createOverlayOrigin } from "../src/ui/features.ts";
 import { LocalHistoryStore } from "../src/history/HistoryStore.ts";
 import { LocalSettingsStore } from "../src/settings/SettingsStore.ts";
 import { DEFAULT_TEXT_SCALE, TEXT_SCALES, textScaleAt } from "../src/settings/textScale.ts";
+import { lockDocumentScroll } from "../src/ui/scrollLock.ts";
 
 const fixture = JSON.stringify({ Example: { "1": { "1": "A generic test sentence.", "2": "Another sentence." }, "10": { "1": "Later." } } });
 
@@ -119,6 +120,44 @@ test("profile slider snaps and scales verse text and numbers", async () => {
   assert.match(styles, /--verse-text-size/);
   assert.match(styles, /--verse-number-size/);
   assert.match(styles, /data-text-scale="extra-large"/);
+});
+
+test("navigation stays vertically ordered in one contained scroll view", async () => {
+  const [reader, styles] = await Promise.all([
+    readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.ok(reader.indexOf('id="books-title"') < reader.indexOf('id="chapters-title"'));
+  assert.ok(reader.indexOf('id="chapters-title"') < reader.indexOf('id="verses-title"'));
+  assert.match(styles, /\.navigation-panel\s*\{[^}]*grid-template-columns:\s*1fr/);
+  assert.match(styles, /\.overlay-content\s*\{[^}]*overscroll-behavior:\s*contain/);
+  assert.doesNotMatch(styles, /\.navigation-panel section\s*\{[^}]*overflow-y:\s*auto/);
+});
+
+test("document scroll lock restores exact prior styles and position", () => {
+  const bodyStyle = { position: "", top: "", left: "", width: "", overflow: "", paddingRight: "" };
+  const rootStyle = { overscrollBehavior: "auto" };
+  const scrollCalls = [];
+  const priorDocument = globalThis.document;
+  const priorWindow = globalThis.window;
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { documentElement: { style: rootStyle, clientWidth: 980 }, body: { style: bodyStyle } } });
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { scrollX: 12, scrollY: 345, innerWidth: 1000, scrollTo: (...args) => scrollCalls.push(args) } });
+  try {
+    const release = lockDocumentScroll();
+    assert.equal(bodyStyle.position, "fixed");
+    assert.equal(bodyStyle.top, "-345px");
+    assert.equal(rootStyle.overscrollBehavior, "none");
+    release();
+    release();
+    assert.equal(bodyStyle.position, "");
+    assert.equal(rootStyle.overscrollBehavior, "auto");
+    assert.deepEqual(scrollCalls, [[12, 345]]);
+  } finally {
+    if (priorDocument === undefined) delete globalThis.document;
+    else Object.defineProperty(globalThis, "document", { configurable: true, value: priorDocument });
+    if (priorWindow === undefined) delete globalThis.window;
+    else Object.defineProperty(globalThis, "window", { configurable: true, value: priorWindow });
+  }
 });
 
 test("overlay geometry starts at its trigger and stops above the dock", () => {

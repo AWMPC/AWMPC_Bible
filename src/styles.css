@@ -82,10 +82,10 @@ article h2 { margin: 0 0 2rem; color: var(--muted); font-size: .8rem; letter-spa
 .overlay-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--border); }
 .overlay-header h2 { margin: .25rem 0 0; font: 700 clamp(1.8rem, 4vw, 2.6rem)/1 ui-serif, Georgia, serif; letter-spacing: -.035em; }
 .overlay-close { min-height: 44px; padding: .65rem 1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-strong); box-shadow: var(--inner-highlight); cursor: pointer; font-weight: 700; }
-.overlay-content { min-height: 0; overflow-y: auto; padding: clamp(1rem, 3vw, 2rem); }
-.navigation-panel { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(150px, .55fr) minmax(150px, .55fr); gap: 1.4rem; height: 100%; }
-.navigation-panel section { min-height: 0; overflow-y: auto; }
-.navigation-panel h3 { position: sticky; top: 0; z-index: 1; margin: 0 0 .8rem; padding: .3rem 0 .65rem; background: linear-gradient(var(--surface-solid) 70%, transparent); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; }
+.overlay-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: clamp(1rem, 3vw, 2rem); }
+.navigation-panel { display: grid; grid-template-columns: 1fr; gap: 2rem; min-height: 100%; }
+.navigation-panel section { min-height: 0; overflow: visible; }
+.navigation-panel h3 { margin: 0 0 .8rem; padding: .3rem 0 .65rem; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; }
 .choice-grid { display: grid; gap: .35rem; }
 .books-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
 .chapter-grid, .verse-grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
@@ -123,8 +123,6 @@ article h2 { margin: 0 0 2rem; color: var(--muted); font-size: .8rem; letter-spa
   .floating-dock { right: 50%; transform: translateX(50%); }
   .feature-overlay { border-radius: 0 0 24px 24px; }
   .overlay-content { padding: 1rem; }
-  .navigation-panel { grid-template-columns: 1fr; }
-  .navigation-panel section { overflow: visible; }
   .history-list li { align-items: start; flex-direction: column; }
   .history-list time { text-align: left; }
   .setting-heading { display: grid; gap: 1rem; }
