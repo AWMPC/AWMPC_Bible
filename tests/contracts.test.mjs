@@ -6,6 +6,7 @@ import { createOverlayOrigin } from "../src/ui/features.ts";
 import { LocalHistoryStore } from "../src/history/HistoryStore.ts";
 import { LocalSettingsStore } from "../src/settings/SettingsStore.ts";
 import { DEFAULT_TEXT_SCALE, TEXT_SCALES, textScaleAt } from "../src/settings/textScale.ts";
+import { DEFAULT_VERSE_FONT, VERSE_FONTS, isVerseFont } from "../src/settings/verseFont.ts";
 import { lockDocumentScroll } from "../src/ui/scrollLock.ts";
 import { nextDockVisibility } from "../src/ui/useUserScrollDockVisibility.ts";
 
@@ -112,13 +113,22 @@ test("settings round-trip validated text scale and recover safely", () => {
   const values = new Map();
   const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
   const store = new LocalSettingsStore(storage);
-  store.save({ textScale: "large" });
-  assert.deepEqual(store.load(), { textScale: "large" });
+  store.save({ textScale: "large", verseFont: "system-sans" });
+  assert.deepEqual(store.load(), { textScale: "large", verseFont: "system-sans" });
   values.set("quiet-reader.settings.v1", '{"textScale":"unknown"}');
-  assert.deepEqual(store.load(), { textScale: "standard" });
+  assert.deepEqual(store.load(), { textScale: "standard", verseFont: "system-serif" });
   const unavailable = new LocalSettingsStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
-  assert.deepEqual(unavailable.load(), { textScale: "standard" });
-  assert.doesNotThrow(() => unavailable.save({ textScale: "compact" }));
+  assert.deepEqual(unavailable.load(), { textScale: "standard", verseFont: "system-serif" });
+  assert.doesNotThrow(() => unavailable.save({ textScale: "compact", verseFont: "rounded" }));
+});
+
+test("old settings preserve scale while font defaults independently", () => {
+  const storage = { getItem: () => '{"textScale":"large"}', setItem: () => {} };
+  assert.deepEqual(new LocalSettingsStore(storage).load(), { textScale: "large", verseFont: "system-serif" });
+  assert.equal(VERSE_FONTS.length, 4);
+  assert.equal(DEFAULT_VERSE_FONT, "system-serif");
+  assert.equal(isVerseFont("monospace"), true);
+  assert.equal(isVerseFont("remote-font"), false);
 });
 
 test("profile slider snaps and scales verse text and numbers", async () => {
@@ -132,6 +142,19 @@ test("profile slider snaps and scales verse text and numbers", async () => {
   assert.match(styles, /--verse-text-size/);
   assert.match(styles, /--verse-number-size/);
   assert.match(styles, /data-text-scale="extra-large"/);
+});
+
+test("profile font selector uses only local system stacks for verses and numbers", async () => {
+  const [profile, styles] = await Promise.all([
+    readFile(new URL("../src/ui/ProfilePanel.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(profile, /<label[^>]*htmlFor="verse-font"/);
+  assert.match(profile, /<select[^>]*id="verse-font"/);
+  assert.match(styles, /--verse-font-family/);
+  assert.match(styles, /\.verses li > span[^}]*font-family:\s*var\(--verse-font-family\)/);
+  assert.match(styles, /\.verses p[^}]*var\(--verse-font-family\)/);
+  assert.doesNotMatch(styles, /@font-face|url\(/);
 });
 
 test("navigation stays vertically ordered in one contained scroll view", async () => {

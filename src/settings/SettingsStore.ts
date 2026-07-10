@@ -1,6 +1,7 @@
 import { DEFAULT_TEXT_SCALE, isTextScale, type TextScale } from "./textScale.ts";
+import { DEFAULT_VERSE_FONT, isVerseFont, type VerseFont } from "./verseFont.ts";
 
-export type ReaderSettings = Readonly<{ textScale: TextScale }>;
+export type ReaderSettings = Readonly<{ textScale: TextScale; verseFont: VerseFont }>;
 
 export interface SettingsStore {
   load(): ReaderSettings;
@@ -20,13 +21,15 @@ export class LocalSettingsStore implements SettingsStore {
   load(): ReaderSettings {
     try {
       const parsed: unknown = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? "null");
-      if (parsed && typeof parsed === "object" && isTextScale((parsed as Partial<ReaderSettings>).textScale)) {
-        return { textScale: (parsed as ReaderSettings).textScale };
-      }
+      const settings = parsed && typeof parsed === "object" ? parsed as Partial<ReaderSettings> : {};
+      return {
+        textScale: isTextScale(settings.textScale) ? settings.textScale : DEFAULT_TEXT_SCALE,
+        verseFont: isVerseFont(settings.verseFont) ? settings.verseFont : DEFAULT_VERSE_FONT,
+      };
     } catch {
       // Invalid or unavailable device storage falls back to a safe default.
     }
-    return { textScale: DEFAULT_TEXT_SCALE };
+    return { textScale: DEFAULT_TEXT_SCALE, verseFont: DEFAULT_VERSE_FONT };
   }
 
   save(settings: ReaderSettings): void {
