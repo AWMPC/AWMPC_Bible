@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0 - 2026-07-10
+
+- Add Auto, Day, and Night appearance selection to Profile.
+- Make Auto follow live operating-system or browser color-scheme changes through CSS.
+- Add complete Day and Night Liquid Glass tokens without media listeners or remote assets.
+
 ## 0.10.0 - 2026-07-10
 
 - Add a native Profile selector for Serif, Sans, Rounded, and Monospace verse fonts.
