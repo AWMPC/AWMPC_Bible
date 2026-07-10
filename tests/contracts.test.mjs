@@ -192,30 +192,34 @@ test("navigation stays vertically ordered in one contained scroll view", async (
   assert.doesNotMatch(styles, /\.navigation-panel section\s*\{[^}]*overflow-y:\s*auto/);
 });
 
-test("document scroll lock restores exact prior styles and position", () => {
-  const bodyStyle = { position: "", top: "", left: "", width: "", overflow: "", paddingRight: "" };
-  const rootStyle = { overscrollBehavior: "auto" };
-  const scrollCalls = [];
+test("document scroll lock restores styles without issuing a scroll", () => {
+  const bodyStyle = { overflow: "visible" };
+  const rootStyle = { overflow: "clip", overscrollBehavior: "auto" };
   const priorDocument = globalThis.document;
-  const priorWindow = globalThis.window;
-  Object.defineProperty(globalThis, "document", { configurable: true, value: { documentElement: { style: rootStyle, clientWidth: 980 }, body: { style: bodyStyle } } });
-  Object.defineProperty(globalThis, "window", { configurable: true, value: { scrollX: 12, scrollY: 345, innerWidth: 1000, scrollTo: (...args) => scrollCalls.push(args) } });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { documentElement: { style: rootStyle }, body: { style: bodyStyle } } });
   try {
     const release = lockDocumentScroll();
-    assert.equal(bodyStyle.position, "fixed");
-    assert.equal(bodyStyle.top, "-345px");
+    assert.equal(bodyStyle.overflow, "hidden");
+    assert.equal(rootStyle.overflow, "hidden");
     assert.equal(rootStyle.overscrollBehavior, "none");
     release();
     release();
-    assert.equal(bodyStyle.position, "");
+    assert.equal(bodyStyle.overflow, "visible");
+    assert.equal(rootStyle.overflow, "clip");
     assert.equal(rootStyle.overscrollBehavior, "auto");
-    assert.deepEqual(scrollCalls, [[12, 345]]);
   } finally {
     if (priorDocument === undefined) delete globalThis.document;
     else Object.defineProperty(globalThis, "document", { configurable: true, value: priorDocument });
-    if (priorWindow === undefined) delete globalThis.window;
-    else Object.defineProperty(globalThis, "window", { configurable: true, value: priorWindow });
   }
+});
+
+test("closing after verse selection never focuses or scrolls the background target", async () => {
+  const reader = await readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8");
+  const lock = await readFile(new URL("../src/ui/scrollLock.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(reader, /scrollIntoView|\.focus\(/);
+  assert.match(reader, /historyStoreRef/);
+  assert.match(reader, /overlayRef\.current\?\.close\(\)/);
+  assert.doesNotMatch(lock, /scrollTo|scrollX|scrollY|position\s*=\s*"fixed"/);
 });
 
 test("dock visibility changes only for fresh matching user scroll intent", () => {

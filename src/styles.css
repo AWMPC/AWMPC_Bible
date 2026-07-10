@@ -35,7 +35,7 @@
 }
 
 * { box-sizing: border-box; }
-html { background: var(--bg); scroll-behavior: smooth; }
+html { background: var(--bg); scroll-behavior: smooth; scrollbar-gutter: stable; }
 body { margin: 0; color: var(--ink); background: var(--bg); }
 button, input, select { font: inherit; }
 button { color: inherit; }

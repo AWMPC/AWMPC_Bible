@@ -126,11 +126,6 @@ export function Reader() {
       setHistory((current) => [entry, ...current].slice(0, 200));
     }
     await overlayRef.current?.close();
-    requestAnimationFrame(() => {
-      const target = document.getElementById(`verse-${chapter}-${verse}`);
-      target?.focus({ preventScroll: true });
-      target?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-    });
   }
 
   function chooseTextScale(scale: TextScale) {
