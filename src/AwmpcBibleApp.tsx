@@ -105,7 +105,7 @@ export function AwmpcBibleApp() {
   }, [appearance]);
 
   const chapters = books.find((item) => item.name === book)?.chapters ?? [];
-  const dockVisible = useUserScrollDockVisibility(activeFeature === null);
+  const { visible: dockVisible, toggle: toggleDockVisibility } = useUserScrollDockVisibility(activeFeature === null);
 
   function chooseBook(nextBook: string) {
     const firstChapter = books.find((item) => item.name === nextBook)?.chapters[0] ?? "1";
@@ -147,7 +147,12 @@ export function AwmpcBibleApp() {
     <div className="awmpc-bible-shell" data-text-scale={textScale} data-verse-font={verseFont}>
       <a className="skip-link" href="#reading-pane">Skip to text</a>
       <div className="workspace">
-        <main id="reading-pane" className="reading-pane" tabIndex={-1}>
+        <main
+          id="reading-pane"
+          className="reading-pane"
+          tabIndex={-1}
+          onClick={(event) => { if (event.nativeEvent.isTrusted && event.detail > 0) toggleDockVisibility(); }}
+        >
           {status === "error" ? <section className="error-card" role="alert"><h1>Unable to open the text</h1><p>{error}</p></section> : (
             <>
               <div className="reading-header">

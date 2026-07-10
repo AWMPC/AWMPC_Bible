@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type ScrollIntent = Readonly<{ direction: -1 | 1; recordedAt: number }>;
 
@@ -26,7 +26,12 @@ function isIgnoredTarget(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest(".feature-overlay, .dock-scroll"));
 }
 
-export function useUserScrollDockVisibility(enabled: boolean): boolean {
+export type DockVisibility = Readonly<{
+  visible: boolean;
+  toggle: () => void;
+}>;
+
+export function useUserScrollDockVisibility(enabled: boolean): DockVisibility {
   const [visible, setVisible] = useState(true);
   const visibleRef = useRef(true);
   const previousY = useRef(0);
@@ -98,5 +103,14 @@ export function useUserScrollDockVisibility(enabled: boolean): boolean {
     };
   }, [enabled]);
 
-  return visible;
+  const toggle = useCallback(() => {
+    if (!enabled) return;
+    setVisible((current) => {
+      const next = !current;
+      visibleRef.current = next;
+      return next;
+    });
+  }, [enabled]);
+
+  return { visible, toggle };
 }

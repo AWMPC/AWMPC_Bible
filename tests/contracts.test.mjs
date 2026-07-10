@@ -255,6 +255,18 @@ test("dock intent hook requires trusted user input and cleans up listeners", asy
   assert.doesNotMatch(source, /setTimeout/);
 });
 
+test("a trusted tap anywhere in the verse view toggles dock visibility", async () => {
+  const [appSource, hookSource] = await Promise.all([
+    readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/ui/useUserScrollDockVisibility.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(appSource, /className="reading-pane"[\s\S]*?event\.nativeEvent\.isTrusted && event\.detail > 0[\s\S]*?toggleDockVisibility\(\)/);
+  assert.match(hookSource, /const toggle = useCallback/);
+  assert.match(hookSource, /if \(!enabled\) return/);
+  assert.match(hookSource, /visibleRef\.current = next/);
+  assert.match(hookSource, /return \{ visible, toggle \}/);
+});
+
 test("overlay geometry starts at its trigger and stops above the dock", () => {
   assert.deepEqual(
     createOverlayOrigin(

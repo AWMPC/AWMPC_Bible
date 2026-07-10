@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.4 - 2026-07-10
+
+- Toggle the floating dock when the user taps anywhere in the verse reading surface.
+
 ## 0.11.3 - 2026-07-10
 
 - Match overlay closing duration, easing, and content timing to the opening animation in reverse.
