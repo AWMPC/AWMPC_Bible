@@ -68,7 +68,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .chapter-indicator { margin: 0; color: var(--muted); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
 .chapter-indicator strong { display: block; margin-top: .2rem; color: var(--ink); font: 700 1.7rem/1 ui-serif, Georgia, serif; }
 article { max-width: 800px; margin: 3rem auto 0; }
-article h2 { margin: 0 0 2rem; color: var(--muted); font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; }
 .verses { display: grid; gap: 1.35rem; margin: 0; padding: 0; list-style: none; }
 .verses li { display: grid; grid-template-columns: calc(var(--verse-number-size) * 2.8) minmax(0, 1fr); gap: .8rem; }
 .verses li:focus-visible { border-radius: 12px; outline: 3px solid var(--accent); outline-offset: 8px; }

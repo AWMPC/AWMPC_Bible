@@ -267,6 +267,18 @@ test("a trusted tap anywhere in the verse view toggles dock visibility", async (
   assert.match(hookSource, /return \{ visible, toggle \}/);
 });
 
+test("verse view presents book and chapter once without redundant labels", async () => {
+  const [appSource, styles] = await Promise.all([
+    readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(appSource, /Now reading/);
+  assert.match(appSource, /className="chapter-indicator">Chapter <strong>\{chapter\}<\/strong>/);
+  assert.match(appSource, /<article aria-label=\{`\$\{book\} chapter \$\{chapter\}`\}>/);
+  assert.doesNotMatch(appSource, /<article[^>]*><h2>Chapter/);
+  assert.doesNotMatch(styles, /article h2/);
+});
+
 test("overlay geometry starts at its trigger and stops above the dock", () => {
   assert.deepEqual(
     createOverlayOrigin(

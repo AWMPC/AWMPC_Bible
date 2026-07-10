@@ -156,10 +156,10 @@ export function AwmpcBibleApp() {
           {status === "error" ? <section className="error-card" role="alert"><h1>Unable to open the text</h1><p>{error}</p></section> : (
             <>
               <div className="reading-header">
-                <div><p className="eyebrow">Now reading</p><h1>{book || "Preparing your library"}</h1></div>
+                <h1>{book || "Preparing your library"}</h1>
                 {chapter && <p className="chapter-indicator">Chapter <strong>{chapter}</strong></p>}
               </div>
-              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><h2>Chapter {chapter}</h2><ol className="verses">{verses.map((verse) => <li id={`verse-${chapter}-${verse.number}`} tabIndex={-1} key={verse.number}><span aria-label={`Verse ${verse.number}`}>{verse.number}</span><p>{verse.text}</p></li>)}</ol></article>}
+              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={`verse-${chapter}-${verse.number}`} tabIndex={-1} key={verse.number}><span aria-label={`Verse ${verse.number}`}>{verse.number}</span><p>{verse.text}</p></li>)}</ol></article>}
             </>
           )}
         </main>

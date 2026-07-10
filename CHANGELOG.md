@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.5 - 2026-07-10
+
+- Remove the “Now reading” eyebrow and redundant chapter heading from the verse view.
+
 ## 0.11.4 - 2026-07-10
 
 - Toggle the floating dock when the user taps anywhere in the verse reading surface.
