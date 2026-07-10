@@ -8,7 +8,7 @@ JSON text. The current dataset uses a book → chapter → verse hierarchy.
 - The application shell renders immediately with an accessible loading skeleton.
 - A dedicated Web Worker fetches, validates, parses, and retains the full dataset.
 - The main thread receives only navigation metadata and the selected chapter.
-- Visual themes share semantic components through CSS design tokens.
+- A focused Liquid Glass interface uses native CSS effects with graceful fallbacks.
 - The acceleration boundary leaves room for WASM search/indexing and optional
   WebGPU effects without making either necessary for correct reading.
 
