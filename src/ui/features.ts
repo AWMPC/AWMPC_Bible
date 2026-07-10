@@ -34,5 +34,5 @@ export const DOCK_FEATURES: readonly DockFeature[] = Object.freeze([
 ]);
 
 export function featureTitle(id: FeatureId): string {
-  return DOCK_FEATURES.find((feature) => feature.id === id)?.shortLabel ?? "Reader";
+  return DOCK_FEATURES.find((feature) => feature.id === id)?.shortLabel ?? "AWMPC Bible";
 }

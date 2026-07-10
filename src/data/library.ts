@@ -64,7 +64,7 @@ export function parseLibrary(text: string): Library {
   }
 
   if (chapterCount > LIMITS.chapters || verseCount > LIMITS.verses) {
-    throw new Error("The library is larger than this reader supports.");
+    throw new Error("The library is larger than AWMPC Bible supports.");
   }
   return value as Library;
 }

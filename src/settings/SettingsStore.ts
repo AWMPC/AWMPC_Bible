@@ -2,15 +2,16 @@ import { DEFAULT_TEXT_SCALE, isTextScale, type TextScale } from "./textScale.ts"
 import { DEFAULT_VERSE_FONT, isVerseFont, type VerseFont } from "./verseFont.ts";
 import { DEFAULT_APPEARANCE, isAppearance, type Appearance } from "./appearance.ts";
 
-export type ReaderSettings = Readonly<{ textScale: TextScale; verseFont: VerseFont; appearance: Appearance }>;
+export type BibleSettings = Readonly<{ textScale: TextScale; verseFont: VerseFont; appearance: Appearance }>;
 
 export interface SettingsStore {
-  load(): ReaderSettings;
-  save(settings: ReaderSettings): void;
+  load(): BibleSettings;
+  save(settings: BibleSettings): void;
 }
 
 type MinimalStorage = Pick<Storage, "getItem" | "setItem">;
-const STORAGE_KEY = "quiet-reader.settings.v1";
+const STORAGE_KEY = "awmpc-bible.settings.v1";
+const LEGACY_STORAGE_KEY = "quiet-reader.settings.v1";
 
 export class LocalSettingsStore implements SettingsStore {
   private readonly storage: MinimalStorage;
@@ -19,22 +20,28 @@ export class LocalSettingsStore implements SettingsStore {
     this.storage = storage;
   }
 
-  load(): ReaderSettings {
+  load(): BibleSettings {
     try {
-      const parsed: unknown = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? "null");
-      const settings = parsed && typeof parsed === "object" ? parsed as Partial<ReaderSettings> : {};
-      return {
+      const current = this.storage.getItem(STORAGE_KEY);
+      const legacy = current === null ? this.storage.getItem(LEGACY_STORAGE_KEY) : null;
+      const parsed: unknown = JSON.parse(current ?? legacy ?? "null");
+      const settings = parsed && typeof parsed === "object" ? parsed as Partial<BibleSettings> : {};
+      const validated: BibleSettings = {
         textScale: isTextScale(settings.textScale) ? settings.textScale : DEFAULT_TEXT_SCALE,
         verseFont: isVerseFont(settings.verseFont) ? settings.verseFont : DEFAULT_VERSE_FONT,
         appearance: isAppearance(settings.appearance) ? settings.appearance : DEFAULT_APPEARANCE,
       };
+      if (current === null && legacy !== null) {
+        try { this.storage.setItem(STORAGE_KEY, JSON.stringify(validated)); } catch { /* Legacy data remains usable. */ }
+      }
+      return validated;
     } catch {
       // Invalid or unavailable device storage falls back to a safe default.
     }
     return { textScale: DEFAULT_TEXT_SCALE, verseFont: DEFAULT_VERSE_FONT, appearance: DEFAULT_APPEARANCE };
   }
 
-  save(settings: ReaderSettings): void {
+  save(settings: BibleSettings): void {
     try {
       this.storage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch {

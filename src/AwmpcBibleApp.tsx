@@ -12,7 +12,7 @@ import { ProfilePanel } from "./ui/ProfilePanel";
 import type { FeatureId, OverlayOrigin } from "./ui/features";
 import { useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
 
-export function Reader() {
+export function AwmpcBibleApp() {
   const workerRef = useRef<Worker | null>(null);
   const requestRef = useRef(0);
   const overlayRef = useRef<FeatureOverlayHandle>(null);
@@ -59,7 +59,7 @@ export function Reader() {
       }
     };
     worker.onerror = () => {
-      setError("The reader could not start. Please reload and try again.");
+      setError("AWMPC Bible could not start. Please reload and try again.");
       setStatus("error");
     };
     send({ type: "load" });
@@ -144,7 +144,7 @@ export function Reader() {
   }
 
   return (
-    <div className="reader-shell" data-text-scale={textScale} data-verse-font={verseFont}>
+    <div className="awmpc-bible-shell" data-text-scale={textScale} data-verse-font={verseFont}>
       <a className="skip-link" href="#reading-pane">Skip to text</a>
       <div className="workspace">
         <main id="reading-pane" className="reading-pane" tabIndex={-1}>

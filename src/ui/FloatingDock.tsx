@@ -8,7 +8,7 @@ type FloatingDockProps = {
 
 export function FloatingDock({ activeFeature, visible, onOpen }: FloatingDockProps) {
   return (
-    <nav className={`floating-dock${visible ? "" : " is-hidden"}`} aria-label="Reader tools">
+    <nav className={`floating-dock${visible ? "" : " is-hidden"}`} aria-label="AWMPC Bible tools">
       <div className="dock-scroll">
         {DOCK_FEATURES.map((feature) => (
           <button

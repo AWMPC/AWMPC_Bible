@@ -35,15 +35,15 @@ test("retries only transient HTTP failures", () => {
   assert.equal(isRetryableStatus(404), false);
 });
 
-test("reader uses a typed Vite worker and text-only React rendering", async () => {
-  const source = await readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8");
+test("AWMPC Bible uses a typed Vite worker and text-only React rendering", async () => {
+  const source = await readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8");
   assert.match(source, /data\.worker\?worker/);
   assert.match(source, /worker\.terminate\(\)/);
   assert.equal(source.includes("dangerouslySetInnerHTML"), false);
   assert.equal(source.includes("innerHTML"), false);
 });
 
-test("reader has one resilient Liquid Glass presentation", async () => {
+test("AWMPC Bible has one resilient Liquid Glass presentation", async () => {
   const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(styles, /backdrop-filter:/);
   assert.match(styles, /@supports not/);
@@ -62,15 +62,15 @@ test("pointer interaction never introduces borders while keyboard focus remains 
   assert.equal(forcedColors.includes("outline: 2px solid Highlight"), false);
 });
 
-test("reader uses one scalable dock and native overlay host", async () => {
-  const [reader, dock, sheet, features] = await Promise.all([
-    readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8"),
+test("AWMPC Bible uses one scalable dock and native overlay host", async () => {
+  const [appSource, dock, sheet, features] = await Promise.all([
+    readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/ui/FloatingDock.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/ui/FeatureOverlay.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/ui/features.ts", import.meta.url), "utf8"),
   ]);
-  assert.equal(reader.includes('className="topbar"'), false);
-  assert.equal(reader.includes('className="library"'), false);
+  assert.equal(appSource.includes('className="topbar"'), false);
+  assert.equal(appSource.includes('className="library"'), false);
   assert.match(dock, /DOCK_FEATURES\.map/);
   assert.match(dock, /aria-haspopup="dialog"/);
   assert.match(sheet, /<dialog/);
@@ -102,6 +102,14 @@ test("history recovers from malformed or unavailable storage", async () => {
   assert.deepEqual(await unavailable.add({ book: "Example", chapter: "1", verse: "1" }), { id: "safe-id", book: "Example", chapter: "1", verse: "1", visitedAt: "1970-01-01T00:00:00.000Z" });
 });
 
+test("legacy history migrates to the AWMPC Bible namespace", async () => {
+  const legacyEntry = { id: "legacy", book: "Example", chapter: "1", verse: "2", visitedAt: "2026-07-10T20:30:00.000Z" };
+  const values = new Map([["quiet-reader.history.v1", JSON.stringify([legacyEntry])]]);
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+  assert.deepEqual(await new LocalHistoryStore(storage).list(), [legacyEntry]);
+  assert.equal(values.has("awmpc-bible.history.v1"), true);
+});
+
 test("text scale exposes five exact snap points", () => {
   assert.equal(TEXT_SCALES.length, 5);
   assert.equal(textScaleAt(-10), "compact");
@@ -116,7 +124,7 @@ test("settings round-trip validated text scale and recover safely", () => {
   const store = new LocalSettingsStore(storage);
   store.save({ textScale: "large", verseFont: "system-sans", appearance: "night" });
   assert.deepEqual(store.load(), { textScale: "large", verseFont: "system-sans", appearance: "night" });
-  values.set("quiet-reader.settings.v1", '{"textScale":"unknown"}');
+  values.set("awmpc-bible.settings.v1", '{"textScale":"unknown"}');
   assert.deepEqual(store.load(), { textScale: "standard", verseFont: "system-serif", appearance: "auto" });
   const unavailable = new LocalSettingsStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
   assert.deepEqual(unavailable.load(), { textScale: "standard", verseFont: "system-serif", appearance: "auto" });
@@ -124,8 +132,10 @@ test("settings round-trip validated text scale and recover safely", () => {
 });
 
 test("old settings preserve scale while font defaults independently", () => {
-  const storage = { getItem: () => '{"textScale":"large"}', setItem: () => {} };
+  const values = new Map([["quiet-reader.settings.v1", '{"textScale":"large"}']]);
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
   assert.deepEqual(new LocalSettingsStore(storage).load(), { textScale: "large", verseFont: "system-serif", appearance: "auto" });
+  assert.equal(values.has("awmpc-bible.settings.v1"), true);
   assert.equal(VERSE_FONTS.length, 4);
   assert.equal(DEFAULT_VERSE_FONT, "system-serif");
   assert.equal(isVerseFont("monospace"), true);
@@ -181,12 +191,12 @@ test("appearance selector uses CSS-native live system detection", async () => {
 });
 
 test("navigation stays vertically ordered in one contained scroll view", async () => {
-  const [reader, styles] = await Promise.all([
-    readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8"),
+  const [appSource, styles] = await Promise.all([
+    readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
   ]);
-  assert.ok(reader.indexOf('id="books-title"') < reader.indexOf('id="chapters-title"'));
-  assert.ok(reader.indexOf('id="chapters-title"') < reader.indexOf('id="verses-title"'));
+  assert.ok(appSource.indexOf('id="books-title"') < appSource.indexOf('id="chapters-title"'));
+  assert.ok(appSource.indexOf('id="chapters-title"') < appSource.indexOf('id="verses-title"'));
   assert.match(styles, /\.navigation-panel\s*\{[^}]*grid-template-columns:\s*1fr/);
   assert.match(styles, /\.overlay-content\s*\{[^}]*overscroll-behavior:\s*contain/);
   assert.doesNotMatch(styles, /\.navigation-panel section\s*\{[^}]*overflow-y:\s*auto/);
@@ -214,11 +224,11 @@ test("document scroll lock restores styles without issuing a scroll", () => {
 });
 
 test("closing after verse selection never focuses or scrolls the background target", async () => {
-  const reader = await readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8");
+  const appSource = await readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8");
   const lock = await readFile(new URL("../src/ui/scrollLock.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(reader, /scrollIntoView|\.focus\(/);
-  assert.match(reader, /historyStoreRef/);
-  assert.match(reader, /overlayRef\.current\?\.close\(\)/);
+  assert.doesNotMatch(appSource, /scrollIntoView|\.focus\(/);
+  assert.match(appSource, /historyStoreRef/);
+  assert.match(appSource, /overlayRef\.current\?\.close\(\)/);
   assert.doesNotMatch(lock, /scrollTo|scrollX|scrollY|position\s*=\s*"fixed"/);
 });
 
@@ -256,4 +266,16 @@ test("overlay geometry starts at its trigger and stops above the dock", () => {
 test("OpenAI Sites packaging is absent", async () => {
   await assert.rejects(readFile(new URL("../build/sites-vite-plugin.ts", import.meta.url)));
   await assert.rejects(readFile(new URL("../.openai/hosting.json", import.meta.url)));
+});
+
+test("current product identity converges on AWMPC Bible", async () => {
+  const [manifest, page, readme] = await Promise.all([
+    readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+    readFile(new URL("../README.md", import.meta.url), "utf8"),
+  ]);
+  assert.equal(JSON.parse(manifest).name, "awmpc-bible");
+  assert.match(page, /<title>AWMPC Bible<\/title>/);
+  assert.match(readme, /^# AWMPC Bible/m);
+  assert.doesNotMatch(`${page}\n${readme}`, /Quiet Reader|awmpc-reader/i);
 });

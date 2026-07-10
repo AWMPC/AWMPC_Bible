@@ -15,7 +15,8 @@ export interface HistoryStore {
 
 type MinimalStorage = Pick<Storage, "getItem" | "setItem">;
 
-const STORAGE_KEY = "quiet-reader.history.v1";
+const STORAGE_KEY = "awmpc-bible.history.v1";
+const LEGACY_STORAGE_KEY = "quiet-reader.history.v1";
 const DEFAULT_LIMIT = 200;
 
 function isEntry(value: unknown): value is HistoryEntry {
@@ -45,8 +46,14 @@ export class LocalHistoryStore implements HistoryStore {
 
   async list(): Promise<HistoryEntry[]> {
     try {
-      const parsed: unknown = JSON.parse(this.storage.getItem(STORAGE_KEY) ?? "[]");
-      return Array.isArray(parsed) ? parsed.filter(isEntry).slice(0, this.limit) : [];
+      const current = this.storage.getItem(STORAGE_KEY);
+      const legacy = current === null ? this.storage.getItem(LEGACY_STORAGE_KEY) : null;
+      const parsed: unknown = JSON.parse(current ?? legacy ?? "[]");
+      const entries = Array.isArray(parsed) ? parsed.filter(isEntry).slice(0, this.limit) : [];
+      if (current === null && legacy !== null) {
+        try { this.storage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch { /* Legacy data remains usable. */ }
+      }
+      return entries;
     } catch {
       return [];
     }
