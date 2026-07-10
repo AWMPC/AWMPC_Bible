@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 - 2026-07-10
+
+- Stack Books, Chapters, and Verses vertically in one universal Navigation scroll view.
+- Contain overlay overscroll and lock the background viewport until reverse close completes.
+- Restore the exact prior document scroll position and inline scroll styles after dismissal.
+
 ## 0.7.0 - 2026-07-10
 
 - Add a five-stop snapping verse text-size control to Profile.
