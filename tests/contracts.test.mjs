@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { isRetryableStatus, listBooks, parseLibrary, readChapter } from "../src/data/library.ts";
+import { createOverlayOrigin } from "../src/ui/features.ts";
 
 const fixture = JSON.stringify({ Example: { "1": { "1": "A generic test sentence.", "2": "Another sentence." }, "10": { "1": "Later." } } });
 
@@ -47,7 +48,7 @@ test("reader uses one scalable dock and native overlay host", async () => {
   const [reader, dock, sheet, features] = await Promise.all([
     readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/ui/FloatingDock.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../src/ui/FeatureSheet.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/ui/FeatureOverlay.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/ui/features.ts", import.meta.url), "utf8"),
   ]);
   assert.equal(reader.includes('className="topbar"'), false);
@@ -56,8 +57,19 @@ test("reader uses one scalable dock and native overlay host", async () => {
   assert.match(dock, /aria-haspopup="dialog"/);
   assert.match(sheet, /<dialog/);
   assert.match(sheet, /showModal\(\)/);
+  assert.match(sheet, /animateFromOrigin/);
   assert.match(sheet, /aria-labelledby/);
   for (const feature of ["history", "search", "navigation", "profile"]) assert.match(features, new RegExp(feature));
+});
+
+test("overlay geometry starts at its trigger and stops above the dock", () => {
+  assert.deepEqual(
+    createOverlayOrigin(
+      { x: 640, y: 720, width: 72, height: 52 },
+      { x: 600, y: 708, width: 360, height: 60 },
+    ),
+    { x: 640, y: 720, width: 72, height: 52, availableHeight: 700 },
+  );
 });
 
 test("OpenAI Sites packaging is absent", async () => {

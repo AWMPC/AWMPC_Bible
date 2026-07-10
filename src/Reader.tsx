@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import DataWorker from "./data/data.worker?worker";
 import type { Book, Verse, WorkerRequest, WorkerResponse } from "./data/contracts";
-import { FeatureSheet } from "./ui/FeatureSheet";
+import { FeatureOverlay } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
-import type { FeatureId } from "./ui/features";
+import type { FeatureId, OverlayOrigin } from "./ui/features";
 
 export function Reader() {
   const workerRef = useRef<Worker | null>(null);
@@ -15,6 +15,7 @@ export function Reader() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
+  const [overlayOrigin, setOverlayOrigin] = useState<OverlayOrigin | null>(null);
 
   const send = useCallback((message: WorkerRequest) => workerRef.current?.postMessage(message), []);
   const requestChapter = useCallback((nextBook: string, nextChapter: string) => {
@@ -85,15 +86,15 @@ export function Reader() {
           )}
         </main>
       </div>
-      <FloatingDock activeFeature={activeFeature} onOpen={setActiveFeature} />
-      <FeatureSheet activeFeature={activeFeature} onClose={() => setActiveFeature(null)}>
+      <FloatingDock activeFeature={activeFeature} onOpen={(feature, origin) => { setOverlayOrigin(origin); setActiveFeature(feature); }} />
+      <FeatureOverlay activeFeature={activeFeature} origin={overlayOrigin} onClose={() => setActiveFeature(null)}>
         {activeFeature === "navigation" && (
           <NavigationPanel books={books} book={book} chapters={chapters} chapter={chapter} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} />
         )}
         {activeFeature === "history" && <EmptyFeature title="Your reading trail will appear here" detail="Recently opened books and chapters will stay private to your account." />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}
         {activeFeature === "profile" && <EmptyFeature title="Profile and preferences" detail="Sign-in, reading preferences, and data controls will live here." />}
-      </FeatureSheet>
+      </FeatureOverlay>
     </div>
   );
 }

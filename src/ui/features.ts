@@ -1,5 +1,25 @@
 export type FeatureId = "history" | "search" | "navigation" | "profile";
 
+export type OverlayOrigin = Readonly<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  availableHeight: number;
+}>;
+
+type RectLike = Pick<DOMRect, "x" | "y" | "width" | "height">;
+
+export function createOverlayOrigin(button: RectLike, dock: RectLike): OverlayOrigin {
+  return {
+    x: button.x,
+    y: button.y,
+    width: button.width,
+    height: button.height,
+    availableHeight: Math.max(0, Math.floor(dock.y - 8)),
+  };
+}
+
 export type DockFeature = Readonly<{
   id: FeatureId;
   label: string;

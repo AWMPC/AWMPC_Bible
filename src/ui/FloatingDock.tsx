@@ -1,8 +1,8 @@
-import { DOCK_FEATURES, type FeatureId } from "./features";
+import { createOverlayOrigin, DOCK_FEATURES, type FeatureId, type OverlayOrigin } from "./features";
 
 type FloatingDockProps = {
   activeFeature: FeatureId | null;
-  onOpen: (feature: FeatureId) => void;
+  onOpen: (feature: FeatureId, origin: OverlayOrigin) => void;
 };
 
 export function FloatingDock({ activeFeature, onOpen }: FloatingDockProps) {
@@ -17,7 +17,11 @@ export function FloatingDock({ activeFeature, onOpen }: FloatingDockProps) {
             aria-label={feature.label}
             aria-haspopup="dialog"
             aria-expanded={activeFeature === feature.id}
-            onClick={() => onOpen(feature.id)}
+            onClick={(event) => {
+              const button = event.currentTarget.getBoundingClientRect();
+              const dock = event.currentTarget.closest("nav")?.getBoundingClientRect();
+              if (dock) onOpen(feature.id, createOverlayOrigin(button, dock));
+            }}
           >
             <span className={`dock-symbol dock-symbol-${feature.id}`} aria-hidden="true" />
             <span>{feature.shortLabel}</span>
