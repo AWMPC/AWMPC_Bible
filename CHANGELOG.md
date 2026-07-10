@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0 - 2026-07-10
+
+- Add a native Profile selector for Serif, Sans, Rounded, and Monospace verse fonts.
+- Apply validated local font stacks to every verse and verse number without downloads.
+- Preserve existing text-scale settings while migrating the additive font preference.
+
 ## 0.9.1 - 2026-07-10
 
 - Remove borders and outlines introduced by pointer selection or programmatic verse focus.
