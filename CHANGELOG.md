@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 - 2026-07-10
+
+- Auto-hide the floating dock on trusted user-initiated downward document scrolls.
+- Reveal it on trusted upward scrolling while ignoring programmatic verse navigation.
+- Support wheel, touch-drag, and scrolling-key intent with leak-free listener cleanup.
+
 ## 0.8.0 - 2026-07-10
 
 - Stack Books, Chapters, and Verses vertically in one universal Navigation scroll view.

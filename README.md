@@ -18,6 +18,7 @@ server and can be served from a VM, CDN, or any static web host.
 - Verse selections create bounded, device-local history entries containing only references and timestamps.
 - Profile offers five meaningful, snapping text scales for every verse and verse number.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
+- The floating dock responds only to recent user-invoked scrolling, not programmatic navigation.
 - The acceleration boundary leaves room for WASM search/indexing and optional
   WebGPU effects without making either necessary for correct reading.
 
