@@ -77,7 +77,8 @@ test("AWMPC Bible uses one scalable dock and native overlay host", async () => {
   assert.match(sheet, /showModal\(\)/);
   assert.match(sheet, /overlayFrames/);
   assert.match(sheet, /reverse \? \[\.\.\.frames\]\.reverse\(\) : frames/);
-  assert.match(sheet, /OVERLAY_ANIMATION_TIMING/);
+  assert.match(sheet, /OVERLAY_DURATION_MS/);
+  assert.match(sheet, /MOTION_EASING/);
   assert.doesNotMatch(sheet, /direction:/);
   assert.match(sheet, /onCancel/);
   assert.match(sheet, /aria-labelledby/);
@@ -306,13 +307,17 @@ test("overlay geometry starts at its trigger and stops above the dock", () => {
   );
 });
 
-test("overlay closing matches the opening duration, easing, and reversed content timing", async () => {
-  const source = await readFile(new URL("../src/ui/FeatureOverlay.tsx", import.meta.url), "utf8");
-  assert.match(source, /duration: 360/);
-  assert.match(source, /easing: "cubic-bezier\(\.2, \.8, \.2, 1\)"/);
-  assert.match(source, /offset: 0\.42/);
-  assert.match(source, /offset: 0\.58/);
-  assert.equal(source.match(/OVERLAY_ANIMATION_TIMING\)/g)?.length, 2);
+test("overlay and dock motion use uniform reversible curves with visible content scaling", async () => {
+  const [source, styles] = await Promise.all([
+    readFile(new URL("../src/ui/FeatureOverlay.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(source, /OVERLAY_DURATION_MS = 400/);
+  assert.match(source, /MOTION_EASING = "cubic-bezier\(\.42, 0, \.58, 1\)"/);
+  assert.match(source, /opacity: 0, transform: "scale\(\.94\)"/);
+  assert.match(source, /reverse \? \[\.\.\.surfaceFrames\]\.reverse\(\) : surfaceFrames/);
+  assert.equal(source.match(/easing: MOTION_EASING/g)?.length, 1);
+  assert.match(styles, /translate 240ms cubic-bezier\(\.42,0,\.58,1\), opacity 240ms cubic-bezier\(\.42,0,\.58,1\)/);
 });
 
 test("OpenAI Sites packaging is absent", async () => {

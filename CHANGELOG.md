@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.1 - 2026-07-10
+
+- Slow overlay closing slightly and keep its content visibly shrinking into the trigger.
+- Use one symmetric motion curve for overlay opening, closing, and floating-dock visibility.
+
 ## 0.12.0 - 2026-07-10
 
 - Separate Old and New Testament books in the navigation overlay.

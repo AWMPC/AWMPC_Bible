@@ -11,10 +11,8 @@ type FeatureOverlayProps = {
   onClose: () => void;
 };
 
-const OVERLAY_ANIMATION_TIMING: KeyframeAnimationOptions = {
-  duration: 360,
-  easing: "cubic-bezier(.2, .8, .2, 1)",
-};
+const MOTION_EASING = "cubic-bezier(.42, 0, .58, 1)";
+const OVERLAY_DURATION_MS = 400;
 
 function overlayFrames(dialog: HTMLDialogElement, origin: OverlayOrigin): Keyframe[] {
   const target = dialog.getBoundingClientRect();
@@ -30,18 +28,24 @@ function overlayFrames(dialog: HTMLDialogElement, origin: OverlayOrigin): Keyfra
   ];
 }
 
-function contentFrames(reverse = false): Keyframe[] {
-  return reverse
-    ? [{ opacity: 1 }, { opacity: 0, offset: 0.58 }, { opacity: 0 }]
-    : [{ opacity: 0 }, { opacity: 0, offset: 0.42 }, { opacity: 1 }];
+function contentFrames(): Keyframe[] {
+  return [
+    { opacity: 0, transform: "scale(.94)" },
+    { opacity: 1, transform: "scale(1)" },
+  ];
 }
 
 async function animate(dialog: HTMLDialogElement, origin: OverlayOrigin, reverse = false): Promise<void> {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const frames = overlayFrames(dialog, origin);
+  const surfaceFrames = contentFrames();
+  const timing: KeyframeAnimationOptions = {
+    duration: OVERLAY_DURATION_MS,
+    easing: MOTION_EASING,
+  };
   const animations = [
-    dialog.animate(reverse ? [...frames].reverse() : frames, OVERLAY_ANIMATION_TIMING),
-    dialog.querySelector<HTMLElement>(".overlay-surface")?.animate(contentFrames(reverse), OVERLAY_ANIMATION_TIMING),
+    dialog.animate(reverse ? [...frames].reverse() : frames, timing),
+    dialog.querySelector<HTMLElement>(".overlay-surface")?.animate(reverse ? [...surfaceFrames].reverse() : surfaceFrames, timing),
   ].filter((value): value is Animation => Boolean(value));
   await Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
 }
