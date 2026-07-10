@@ -1,13 +1,6 @@
-"use client";
-
 import { useCallback, useEffect, useRef, useState } from "react";
-
-type Book = { name: string; chapters: string[] };
-type Verse = { number: string; text: string };
-type WorkerMessage =
-  | { type: "ready"; books: Book[] }
-  | { type: "chapter"; requestId: number; book: string; chapter: string; verses: Verse[] }
-  | { type: "error"; message: string };
+import DataWorker from "./data/data.worker?worker";
+import type { Book, Verse, WorkerRequest, WorkerResponse } from "./data/contracts";
 
 export function Reader() {
   const workerRef = useRef<Worker | null>(null);
@@ -19,16 +12,17 @@ export function Reader() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
 
+  const send = useCallback((message: WorkerRequest) => workerRef.current?.postMessage(message), []);
   const requestChapter = useCallback((nextBook: string, nextChapter: string) => {
     const requestId = ++requestRef.current;
     setVerses([]);
-    workerRef.current?.postMessage({ type: "chapter", requestId, book: nextBook, chapter: nextChapter });
-  }, []);
+    send({ type: "chapter", requestId, book: nextBook, chapter: nextChapter });
+  }, [send]);
 
   useEffect(() => {
-    const worker = new Worker("/data.worker.js");
+    const worker = new DataWorker();
     workerRef.current = worker;
-    worker.onmessage = ({ data }: MessageEvent<WorkerMessage>) => {
+    worker.onmessage = ({ data }: MessageEvent<WorkerResponse>) => {
       if (data.type === "ready") {
         setBooks(data.books);
         const first = data.books[0];
@@ -49,12 +43,12 @@ export function Reader() {
       setError("The reader could not start. Please reload and try again.");
       setStatus("error");
     };
-    worker.postMessage({ type: "load", url: "/data/bible-en.json" });
+    send({ type: "load" });
     return () => {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [requestChapter]);
+  }, [requestChapter, send]);
 
   const chapters = books.find((item) => item.name === book)?.chapters ?? [];
 
