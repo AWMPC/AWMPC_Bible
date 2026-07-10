@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 - 2026-07-10
+
+- Replace persistent header and book sidebar chrome with a scalable bottom floating dock.
+- Add one native semi-fullscreen overlay host for Navigation, History, Search, and Profile.
+- Move working book and chapter navigation into the overlay.
+- Remove the dormant OpenAI Sites packaging artifacts.
+
 ## 0.3.0 - 2026-07-10
 
 - Migrate from the Next/vinext server stack to a static Vite and React SPA.
