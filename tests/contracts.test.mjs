@@ -7,6 +7,7 @@ import { LocalHistoryStore } from "../src/history/HistoryStore.ts";
 import { LocalSettingsStore } from "../src/settings/SettingsStore.ts";
 import { DEFAULT_TEXT_SCALE, TEXT_SCALES, textScaleAt } from "../src/settings/textScale.ts";
 import { lockDocumentScroll } from "../src/ui/scrollLock.ts";
+import { nextDockVisibility } from "../src/ui/useUserScrollDockVisibility.ts";
 
 const fixture = JSON.stringify({ Example: { "1": { "1": "A generic test sentence.", "2": "Another sentence." }, "10": { "1": "Later." } } });
 
@@ -158,6 +159,27 @@ test("document scroll lock restores exact prior styles and position", () => {
     if (priorWindow === undefined) delete globalThis.window;
     else Object.defineProperty(globalThis, "window", { configurable: true, value: priorWindow });
   }
+});
+
+test("dock visibility changes only for fresh matching user scroll intent", () => {
+  const down = { direction: 1, recordedAt: 1000 };
+  const up = { direction: -1, recordedAt: 1000 };
+  assert.equal(nextDockVisibility(true, 100, 180, null, 1100), true, "programmatic scroll is ignored");
+  assert.equal(nextDockVisibility(true, 100, 180, down, 1100), false, "user scroll down hides");
+  assert.equal(nextDockVisibility(false, 180, 90, up, 1100), true, "user scroll up reveals");
+  assert.equal(nextDockVisibility(false, 180, 90, up, 1800), false, "stale intent is ignored");
+  assert.equal(nextDockVisibility(false, 20, 0, up, 1100), true, "user scroll to top reveals");
+  assert.equal(nextDockVisibility(true, 100, 180, up, 1100), true, "mismatched intent is ignored");
+});
+
+test("dock intent hook requires trusted user input and cleans up listeners", async () => {
+  const source = await readFile(new URL("../src/ui/useUserScrollDockVisibility.ts", import.meta.url), "utf8");
+  assert.match(source, /event\.isTrusted/);
+  assert.match(source, /wheel/);
+  assert.match(source, /touchmove/);
+  assert.match(source, /keydown/);
+  assert.match(source, /removeEventListener/);
+  assert.doesNotMatch(source, /setTimeout/);
 });
 
 test("overlay geometry starts at its trigger and stops above the dock", () => {

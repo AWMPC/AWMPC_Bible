@@ -8,6 +8,7 @@ import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import type { FeatureId, OverlayOrigin } from "./ui/features";
+import { useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
 
 export function Reader() {
   const workerRef = useRef<Worker | null>(null);
@@ -87,6 +88,7 @@ export function Reader() {
   }, []);
 
   const chapters = books.find((item) => item.name === book)?.chapters ?? [];
+  const dockVisible = useUserScrollDockVisibility(activeFeature === null);
 
   function chooseBook(nextBook: string) {
     const firstChapter = books.find((item) => item.name === nextBook)?.chapters[0] ?? "1";
@@ -135,7 +137,7 @@ export function Reader() {
           )}
         </main>
       </div>
-      <FloatingDock activeFeature={activeFeature} onOpen={(feature, origin) => { setOverlayOrigin(origin); setActiveFeature(feature); }} />
+      <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={(feature, origin) => { setOverlayOrigin(origin); setActiveFeature(feature); }} />
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={() => { setActiveFeature(null); setOverlayOrigin(null); }}>
         {activeFeature === "navigation" && (
           <NavigationPanel books={books} book={book} chapters={chapters} chapter={chapter} verses={verses} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} onVerse={(verse) => void chooseVerse(verse)} />

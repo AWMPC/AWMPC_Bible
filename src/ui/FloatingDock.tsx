@@ -2,12 +2,13 @@ import { createOverlayOrigin, DOCK_FEATURES, type FeatureId, type OverlayOrigin 
 
 type FloatingDockProps = {
   activeFeature: FeatureId | null;
+  visible: boolean;
   onOpen: (feature: FeatureId, origin: OverlayOrigin) => void;
 };
 
-export function FloatingDock({ activeFeature, onOpen }: FloatingDockProps) {
+export function FloatingDock({ activeFeature, visible, onOpen }: FloatingDockProps) {
   return (
-    <nav className="floating-dock" aria-label="Reader tools">
+    <nav className={`floating-dock${visible ? "" : " is-hidden"}`} aria-label="Reader tools">
       <div className="dock-scroll">
         {DOCK_FEATURES.map((feature) => (
           <button
