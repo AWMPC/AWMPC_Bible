@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.1 - 2026-07-10
+
+- Use a symmetric sampled quintic smoothstep curve for overlay and floating-dock motion.
+- Shorten overlay opening and closing to 300 milliseconds with a graceful legacy easing fallback.
+
 ## 0.13.0 - 2026-07-10
 
 - Stage book and chapter navigation inside the overlay without changing the verse view.

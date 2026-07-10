@@ -19,7 +19,7 @@
   --day-glow-two: rgba(220, 232, 248, .78); --night-glow-two: rgba(45, 61, 88, .3);
   --bg: var(--day-bg); --surface: var(--day-surface); --surface-strong: var(--day-surface-strong); --surface-solid: var(--day-surface-solid);
   --ink: var(--day-ink); --muted: var(--day-muted); --accent: var(--day-accent); --accent-soft: var(--day-accent-soft); --border: var(--day-border);
-  --inner-highlight: var(--day-highlight); --shadow: var(--day-shadow); --glass: var(--day-glass); --overlay: var(--day-overlay); --card: var(--day-card); --overlay-backdrop: var(--day-backdrop); --glow-one: var(--day-glow-one); --glow-two: var(--day-glow-two);
+  --inner-highlight: var(--day-highlight); --shadow: var(--day-shadow); --glass: var(--day-glass); --overlay: var(--day-overlay); --card: var(--day-card); --overlay-backdrop: var(--day-backdrop); --glow-one: var(--day-glow-one); --glow-two: var(--day-glow-two); --motion-easing: cubic-bezier(.42,0,.58,1);
   --radius: 24px;
   --blur: blur(24px) saturate(130%);
   --dock-clearance: calc(5rem + max(1rem, env(safe-area-inset-bottom)));
@@ -81,7 +81,7 @@ article { max-width: 800px; margin: 3rem auto 0; }
 .error-card { max-width: 560px; margin: 12vh auto; padding: 2rem; border-radius: var(--radius); background: var(--accent-soft); }
 @keyframes shimmer { to { background-position-x: -220%; } }
 
-.floating-dock { position: fixed; z-index: 8; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), 0 16px 44px rgba(0, 0, 0, .18); backdrop-filter: blur(28px) saturate(150%); transition: translate 240ms cubic-bezier(.42,0,.58,1), opacity 240ms cubic-bezier(.42,0,.58,1); }
+.floating-dock { position: fixed; z-index: 8; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), 0 16px 44px rgba(0, 0, 0, .18); backdrop-filter: blur(28px) saturate(150%); transition: translate 240ms var(--motion-easing), opacity 240ms var(--motion-easing); }
 .floating-dock.is-hidden { opacity: 0; translate: 0 calc(100% + max(1rem, env(safe-area-inset-bottom)) + 1rem); pointer-events: none; }
 .floating-dock.is-hidden:focus-within { opacity: 1; translate: 0 0; pointer-events: auto; }
 .dock-scroll { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(64px, auto); gap: .25rem; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
@@ -165,6 +165,10 @@ article { max-width: 800px; margin: 3rem auto 0; }
   .skeleton span { animation: none; }
   .dock-button { transition: none; }
   .floating-dock { transition: none; }
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --motion-easing: linear(0, .00856 10%, .05792 20%, .16308 30%, .31744 40%, .5 50%, .68256 60%, .83692 70%, .94208 80%, .99144 90%, 1); }
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

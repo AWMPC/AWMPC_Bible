@@ -327,17 +327,20 @@ test("overlay geometry starts at its trigger and stops above the dock", () => {
   );
 });
 
-test("overlay and dock motion use uniform reversible curves with visible content scaling", async () => {
+test("overlay and dock use a uniform quintic smoothstep curve at 300ms overlay timing", async () => {
   const [source, styles] = await Promise.all([
     readFile(new URL("../src/ui/FeatureOverlay.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
   ]);
-  assert.match(source, /OVERLAY_DURATION_MS = 400/);
-  assert.match(source, /MOTION_EASING = "cubic-bezier\(\.42, 0, \.58, 1\)"/);
+  assert.match(source, /OVERLAY_DURATION_MS = 300/);
+  assert.match(source, /getPropertyValue\("--motion-easing"\)/);
+  assert.match(source, /FALLBACK_MOTION_EASING/);
   assert.match(source, /opacity: 0, transform: "scale\(\.94\)"/);
   assert.match(source, /reverse \? \[\.\.\.surfaceFrames\]\.reverse\(\) : surfaceFrames/);
-  assert.equal(source.match(/easing: MOTION_EASING/g)?.length, 1);
-  assert.match(styles, /translate 240ms cubic-bezier\(\.42,0,\.58,1\), opacity 240ms cubic-bezier\(\.42,0,\.58,1\)/);
+  assert.equal(source.match(/easing: motionEasing\(\)/g)?.length, 1);
+  assert.match(styles, /translate 240ms var\(--motion-easing\), opacity 240ms var\(--motion-easing\)/);
+  assert.match(styles, /--motion-easing:\s*cubic-bezier\(\.42,0,\.58,1\)/);
+  assert.match(styles, /--motion-easing:\s*linear\(0, \.00856 10%, \.05792 20%, \.16308 30%, \.31744 40%, \.5 50%, \.68256 60%, \.83692 70%, \.94208 80%, \.99144 90%, 1\)/);
 });
 
 test("OpenAI Sites packaging is absent", async () => {

@@ -11,8 +11,12 @@ type FeatureOverlayProps = {
   onClose: () => void;
 };
 
-const MOTION_EASING = "cubic-bezier(.42, 0, .58, 1)";
-const OVERLAY_DURATION_MS = 400;
+const FALLBACK_MOTION_EASING = "cubic-bezier(.42, 0, .58, 1)";
+const OVERLAY_DURATION_MS = 300;
+
+function motionEasing(): string {
+  return getComputedStyle(document.documentElement).getPropertyValue("--motion-easing").trim() || FALLBACK_MOTION_EASING;
+}
 
 function overlayFrames(dialog: HTMLDialogElement, origin: OverlayOrigin): Keyframe[] {
   const target = dialog.getBoundingClientRect();
@@ -41,7 +45,7 @@ async function animate(dialog: HTMLDialogElement, origin: OverlayOrigin, reverse
   const surfaceFrames = contentFrames();
   const timing: KeyframeAnimationOptions = {
     duration: OVERLAY_DURATION_MS,
-    easing: MOTION_EASING,
+    easing: motionEasing(),
   };
   const animations = [
     dialog.animate(reverse ? [...frames].reverse() : frames, timing),
