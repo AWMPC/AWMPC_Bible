@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0 - 2026-07-10
+
+- Animate every overlay dismissal back into its originating dock button.
+- Add verse selection to Navigation and focus the chosen verse after closing.
+- Record each chosen verse reference with an ISO timestamp in bounded device-local history.
+- Introduce a history storage interface ready for a future Firebase adapter.
+
 ## 0.5.0 - 2026-07-10
 
 - Replace the floating sheet treatment with an edge-to-edge overlay above the dock.
