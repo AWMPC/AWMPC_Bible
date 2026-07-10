@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 - 2026-07-10
+
+- Replace the floating sheet treatment with an edge-to-edge overlay above the dock.
+- Expand the overlay from the exact bounds of the pressed dock button.
+- Keep native dialog focus, Escape behavior, reduced-motion handling, and one shared overlay host.
+
 ## 0.4.0 - 2026-07-10
 
 - Replace persistent header and book sidebar chrome with a scalable bottom floating dock.

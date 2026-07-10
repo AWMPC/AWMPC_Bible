@@ -13,7 +13,7 @@ server and can be served from a VM, CDN, or any static web host.
 - The main thread receives only navigation metadata and the selected chapter.
 - A focused Liquid Glass interface uses native CSS effects with graceful fallbacks.
 - A data-driven bottom dock scales to additional reader tools without duplicating overlay infrastructure.
-- One native dialog provides focus containment, Escape dismissal, and semi-fullscreen tool surfaces.
+- One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - The acceleration boundary leaves room for WASM search/indexing and optional
   WebGPU effects without making either necessary for correct reading.
 
