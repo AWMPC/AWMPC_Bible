@@ -42,3 +42,25 @@ test("reader has one resilient Liquid Glass presentation", async () => {
   assert.match(styles, /prefers-reduced-motion/);
   assert.match(styles, /forced-colors/);
 });
+
+test("reader uses one scalable dock and native overlay host", async () => {
+  const [reader, dock, sheet, features] = await Promise.all([
+    readFile(new URL("../src/Reader.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/ui/FloatingDock.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/ui/FeatureSheet.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/ui/features.ts", import.meta.url), "utf8"),
+  ]);
+  assert.equal(reader.includes('className="topbar"'), false);
+  assert.equal(reader.includes('className="library"'), false);
+  assert.match(dock, /DOCK_FEATURES\.map/);
+  assert.match(dock, /aria-haspopup="dialog"/);
+  assert.match(sheet, /<dialog/);
+  assert.match(sheet, /showModal\(\)/);
+  assert.match(sheet, /aria-labelledby/);
+  for (const feature of ["history", "search", "navigation", "profile"]) assert.match(features, new RegExp(feature));
+});
+
+test("OpenAI Sites packaging is absent", async () => {
+  await assert.rejects(readFile(new URL("../build/sites-vite-plugin.ts", import.meta.url)));
+  await assert.rejects(readFile(new URL("../.openai/hosting.json", import.meta.url)));
+});
