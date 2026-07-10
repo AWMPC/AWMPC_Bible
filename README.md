@@ -16,6 +16,7 @@ server and can be served from a VM, CDN, or any static web host.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
 - Verse selections create bounded, device-local history entries containing only references and timestamps.
+- Profile offers five meaningful, snapping text scales for every verse and verse number.
 - The acceleration boundary leaves room for WASM search/indexing and optional
   WebGPU effects without making either necessary for correct reading.
 

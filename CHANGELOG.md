@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 - 2026-07-10
+
+- Add a five-stop snapping verse text-size control to Profile.
+- Scale every verse and verse number together with readable line-height adjustments.
+- Persist validated reader settings locally behind a Firebase-ready settings interface.
+
 ## 0.6.0 - 2026-07-10
 
 - Animate every overlay dismissal back into its originating dock button.
