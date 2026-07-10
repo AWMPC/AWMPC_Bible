@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.3 - 2026-07-10
+
+- Match overlay closing duration, easing, and content timing to the opening animation in reverse.
+
 ## 0.11.2 - 2026-07-10
 
 - Converge package, metadata, UI, source identifiers, and documentation on AWMPC Bible.

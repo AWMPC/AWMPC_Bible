@@ -76,7 +76,9 @@ test("AWMPC Bible uses one scalable dock and native overlay host", async () => {
   assert.match(sheet, /<dialog/);
   assert.match(sheet, /showModal\(\)/);
   assert.match(sheet, /overlayFrames/);
-  assert.match(sheet, /direction: reverse \? "reverse"/);
+  assert.match(sheet, /reverse \? \[\.\.\.frames\]\.reverse\(\) : frames/);
+  assert.match(sheet, /OVERLAY_ANIMATION_TIMING/);
+  assert.doesNotMatch(sheet, /direction:/);
   assert.match(sheet, /onCancel/);
   assert.match(sheet, /aria-labelledby/);
   for (const feature of ["history", "search", "navigation", "profile"]) assert.match(features, new RegExp(feature));
@@ -261,6 +263,15 @@ test("overlay geometry starts at its trigger and stops above the dock", () => {
     ),
     { x: 640, y: 720, width: 72, height: 52, availableHeight: 700 },
   );
+});
+
+test("overlay closing matches the opening duration, easing, and reversed content timing", async () => {
+  const source = await readFile(new URL("../src/ui/FeatureOverlay.tsx", import.meta.url), "utf8");
+  assert.match(source, /duration: 360/);
+  assert.match(source, /easing: "cubic-bezier\(\.2, \.8, \.2, 1\)"/);
+  assert.match(source, /offset: 0\.42/);
+  assert.match(source, /offset: 0\.58/);
+  assert.equal(source.match(/OVERLAY_ANIMATION_TIMING\)/g)?.length, 2);
 });
 
 test("OpenAI Sites packaging is absent", async () => {
