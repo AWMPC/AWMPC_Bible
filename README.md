@@ -1,7 +1,7 @@
-# Quiet Reader
+# AWMPC Bible
 
-Quiet Reader is a web-only, lightweight interface for reading deeply nested
-JSON text. The current dataset uses a book → chapter → verse hierarchy.
+AWMPC Bible is a web-only, lightweight Bible experience backed by structured
+JSON text using a book → chapter → verse hierarchy.
 
 The application is a static React SPA built with Vite. It requires no application
 server and can be served from a VM, CDN, or any static web host.
@@ -12,7 +12,7 @@ server and can be served from a VM, CDN, or any static web host.
 - A typed Vite module worker fetches, validates, parses, and retains the full dataset.
 - The main thread receives only navigation metadata and the selected chapter.
 - A focused Liquid Glass interface uses native CSS effects with graceful fallbacks.
-- A data-driven bottom dock scales to additional reader tools without duplicating overlay infrastructure.
+- A data-driven bottom dock scales to additional AWMPC Bible tools without duplicating overlay infrastructure.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
 - Verse selections create bounded, device-local history entries containing only references and timestamps.
@@ -24,7 +24,7 @@ server and can be served from a VM, CDN, or any static web host.
 - The acceleration boundary leaves room for WASM search/indexing and optional
   WebGPU effects without making either necessary for correct reading.
 
-All content is rendered as text. The reader does not use analytics, remote fonts,
+All content is rendered as text. AWMPC Bible does not use analytics, remote fonts,
 or third-party runtime services.
 
 ## Development

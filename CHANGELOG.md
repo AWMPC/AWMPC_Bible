@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.2 - 2026-07-10
+
+- Converge package, metadata, UI, source identifiers, and documentation on AWMPC Bible.
+- Migrate legacy product history and settings into AWMPC Bible storage keys.
+
 ## 0.11.1 - 2026-07-10
 
 - Keep the reading viewport completely stationary when an overlay closes.
@@ -40,7 +45,7 @@
 
 - Add a five-stop snapping verse text-size control to Profile.
 - Scale every verse and verse number together with readable line-height adjustments.
-- Persist validated reader settings locally behind a Firebase-ready settings interface.
+- Persist validated AWMPC Bible settings locally behind a Firebase-ready settings interface.
 
 ## 0.6.0 - 2026-07-10
 
@@ -73,9 +78,9 @@
 
 - Focus the interface exclusively on a refined Liquid Glass visual language.
 - Remove theme state, persistence, controls, and Material-specific styling.
-- Simplify the reader chrome while preserving worker isolation and accessibility.
+- Simplify the AWMPC Bible chrome while preserving worker isolation and accessibility.
 
 ## 0.1.0 - 2026-07-10
 
-- Add the initial web-only structured text reader.
+- Add the initial web-only AWMPC Bible structured-text experience.
 - Add worker-based loading, validated data limits, graceful fetch backoff, responsive navigation, loading skeletons, and hot-swappable visual themes.
