@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1 - 2026-07-10
+
+- Remove borders and outlines introduced by pointer selection or programmatic verse focus.
+- Preserve explicit focus indicators for keyboard navigation only.
+- Keep selected navigation states visible through fill, color, weight, and depth.
+
 ## 0.9.0 - 2026-07-10
 
 - Auto-hide the floating dock on trusted user-initiated downward document scrolls.
