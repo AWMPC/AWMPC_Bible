@@ -15,8 +15,10 @@ export function FloatingDock({ activeFeature, visible, onOpen }: FloatingDockPro
             key={feature.id}
             type="button"
             className="dock-button"
+            data-feature={feature.id}
             aria-label={feature.label}
             aria-haspopup="dialog"
+            aria-controls="feature-overlay"
             aria-expanded={activeFeature === feature.id}
             onClick={(event) => {
               const button = event.currentTarget.getBoundingClientRect();

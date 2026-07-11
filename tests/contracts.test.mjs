@@ -37,7 +37,8 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
 });
 
 test("panels retain semantic native controls", async () => {
-  const [navigation, history, overlay, profile] = await Promise.all([
+  const [app, navigation, history, overlay, profile] = await Promise.all([
+    read("../src/AwmpcBibleApp.tsx"),
     read("../src/ui/NavigationPanel.tsx"),
     read("../src/ui/HistoryPanel.tsx"),
     read("../src/ui/FeatureOverlay.tsx"),
@@ -48,7 +49,15 @@ test("panels retain semantic native controls", async () => {
   assert.match(navigation, /aria-busy/);
   assert.match(history, /<button type="button"/);
   assert.match(overlay, /<dialog/);
+  assert.match(overlay, /dialog\.show\(\)/);
+  assert.doesNotMatch(overlay, /showModal\(\)/);
   assert.match(overlay, /onCancel/);
+  assert.match(app, /inert=\{activeFeature !== null\}/);
+  assert.match(app, /feature === activeFeature/);
+  assert.match(app, /overlayRef\.current\?\.keepOpen\(\)/);
+  assert.match(overlay, /closeGenerationRef/);
+  assert.match(overlay, /content\.scrollTop = 0/);
+  assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
   assert.match(profile, /<select/);
 });
@@ -57,7 +66,7 @@ test("ordinary overlay close remains isolated from verse reveal scrolling", asyn
   const [app, overlay] = await Promise.all([read("../src/AwmpcBibleApp.tsx"), read("../src/ui/FeatureOverlay.tsx")]);
   const ordinaryClose = app.match(/function finishOverlayClose\(\)[\s\S]*?\n  }/)?.[0] ?? "";
   assert.doesNotMatch(ordinaryClose, /scroll|transitionVerseView|setPassage/);
-  assert.doesNotMatch(overlay, /scrollIntoView|scrollTo/);
+  assert.doesNotMatch(overlay, /scrollIntoView|scrollTo\(/);
 });
 
 test("AWMPC Bible identity and plain Vite packaging are exact", async () => {

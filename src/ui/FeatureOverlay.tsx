@@ -2,7 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, type R
 import { featureTitle, type FeatureId, type OverlayOrigin } from "./features";
 import { lockDocumentScroll } from "./scrollLock";
 
-export type FeatureOverlayHandle = { close: () => Promise<void> };
+export type FeatureOverlayHandle = { close: () => Promise<void>; keepOpen: () => void };
 
 type FeatureOverlayProps = {
   activeFeature: FeatureId | null;
@@ -63,6 +63,8 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
     const originRef = useRef<OverlayOrigin | null>(origin);
     const closingRef = useRef(false);
     const animationsRef = useRef<Animation[]>([]);
+    const releaseScrollRef = useRef<(() => void) | null>(null);
+    const closeGenerationRef = useRef(0);
 
     useEffect(() => { originRef.current = origin; }, [origin]);
 
@@ -71,6 +73,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       const currentOrigin = originRef.current;
       if (!dialog?.open || !currentOrigin || closingRef.current) return;
       closingRef.current = true;
+      const closeGeneration = ++closeGenerationRef.current;
       let animations = animationsRef.current.filter((animation) => animation.playState !== "idle");
       if (animations.length) animations.forEach((animation) => animation.reverse());
       else {
@@ -82,22 +85,40 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       }
       animationsRef.current = animations;
       await waitForAnimations(animations);
+      if (closeGeneration !== closeGenerationRef.current) return;
       dialog.close();
       animationsRef.current = [];
       closingRef.current = false;
     }, []);
 
-    useImperativeHandle(ref, () => ({ close }), [close]);
+    const keepOpen = useCallback(() => {
+      closeGenerationRef.current += 1;
+      closingRef.current = false;
+      animationsRef.current.forEach((animation) => animation.cancel());
+      animationsRef.current = [];
+    }, []);
+
+    useImperativeHandle(ref, () => ({ close, keepOpen }), [close, keepOpen]);
+
+    useEffect(() => {
+      if (!activeFeature) return;
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== "Escape" || event.defaultPrevented) return;
+        event.preventDefault();
+        void close();
+      };
+      document.addEventListener("keydown", onKeyDown);
+      return () => document.removeEventListener("keydown", onKeyDown);
+    }, [activeFeature, close]);
 
     useEffect(() => {
       const dialog = dialogRef.current;
       if (!dialog) return;
       let animationFrame = 0;
-      let releaseScroll = () => {};
       if (activeFeature && origin && !dialog.open) {
-        releaseScroll = lockDocumentScroll();
+        releaseScrollRef.current ??= lockDocumentScroll();
         dialog.style.height = `${origin.availableHeight}px`;
-        dialog.showModal();
+        dialog.show();
         animationFrame = requestAnimationFrame(() => {
           animationsRef.current = startAnimations(dialog, origin);
         });
@@ -107,17 +128,32 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
         animationsRef.current.forEach((animation) => animation.cancel());
         animationsRef.current = [];
         dialog.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
-        releaseScroll();
       };
     }, [activeFeature, origin]);
+
+    useEffect(() => {
+      if (!activeFeature || !dialogRef.current?.open) return;
+      const content = dialogRef.current.querySelector<HTMLElement>(".overlay-content");
+      if (content) content.scrollTop = 0;
+    }, [activeFeature]);
+
+    useEffect(() => () => {
+      releaseScrollRef.current?.();
+      releaseScrollRef.current = null;
+    }, []);
 
     return (
       <dialog
         ref={dialogRef}
+        id="feature-overlay"
         className="feature-overlay"
         aria-labelledby="feature-overlay-title"
         onCancel={(event) => { event.preventDefault(); void close(); }}
-        onClose={onClose}
+        onClose={() => {
+          releaseScrollRef.current?.();
+          releaseScrollRef.current = null;
+          onClose();
+        }}
         onClick={(event) => { if (event.target === event.currentTarget) void close(); }}
       >
         <div className="overlay-surface">

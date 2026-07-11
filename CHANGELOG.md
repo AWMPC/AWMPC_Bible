@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.0 - 2026-07-11
+
+- Keep the floating dock foregrounded and interactive while an overlay is open.
+- Switch directly between overlay features and close when the active dock button is pressed again.
+- Keep the reader inert and scroll-locked across overlay switches with explicit Escape and focus-return handling.
+
 ## 0.16.3 - 2026-07-11
 
 - Set symmetric overlay opening and closing motion to 210 milliseconds.

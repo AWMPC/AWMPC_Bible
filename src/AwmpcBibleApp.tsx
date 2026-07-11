@@ -45,6 +45,13 @@ export function AwmpcBibleApp() {
   const { visible: dockVisible, toggle: toggleDockVisibility } = useUserScrollDockVisibility(activeFeature === null);
 
   function openFeature(feature: FeatureId, origin: OverlayOrigin) {
+    if (feature === activeFeature) {
+      void overlayRef.current?.close();
+      return;
+    }
+    overlayRef.current?.keepOpen();
+    cancelVerseSelection();
+    if (activeFeature === "navigation") navigation.abandon();
     if (feature === "navigation") {
       navigation.openFrom(passage);
     }
@@ -53,17 +60,22 @@ export function AwmpcBibleApp() {
   }
 
   function finishOverlayClose() {
+    const closedFeature = activeFeature;
     cancelVerseSelection();
     navigation.abandon();
     setActiveFeature(null);
     setOverlayOrigin(null);
+    requestAnimationFrame(() => {
+      if (closedFeature) document.querySelector<HTMLButtonElement>(`.dock-button[data-feature="${closedFeature}"]`)?.focus({ preventScroll: true });
+    });
   }
 
   return (
     <div className="awmpc-bible-shell" data-text-scale={textScale} data-verse-font={verseFont}>
-      <a className="skip-link" href="#reading-pane">Skip to text</a>
-      <div className="workspace">
-        <main
+      <div className="reader-layer" inert={activeFeature !== null}>
+        <a className="skip-link" href="#reading-pane">Skip to text</a>
+        <div className="workspace">
+          <main
           ref={readingPaneRef}
           id="reading-pane"
           className="reading-pane"
@@ -82,8 +94,10 @@ export function AwmpcBibleApp() {
               {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={verse.number}><span aria-label={`Verse ${verse.number}`}>{verse.number}</span><p>{verse.text}</p></li>)}</ol></article>}
             </>
           )}
-        </main>
+          </main>
+        </div>
       </div>
+      {activeFeature && <button className="overlay-shade" type="button" aria-label="Close overlay" onClick={() => void overlayRef.current?.close()} />}
       <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={openFeature} />
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (

@@ -91,9 +91,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .error-card { max-width: 560px; margin: 12vh auto; padding: 2rem; border-radius: var(--radius); background: var(--accent-soft); }
 @keyframes shimmer { to { background-position-x: -220%; } }
 
-.floating-dock { position: fixed; z-index: 8; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), 0 16px 44px rgba(0, 0, 0, .18); backdrop-filter: blur(28px) saturate(150%); transition: translate 240ms var(--motion-easing), opacity 240ms var(--motion-easing); }
+.floating-dock { position: fixed; z-index: 12; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), 0 16px 44px rgba(0, 0, 0, .18); backdrop-filter: blur(28px) saturate(150%); transition: translate 240ms var(--motion-easing), opacity 240ms var(--motion-easing); }
 .floating-dock.is-hidden { opacity: 0; translate: 0 calc(100% + max(1rem, env(safe-area-inset-bottom)) + 1rem); pointer-events: none; }
 .floating-dock.is-hidden:focus-within { opacity: 1; translate: 0 0; pointer-events: auto; }
+.overlay-shade { position: fixed; z-index: 9; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: var(--overlay-backdrop); cursor: default; }
 .dock-scroll { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(64px, auto); gap: .25rem; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .dock-scroll::-webkit-scrollbar { display: none; }
 .dock-button { display: grid; min-width: 64px; min-height: 52px; place-items: center; gap: .2rem; padding: .38rem .65rem; border: 0; border-radius: 16px; background: transparent; cursor: pointer; color: var(--muted); font-size: .66rem; font-weight: 720; transition: background-color 140ms ease, color 140ms ease, transform 140ms ease; }
@@ -110,8 +111,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .dock-symbol-profile::before { position: absolute; width: 6px; height: 6px; left: 5px; top: 3px; border: 2px solid currentColor; border-radius: 50%; content: ""; }
 .dock-symbol-profile::after { position: absolute; width: 10px; height: 5px; left: 3px; bottom: 2px; border: 2px solid currentColor; border-bottom: 0; border-radius: 8px 8px 0 0; content: ""; }
 
-.feature-overlay { inset: 0 0 auto; width: 100vw; height: calc(100dvh - var(--dock-clearance)); max-width: none; max-height: none; margin: 0; padding: 0; overflow: hidden; color: var(--ink); border: 0; border-bottom: 1px solid var(--border); border-radius: 0 0 30px 30px; background: var(--overlay); box-shadow: var(--inner-highlight), 0 24px 70px rgba(0, 0, 0, .24); transform-origin: center; backdrop-filter: blur(32px) saturate(145%); }
-.feature-overlay::backdrop { background: var(--overlay-backdrop); }
+.feature-overlay { position: fixed; z-index: 10; inset: 0 0 auto; width: 100vw; height: calc(100dvh - var(--dock-clearance)); max-width: none; max-height: none; margin: 0; padding: 0; overflow: hidden; color: var(--ink); border: 0; border-bottom: 1px solid var(--border); border-radius: 0 0 30px 30px; background: var(--overlay); box-shadow: var(--inner-highlight), 0 24px 70px rgba(0, 0, 0, .24); transform-origin: center; backdrop-filter: blur(32px) saturate(145%); }
 .overlay-surface { display: grid; grid-template-rows: auto 1fr; height: 100%; }
 .overlay-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--border); }
 .overlay-header h2 { margin: .25rem 0 0; font: 700 clamp(1.8rem, 4vw, 2.6rem)/1 ui-serif, Georgia, serif; letter-spacing: -.035em; }
