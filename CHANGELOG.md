@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.3 - 2026-07-11
+
+- Set symmetric overlay opening and closing motion to 210 milliseconds.
+
 ## 0.16.2 - 2026-07-11
 
 - Fit the reading card to the 70-character text measure, verse-number gutter, and responsive margins.
