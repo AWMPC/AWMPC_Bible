@@ -17,9 +17,24 @@
   --day-backdrop: rgba(30, 45, 52, .1); --night-backdrop: rgba(0, 0, 0, .32);
   --day-glow-one: rgba(197, 230, 240, .86); --night-glow-one: rgba(44, 91, 105, .34);
   --day-glow-two: rgba(220, 232, 248, .78); --night-glow-two: rgba(45, 61, 88, .3);
-  --bg: var(--day-bg); --surface: var(--day-surface); --surface-strong: var(--day-surface-strong); --surface-solid: var(--day-surface-solid);
-  --ink: var(--day-ink); --muted: var(--day-muted); --accent: var(--day-accent); --accent-soft: var(--day-accent-soft); --border: var(--day-border);
-  --inner-highlight: var(--day-highlight); --shadow: var(--day-shadow); --glass: var(--day-glass); --overlay: var(--day-overlay); --card: var(--day-card); --overlay-backdrop: var(--day-backdrop); --glow-one: var(--day-glow-one); --glow-two: var(--day-glow-two); --motion-easing: cubic-bezier(.42,0,.58,1);
+  --bg: light-dark(var(--day-bg), var(--night-bg));
+  --surface: light-dark(var(--day-surface), var(--night-surface));
+  --surface-strong: light-dark(var(--day-surface-strong), var(--night-surface-strong));
+  --surface-solid: light-dark(var(--day-surface-solid), var(--night-surface-solid));
+  --ink: light-dark(var(--day-ink), var(--night-ink));
+  --muted: light-dark(var(--day-muted), var(--night-muted));
+  --accent: light-dark(var(--day-accent), var(--night-accent));
+  --accent-soft: light-dark(var(--day-accent-soft), var(--night-accent-soft));
+  --border: light-dark(var(--day-border), var(--night-border));
+  --inner-highlight: light-dark(var(--day-highlight), var(--night-highlight));
+  --shadow: light-dark(var(--day-shadow), var(--night-shadow));
+  --glass: light-dark(var(--day-glass), var(--night-glass));
+  --overlay: light-dark(var(--day-overlay), var(--night-overlay));
+  --card: light-dark(var(--day-card), var(--night-card));
+  --overlay-backdrop: light-dark(var(--day-backdrop), var(--night-backdrop));
+  --glow-one: light-dark(var(--day-glow-one), var(--night-glow-one));
+  --glow-two: light-dark(var(--day-glow-two), var(--night-glow-two));
+  --motion-easing: cubic-bezier(.42,0,.58,1);
   --radius: 24px;
   --blur: blur(24px) saturate(130%);
   --dock-clearance: calc(5rem + max(1rem, env(safe-area-inset-bottom)));
@@ -28,11 +43,7 @@
 
 :root[data-appearance="auto"] { color-scheme: light dark; }
 :root[data-appearance="day"] { color-scheme: light; }
-:root[data-appearance="night"] { color-scheme: dark; --bg: var(--night-bg); --surface: var(--night-surface); --surface-strong: var(--night-surface-strong); --surface-solid: var(--night-surface-solid); --ink: var(--night-ink); --muted: var(--night-muted); --accent: var(--night-accent); --accent-soft: var(--night-accent-soft); --border: var(--night-border); --inner-highlight: var(--night-highlight); --shadow: var(--night-shadow); --glass: var(--night-glass); --overlay: var(--night-overlay); --card: var(--night-card); --overlay-backdrop: var(--night-backdrop); --glow-one: var(--night-glow-one); --glow-two: var(--night-glow-two); }
-
-@media (prefers-color-scheme: dark) {
-  :root[data-appearance="auto"] { --bg: var(--night-bg); --surface: var(--night-surface); --surface-strong: var(--night-surface-strong); --surface-solid: var(--night-surface-solid); --ink: var(--night-ink); --muted: var(--night-muted); --accent: var(--night-accent); --accent-soft: var(--night-accent-soft); --border: var(--night-border); --inner-highlight: var(--night-highlight); --shadow: var(--night-shadow); --glass: var(--night-glass); --overlay: var(--night-overlay); --card: var(--night-card); --overlay-backdrop: var(--night-backdrop); --glow-one: var(--night-glow-one); --glow-two: var(--night-glow-two); }
-}
+:root[data-appearance="night"] { color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html { background: var(--bg); scroll-behavior: smooth; scrollbar-gutter: stable; }
@@ -60,14 +71,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .skip-link:focus { transform: none; }
 .workspace { max-width: 1120px; min-height: 100vh; margin: auto; padding: clamp(.75rem, 2.5vw, 2rem) clamp(.75rem, 2.5vw, 2rem) calc(7.5rem + env(safe-area-inset-bottom)); }
 .reading-pane { min-height: calc(100vh - 2rem); padding: clamp(1.5rem, 5vw, 5rem); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--inner-highlight), var(--shadow); backdrop-filter: var(--blur); }
-.reading-header h1 { margin: .2rem 0 1rem; letter-spacing: -.045em; }
 .eyebrow { margin: 0; color: var(--accent); font-size: .7rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .reading-pane:focus { outline: none; }
 .reading-header { display: flex; justify-content: space-between; align-items: end; gap: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
-.reading-header h1 { margin-bottom: 0; font: 700 clamp(2.6rem, 6vw, 5.6rem)/.95 ui-serif, Georgia, serif; }
+.reading-header h1 { margin: .2rem 0 0; font: 700 clamp(2.6rem, 6vw, 5.6rem)/.95 ui-serif, Georgia, serif; letter-spacing: -.045em; }
 .chapter-indicator { margin: 0; color: var(--muted); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
 .chapter-indicator strong { display: block; margin-top: .2rem; color: var(--ink); font: 700 1.7rem/1 ui-serif, Georgia, serif; }
-article { max-width: 800px; margin: 3rem auto 0; }
+.reading-pane article { max-width: 800px; margin: 3rem auto 0; }
 .verses { display: grid; gap: 1.35rem; margin: 0; padding: 0; list-style: none; }
 .verses li { display: grid; grid-template-columns: calc(var(--verse-number-size) * 2.8) minmax(0, 1fr); gap: .8rem; }
 .verses li:focus-visible { border-radius: 12px; outline: 3px solid var(--accent); outline-offset: 8px; }
@@ -148,7 +158,7 @@ article { max-width: 800px; margin: 3rem auto 0; }
   .reading-pane { padding: 1.3rem; }
   .reading-header { align-items: start; }
   .reading-header h1 { font-size: 2.8rem; }
-  article { margin-top: 2rem; }
+  .reading-pane article { margin-top: 2rem; }
   .floating-dock { right: 50%; transform: translateX(50%); }
   .feature-overlay { border-radius: 0 0 24px 24px; }
   .overlay-content { padding: 1rem; }

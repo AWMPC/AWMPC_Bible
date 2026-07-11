@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.16.0 - 2026-07-10
+
+- Split worker brokerage, staged navigation, verse selection, history, settings, and panels into focused modules.
+- Stream and bound dataset downloads, add request timeouts, and validate nonempty canonical chapter and verse structures.
+- Add navigation loading and request-scoped errors without invalidating an already loaded Bible.
+- Reverse active overlay animations instead of starting competing close animations.
+- Replace broad source-shape tests with focused data, storage, selection, and UI behavior suites.
+- Consolidate theme and reader styles, clean obsolete repository ignores, and document production security headers.
+
 ## 0.15.0 - 2026-07-10
 
 - Route history selections through the shared verse transition and centered reveal flow.

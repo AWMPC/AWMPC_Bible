@@ -39,18 +39,21 @@ function contentFrames(): Keyframe[] {
   ];
 }
 
-async function animate(dialog: HTMLDialogElement, origin: OverlayOrigin, reverse = false): Promise<void> {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+function startAnimations(dialog: HTMLDialogElement, origin: OverlayOrigin): Animation[] {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return [];
   const frames = overlayFrames(dialog, origin);
   const surfaceFrames = contentFrames();
   const timing: KeyframeAnimationOptions = {
     duration: OVERLAY_DURATION_MS,
     easing: motionEasing(),
   };
-  const animations = [
-    dialog.animate(reverse ? [...frames].reverse() : frames, timing),
-    dialog.querySelector<HTMLElement>(".overlay-surface")?.animate(reverse ? [...surfaceFrames].reverse() : surfaceFrames, timing),
+  return [
+    dialog.animate(frames, timing),
+    dialog.querySelector<HTMLElement>(".overlay-surface")?.animate(surfaceFrames, timing),
   ].filter((value): value is Animation => Boolean(value));
+}
+
+async function waitForAnimations(animations: Animation[]): Promise<void> {
   await Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
 }
 
@@ -59,6 +62,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
     const dialogRef = useRef<HTMLDialogElement>(null);
     const originRef = useRef<OverlayOrigin | null>(origin);
     const closingRef = useRef(false);
+    const animationsRef = useRef<Animation[]>([]);
 
     useEffect(() => { originRef.current = origin; }, [origin]);
 
@@ -67,8 +71,19 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       const currentOrigin = originRef.current;
       if (!dialog?.open || !currentOrigin || closingRef.current) return;
       closingRef.current = true;
-      await animate(dialog, currentOrigin, true);
+      let animations = animationsRef.current.filter((animation) => animation.playState !== "idle");
+      if (animations.length) animations.forEach((animation) => animation.reverse());
+      else {
+        animations = startAnimations(dialog, currentOrigin);
+        animations.forEach((animation) => {
+          animation.currentTime = animation.effect?.getTiming().duration as number;
+          animation.reverse();
+        });
+      }
+      animationsRef.current = animations;
+      await waitForAnimations(animations);
       dialog.close();
+      animationsRef.current = [];
       closingRef.current = false;
     }, []);
 
@@ -83,10 +98,14 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
         releaseScroll = lockDocumentScroll();
         dialog.style.height = `${origin.availableHeight}px`;
         dialog.showModal();
-        animationFrame = requestAnimationFrame(() => void animate(dialog, origin));
+        animationFrame = requestAnimationFrame(() => {
+          animationsRef.current = startAnimations(dialog, origin);
+        });
       }
       return () => {
         cancelAnimationFrame(animationFrame);
+        animationsRef.current.forEach((animation) => animation.cancel());
+        animationsRef.current = [];
         dialog.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
         releaseScroll();
       };

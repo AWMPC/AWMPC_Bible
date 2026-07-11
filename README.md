@@ -47,6 +47,12 @@ The deployable static output is written to `dist/`. In production, serve that
 directory with a static server such as Caddy or nginx. `npm start` is intended
 only for local previewing of a completed build.
 
+The production host should send a restrictive Content Security Policy allowing
+only same-origin scripts, styles, workers, data, and connections. It should also
+set `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, a minimal
+`Permissions-Policy`, and deny framing with `frame-ancestors 'none'`. Keep the
+dataset response same-origin and serve it with the correct JSON content type.
+
 The local dataset belongs at `public/data/bible-*.json`. Those files are ignored
 at every directory depth and must be provisioned separately during deployment.
 
