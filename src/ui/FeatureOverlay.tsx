@@ -12,7 +12,7 @@ type FeatureOverlayProps = {
 };
 
 const FALLBACK_MOTION_EASING = "cubic-bezier(.42, 0, .58, 1)";
-const OVERLAY_DURATION_MS = 300;
+const OVERLAY_DURATION_MS = 150;
 
 function motionEasing(): string {
   return getComputedStyle(document.documentElement).getPropertyValue("--motion-easing").trim() || FALLBACK_MOTION_EASING;

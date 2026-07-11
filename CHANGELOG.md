@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.1 - 2026-07-11
+
+- Shorten overlay opening and closing to 150 milliseconds.
+- Size the book title relative to verse text instead of viewport width and keep Chapter N inline.
+- Constrain verses to a 70-character measure with tighter side insets and vertical spacing.
+
 ## 0.16.0 - 2026-07-10
 
 - Split worker brokerage, staged navigation, verse selection, history, settings, and panels into focused modules.

@@ -17,7 +17,7 @@ test("runtime remains a lean text-only Vite worker application", async () => {
 });
 
 test("Liquid Glass accessibility and motion fallbacks remain present", async () => {
-  const styles = await read("../src/styles.css");
+  const [styles, overlay] = await Promise.all([read("../src/styles.css"), read("../src/ui/FeatureOverlay.tsx")]);
   assert.match(styles, /backdrop-filter:/);
   assert.match(styles, /@supports not/);
   assert.match(styles, /prefers-reduced-motion/);
@@ -25,6 +25,11 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(styles, /button:focus-visible/);
   assert.match(styles, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /--motion-easing:\s*linear\(/);
+  assert.match(overlay, /OVERLAY_DURATION_MS = 150/);
+  assert.match(styles, /font:\s*700 calc\(var\(--verse-text-size\) \* 1\.5\)/);
+  assert.match(styles, /\.chapter-indicator strong\s*\{[^}]*display:\s*inline/);
+  assert.match(styles, /\.reading-pane article\s*\{[^}]*max-width:\s*70ch/);
+  assert.match(styles, /\.verses\s*\{[^}]*gap:\s*\.75rem/);
 });
 
 test("panels retain semantic native controls", async () => {
