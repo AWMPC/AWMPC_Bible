@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.1 - 2026-07-11
+
+- Reduce the visible verse-rail footnote control from 44 to 32 pixels square.
+- Add a clearly visible Liquid Glass border with stronger active-state contrast.
+- Replace the magnifying glass with a consistent current-color information-circle icon.
+- Retain a forgiving pointer target without enlarging the visible control.
+
 ## 0.21.0 - 2026-07-11
 
 - Move each footnote control into the verse-number rail directly beneath its number.

@@ -11,7 +11,7 @@ export function VerseWithFootnotes({ verse }: { verse: Verse }) {
     <>
       <div className="verse-rail">
         <span className="verse-number" aria-label={`Verse ${verse.number}`}>{verse.number}</span>
-        {footnotes.length > 0 && <button className="footnotes-toggle" type="button" title="Footnotes" aria-label={`${expanded ? "Hide" : "Show"} footnotes for verse ${verse.number}`} aria-expanded={expanded} aria-controls={cardId} onClick={() => setExpanded((value) => !value)}><span className="footnotes-symbol" aria-hidden="true" /></button>}
+        {footnotes.length > 0 && <button className="footnotes-toggle" type="button" title="Footnotes" aria-label={`${expanded ? "Hide" : "Show"} footnotes for verse ${verse.number}`} aria-expanded={expanded} aria-controls={cardId} onClick={() => setExpanded((value) => !value)}><svg className="footnotes-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" /><path d="M12 10.5v6" /><circle cx="12" cy="7.5" r=".8" stroke="none" fill="currentColor" /></svg></button>}
       </div>
       <div className="verse-content" data-footnotes-expanded={expanded || undefined}>
         <p>{segments.map((segment, index) => typeof segment === "string"

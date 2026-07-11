@@ -79,8 +79,13 @@ test("toggles inline footnote numbers and their nested card together", async ({ 
   const numberBox = await number.boundingBox();
   if (!toggleBox || !numberBox) throw new Error("The verse rail is not measurable.");
   expect(Math.abs(toggleBox.width - toggleBox.height)).toBeLessThan(0.5);
-  expect(toggleBox.width).toBeGreaterThanOrEqual(44);
+  expect(toggleBox.width).toBeGreaterThanOrEqual(32);
+  expect(toggleBox.width).toBeLessThan(44);
   expect(toggleBox.y).toBeGreaterThan(numberBox.y);
+  expect(await toggle.evaluate((element) => getComputedStyle(element).borderStyle)).toBe("solid");
+  expect(await toggle.evaluate((element) => getComputedStyle(element).borderWidth)).toBe("1px");
+  await expect(toggle.locator(".footnotes-symbol circle")).toHaveCount(2);
+  await expect(toggle.locator(".footnotes-symbol path")).toHaveCount(1);
   await expect(page.locator(".verses > li").nth(1).locator(".footnotes-toggle")).toHaveCount(0);
   await expect(marker).toHaveAttribute("aria-hidden", "true");
   await expect(reveal).toHaveAttribute("aria-hidden", "true");

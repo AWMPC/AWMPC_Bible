@@ -55,7 +55,7 @@ button, input, select, a { -webkit-tap-highlight-color: transparent; }
 button:focus:not(:focus-visible), input:focus:not(:focus-visible), select:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
-.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2.75rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --workspace-inline-padding: clamp(.5rem, 1.5vw, 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: radial-gradient(circle at 78% 8%, var(--glow-one), transparent 30%), radial-gradient(circle at 8% 82%, var(--glow-two), transparent 28%), var(--bg); }
+.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --workspace-inline-padding: clamp(.5rem, 1.5vw, 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: radial-gradient(circle at 78% 8%, var(--glow-one), transparent 30%), radial-gradient(circle at 8% 82%, var(--glow-two), transparent 28%), var(--bg); }
 .awmpc-bible-shell[data-text-scale="compact"] { --verse-text-size: 1rem; --verse-number-size: .64rem; --verse-line-height: 1.46; }
 .awmpc-bible-shell[data-text-scale="standard"] { --verse-text-size: 1.2rem; --verse-number-size: .72rem; --verse-line-height: 1.5; }
 .awmpc-bible-shell[data-text-scale="comfortable"] { --verse-text-size: 1.4rem; --verse-number-size: .8rem; --verse-line-height: 1.52; }
@@ -89,11 +89,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .footnote-marker-reveal { display: inline-block; max-width: 0; overflow: clip; opacity: 0; transform: scale(.7); transform-origin: left bottom; vertical-align: baseline; transition: max-width var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), transform var(--motion-duration) var(--motion-easing); }
 .verse-content[data-footnotes-expanded] .footnote-marker-reveal { max-width: 2em; opacity: 1; transform: scale(1); }
 .footnote-marker { margin-left: .12em; color: var(--accent); font-size: .62em; font-weight: 800; line-height: 0; vertical-align: super; }
-.footnotes-toggle { display: grid; width: 2.75rem; aspect-ratio: 1; place-items: center; padding: 0; border: 0; border-radius: 12px; color: var(--accent); background: var(--card); cursor: pointer; transition: background-color 140ms ease, color 140ms ease, transform 140ms ease; }
-.footnotes-toggle[aria-expanded="true"] { background: var(--surface-strong); box-shadow: var(--inner-highlight); }
+.footnotes-toggle { position: relative; display: grid; width: 2rem; aspect-ratio: 1; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border)); border-radius: 9px; color: var(--accent); background: color-mix(in srgb, var(--card) 82%, transparent); box-shadow: var(--inner-highlight); cursor: pointer; transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease; }
+.footnotes-toggle::after { position: absolute; inset: -.375rem; content: ""; }
+.footnotes-toggle:hover, .footnotes-toggle[aria-expanded="true"] { border-color: var(--accent); background: var(--surface-strong); }
 .footnotes-toggle:active { transform: scale(.96); }
-.footnotes-symbol { position: relative; width: .78rem; aspect-ratio: 1; border: 2px solid currentColor; border-radius: 50%; }
-.footnotes-symbol::after { position: absolute; width: .42rem; height: 2px; right: -.34rem; bottom: -.2rem; background: currentColor; border-radius: 2px; content: ""; transform: rotate(45deg); transform-origin: left center; }
+.footnotes-symbol { width: 1.05rem; aspect-ratio: 1; overflow: visible; }
 .footnotes-reveal { display: grid; grid-template-rows: 0fr; opacity: 0; transform: scale(.985); transform-origin: top; transition: grid-template-rows var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), transform var(--motion-duration) var(--motion-easing); }
 .verse-content[data-footnotes-expanded] .footnotes-reveal { grid-template-rows: 1fr; opacity: 1; transform: scale(1); }
 .footnotes-reveal-inner { min-height: 0; overflow: hidden; }
