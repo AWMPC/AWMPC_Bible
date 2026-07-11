@@ -10,6 +10,7 @@ import { DEFAULT_VERSE_FONT, VERSE_FONTS, isVerseFont } from "../src/settings/ve
 import { APPEARANCES, DEFAULT_APPEARANCE, isAppearance } from "../src/settings/appearance.ts";
 import { lockDocumentScroll } from "../src/ui/scrollLock.ts";
 import { nextDockVisibility } from "../src/ui/useUserScrollDockVisibility.ts";
+import { transitionVerseView, verseElementId } from "../src/ui/transitionVerseView.ts";
 
 const fixture = JSON.stringify({ Example: { "1": { "1": "A generic test sentence.", "2": "Another sentence." }, "10": { "1": "Later." } } });
 
@@ -234,10 +235,10 @@ test("navigation stages books and chapters until a verse selection commits the r
   assert.doesNotMatch(appSource.match(/function chooseBook[\s\S]*?\n  }/)?.[0] ?? "", /setBook\(/);
   assert.doesNotMatch(appSource.match(/function chooseChapter[\s\S]*?\n  }/)?.[0] ?? "", /setChapter\(/);
   const verseSelection = appSource.match(/async function chooseVerse[\s\S]*?\n  }/)?.[0] ?? "";
-  assert.match(verseSelection, /setBook\(navigationBook\)/);
-  assert.match(verseSelection, /setChapter\(navigationChapter\)/);
-  assert.match(verseSelection, /setVerses\(navigationVerses\)/);
-  assert.match(verseSelection, /book: navigationBook, chapter: navigationChapter, verse/);
+  assert.match(verseSelection, /setBook\(selectedBook\)/);
+  assert.match(verseSelection, /setChapter\(selectedChapter\)/);
+  assert.match(verseSelection, /setVerses\(selectedVerses\)/);
+  assert.match(verseSelection, /book: selectedBook, chapter: selectedChapter, verse/);
   assert.match(verseSelection, /navigationSelectionRef\.current/);
   assert.match(appSource, /function finishOverlayClose\(\)[\s\S]*?latestChapterRequestRef\.current\.navigation = \+\+requestRef\.current/);
 });
@@ -263,13 +264,44 @@ test("document scroll lock restores styles without issuing a scroll", () => {
   }
 });
 
-test("closing after verse selection never focuses or scrolls the background target", async () => {
+test("verse selection fades, commits, closes, resets to top, and centers the target", async () => {
   const appSource = await readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8");
-  const lock = await readFile(new URL("../src/ui/scrollLock.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(appSource, /scrollIntoView|\.focus\(/);
-  assert.match(appSource, /historyStoreRef/);
-  assert.match(appSource, /overlayRef\.current\?\.close\(\)/);
-  assert.doesNotMatch(lock, /scrollTo|scrollX|scrollY|position\s*=\s*"fixed"/);
+  const events = [];
+  const animations = [];
+  const pane = {
+    style: { opacity: "", removeProperty: () => events.push("restore-opacity") },
+    animate: (frames) => {
+      animations.push(frames);
+      return { finished: Promise.resolve(), cancel: () => {} };
+    },
+  };
+  const target = { scrollIntoView: (options) => events.push(["target", options]) };
+  await transitionVerseView(
+    pane,
+    verseElementId("3", "16"),
+    () => events.push("commit"),
+    async () => { events.push("close"); },
+    {
+      prefersReducedMotion: () => false,
+      afterPaint: async () => { events.push("paint"); },
+      scrollToTop: () => events.push("top"),
+      findTarget: (id) => { events.push(["find", id]); return target; },
+    },
+  );
+  assert.deepEqual(events, ["commit", "close", "paint", ["find", "verse-3-16"], "top", ["target", { behavior: "smooth", block: "center", inline: "nearest" }], "restore-opacity"]);
+  assert.deepEqual(animations, [[{ opacity: 1 }, { opacity: 0 }], [{ opacity: 0 }, { opacity: 1 }]]);
+  assert.match(appSource, /void store\.add/);
+  assert.match(appSource, /transitionVerseView/);
+});
+
+test("closing an overlay without selecting a verse never scrolls or resets the reader", async () => {
+  const [appSource, overlaySource] = await Promise.all([
+    readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/ui/FeatureOverlay.tsx", import.meta.url), "utf8"),
+  ]);
+  const ordinaryClose = appSource.match(/function finishOverlayClose\(\)[\s\S]*?\n  }/)?.[0] ?? "";
+  assert.doesNotMatch(ordinaryClose, /scroll|transitionVerseView|setBook|setChapter|setVerses/);
+  assert.doesNotMatch(overlaySource, /scrollIntoView|scrollTo/);
 });
 
 test("dock visibility changes only for fresh matching user scroll intent", () => {

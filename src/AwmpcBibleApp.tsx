@@ -11,6 +11,7 @@ import { FloatingDock } from "./ui/FloatingDock";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import type { FeatureId, OverlayOrigin } from "./ui/features";
 import { groupBooksByTestament } from "./ui/testaments";
+import { transitionVerseView, verseElementId } from "./ui/transitionVerseView";
 import { useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
 
 export function AwmpcBibleApp() {
@@ -18,6 +19,7 @@ export function AwmpcBibleApp() {
   const requestRef = useRef(0);
   const latestChapterRequestRef = useRef<Record<ChapterTarget, number>>({ reader: 0, navigation: 0 });
   const overlayRef = useRef<FeatureOverlayHandle>(null);
+  const readingPaneRef = useRef<HTMLElement>(null);
   const navigationSelectionRef = useRef(false);
   const historyStoreRef = useRef<HistoryStore | null>(null);
   const settingsStoreRef = useRef<SettingsStore | null>(null);
@@ -131,15 +133,31 @@ export function AwmpcBibleApp() {
   async function chooseVerse(verse: string) {
     if (navigationSelectionRef.current || !navigationVerses.some((item) => item.number === verse)) return;
     navigationSelectionRef.current = true;
-    setBook(navigationBook);
-    setChapter(navigationChapter);
-    setVerses(navigationVerses);
+    const selectedBook = navigationBook;
+    const selectedChapter = navigationChapter;
+    const selectedVerses = navigationVerses;
+    const commit = () => {
+      setBook(selectedBook);
+      setChapter(selectedChapter);
+      setVerses(selectedVerses);
+    };
     const store = historyStoreRef.current;
     if (store) {
-      const entry = await store.add({ book: navigationBook, chapter: navigationChapter, verse });
-      setHistory((current) => [entry, ...current].slice(0, 200));
+      void store.add({ book: selectedBook, chapter: selectedChapter, verse })
+        .then((entry) => setHistory((current) => [entry, ...current].slice(0, 200)))
+        .catch(() => undefined);
     }
-    await overlayRef.current?.close();
+    try {
+      const pane = readingPaneRef.current;
+      if (pane) {
+        await transitionVerseView(pane, verseElementId(selectedChapter, verse), commit, async () => { await overlayRef.current?.close(); });
+      } else {
+        commit();
+        await overlayRef.current?.close();
+      }
+    } finally {
+      navigationSelectionRef.current = false;
+    }
   }
 
   function chooseTextScale(scale: TextScale) {
@@ -181,6 +199,7 @@ export function AwmpcBibleApp() {
       <a className="skip-link" href="#reading-pane">Skip to text</a>
       <div className="workspace">
         <main
+          ref={readingPaneRef}
           id="reading-pane"
           className="reading-pane"
           tabIndex={-1}
@@ -192,7 +211,7 @@ export function AwmpcBibleApp() {
                 <h1>{book || "Preparing your library"}</h1>
                 {chapter && <p className="chapter-indicator">Chapter <strong>{chapter}</strong></p>}
               </div>
-              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={`verse-${chapter}-${verse.number}`} tabIndex={-1} key={verse.number}><span aria-label={`Verse ${verse.number}`}>{verse.number}</span><p>{verse.text}</p></li>)}</ol></article>}
+              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={verse.number}><span aria-label={`Verse ${verse.number}`}>{verse.number}</span><p>{verse.text}</p></li>)}</ol></article>}
             </>
           )}
         </main>

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.0 - 2026-07-10
+
+- Fade the verse view during passage changes, then scroll smoothly from the chapter top to center the selected verse.
+- Keep overlay dismissal independent from asynchronous history persistence.
+
 ## 0.13.1 - 2026-07-10
 
 - Use a symmetric sampled quintic smoothstep curve for overlay and floating-dock motion.
