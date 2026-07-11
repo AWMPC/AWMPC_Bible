@@ -13,6 +13,7 @@ export const LIMITS = Object.freeze({
 });
 
 const BLOCKED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const POSITIVE_INTEGER_KEY = /^[1-9]\d*$/;
 
 function ownObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -21,6 +22,13 @@ function ownObject(value: unknown): value is Record<string, unknown> {
 function assertSafeKey(key: string): void {
   if (!key || key.length > LIMITS.key || BLOCKED_KEYS.has(key)) {
     throw new Error("The library contains an invalid key.");
+  }
+}
+
+function assertNumericKey(key: string): void {
+  assertSafeKey(key);
+  if (!POSITIVE_INTEGER_KEY.test(key)) {
+    throw new Error("Chapter and verse keys must be canonical positive integers.");
   }
 }
 
@@ -47,13 +55,17 @@ export function parseLibrary(text: string): Library {
     assertSafeKey(book);
     const chapters = value[book];
     if (!ownObject(chapters)) throw new Error("A book entry is invalid.");
-    for (const chapter of Object.keys(chapters)) {
-      assertSafeKey(chapter);
+    const chapterKeys = Object.keys(chapters);
+    if (!chapterKeys.length) throw new Error("A book must contain at least one chapter.");
+    for (const chapter of chapterKeys) {
+      assertNumericKey(chapter);
       chapterCount += 1;
       const verses = chapters[chapter];
       if (!ownObject(verses)) throw new Error("A chapter entry is invalid.");
-      for (const verse of Object.keys(verses)) {
-        assertSafeKey(verse);
+      const verseKeys = Object.keys(verses);
+      if (!verseKeys.length) throw new Error("A chapter must contain at least one verse.");
+      for (const verse of verseKeys) {
+        assertNumericKey(verse);
         verseCount += 1;
         const verseText = verses[verse];
         if (typeof verseText !== "string" || verseText.length > LIMITS.text) {
