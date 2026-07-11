@@ -37,5 +37,17 @@ export function useBibleHistory(createStore: () => HistoryStore = createLocalHis
     }).catch(() => undefined);
   }, []);
 
-  return { entries, record } as const;
+  const remove = useCallback((id: string) => {
+    const store = storeRef.current;
+    setEntries((current) => current.filter((entry) => entry.id !== id));
+    void store?.remove(id).catch(() => undefined);
+  }, []);
+
+  const clear = useCallback(() => {
+    const store = storeRef.current;
+    setEntries([]);
+    void store?.clear().catch(() => undefined);
+  }, []);
+
+  return { entries, record, remove, clear } as const;
 }

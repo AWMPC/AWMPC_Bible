@@ -43,7 +43,7 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
           <label id="verse-font-label" htmlFor="verse-font">Verse font</label>
           <p>Uses the closest available local font on this device.</p>
         </div>
-        <select id="verse-font" className="verse-font-select" value={verseFont} onChange={(event) => onVerseFontChange(event.currentTarget.value as VerseFont)}>
+        <select id="verse-font" className="setting-select" value={verseFont} onChange={(event) => onVerseFontChange(event.currentTarget.value as VerseFont)}>
           {VERSE_FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
         </select>
       </section>
@@ -53,7 +53,7 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
           <label id="appearance-label" htmlFor="appearance">Appearance</label>
           <p>Auto follows the current operating system or browser setting.</p>
         </div>
-        <select id="appearance" className="verse-font-select" value={appearance} onChange={(event) => onAppearanceChange(event.currentTarget.value as Appearance)}>
+        <select id="appearance" className="setting-select" value={appearance} onChange={(event) => onAppearanceChange(event.currentTarget.value as Appearance)}>
           {APPEARANCES.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
         </select>
       </section>

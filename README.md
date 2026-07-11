@@ -41,7 +41,10 @@ Quality checks:
 ```bash
 npm test
 npm run build
+npm run test:browser
 ```
+
+The browser suite uses Playwright Chromium and starts its own local Vite server.
 
 The deployable static output is written to `dist/`. In production, serve that
 directory with a static server such as Caddy or nginx. `npm start` is intended

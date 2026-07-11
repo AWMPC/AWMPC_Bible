@@ -11,9 +11,11 @@ export type HistorySelection = Pick<HistoryEntry, "book" | "chapter" | "verse">;
 export interface HistoryStore {
   list(): Promise<HistoryEntry[]>;
   add(selection: HistorySelection): Promise<HistoryEntry>;
+  remove(id: string): Promise<void>;
+  clear(): Promise<void>;
 }
 
-type MinimalStorage = Pick<Storage, "getItem" | "setItem">;
+type MinimalStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 const STORAGE_KEY = "awmpc-bible.history.v1";
 const LEGACY_STORAGE_KEY = "quiet-reader.history.v1";
@@ -101,5 +103,18 @@ export class LocalHistoryStore implements HistoryStore {
       // Storage can be unavailable or full; the caller still retains this session entry.
     }
     return entry;
+  }
+
+  async remove(id: string): Promise<void> {
+    try {
+      const entries = (await this.list()).filter((entry) => entry.id !== id);
+      this.storage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    } catch {
+      // The in-memory view remains authoritative when storage is unavailable.
+    }
+  }
+
+  async clear(): Promise<void> {
+    try { this.storage.removeItem(STORAGE_KEY); } catch { /* The in-memory view still clears. */ }
   }
 }

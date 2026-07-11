@@ -5,7 +5,7 @@ import { LocalSettingsStore } from "../src/settings/SettingsStore.ts";
 
 test("history timestamps, bounds, validates, and migrates references", async () => {
   const values = new Map();
-  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
   const store = new LocalHistoryStore(storage, 2, () => new Date("2026-07-10T20:30:00.000Z"), () => `entry-${values.size}`);
   await store.add({ book: "Example", chapter: "1", verse: "1" });
   await store.add({ book: "Example", chapter: "1", verse: "2" });
@@ -18,9 +18,22 @@ test("history timestamps, bounds, validates, and migrates references", async () 
 
   const legacy = { id: "legacy", book: "Example", chapter: "1", verse: "2", visitedAt: "2026-07-10T20:30:00.000Z" };
   const migrated = new Map([["quiet-reader.history.v1", JSON.stringify([legacy])]]);
-  const migratedStorage = { getItem: (key) => migrated.get(key) ?? null, setItem: (key, value) => migrated.set(key, value) };
+  const migratedStorage = { getItem: (key) => migrated.get(key) ?? null, setItem: (key, value) => migrated.set(key, value), removeItem: (key) => migrated.delete(key) };
   assert.deepEqual(await new LocalHistoryStore(migratedStorage).list(), [legacy]);
   assert.equal(migrated.has("awmpc-bible.history.v1"), true);
+});
+
+test("history supports removing one entry and clearing all entries", async () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  let id = 0;
+  const store = new LocalHistoryStore(storage, 10, () => new Date(0), () => `id-${++id}`);
+  const first = await store.add({ book: "Example", chapter: "1", verse: "1" });
+  await store.add({ book: "Example", chapter: "1", verse: "2" });
+  await store.remove(first.id);
+  assert.deepEqual((await store.list()).map((entry) => entry.verse), ["2"]);
+  await store.clear();
+  assert.deepEqual(await store.list(), []);
 });
 
 test("history and settings tolerate malformed or unavailable storage", async () => {

@@ -1,5 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from "react";
 import { featureTitle, type FeatureId, type OverlayOrigin } from "./features";
+import { motionEasing, MOTION_DURATION_MS } from "./motion";
 import { lockDocumentScroll } from "./scrollLock";
 
 export type FeatureOverlayHandle = { close: () => Promise<void>; keepOpen: () => void };
@@ -11,12 +12,7 @@ type FeatureOverlayProps = {
   onClose: () => void;
 };
 
-const FALLBACK_MOTION_EASING = "cubic-bezier(.42, 0, .58, 1)";
-const OVERLAY_DURATION_MS = 210;
-
-function motionEasing(): string {
-  return getComputedStyle(document.documentElement).getPropertyValue("--motion-easing").trim() || FALLBACK_MOTION_EASING;
-}
+type OverlayPhase = "closed" | "opening" | "open" | "closing";
 
 function overlayFrames(dialog: HTMLDialogElement, origin: OverlayOrigin): Keyframe[] {
   const target = dialog.getBoundingClientRect();
@@ -44,7 +40,7 @@ function startAnimations(dialog: HTMLDialogElement, origin: OverlayOrigin): Anim
   const frames = overlayFrames(dialog, origin);
   const surfaceFrames = contentFrames();
   const timing: KeyframeAnimationOptions = {
-    duration: OVERLAY_DURATION_MS,
+    duration: MOTION_DURATION_MS,
     easing: motionEasing(),
   };
   return [
@@ -61,20 +57,24 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
   function FeatureOverlay({ activeFeature, origin, children, onClose }, ref) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const originRef = useRef<OverlayOrigin | null>(origin);
-    const closingRef = useRef(false);
     const animationsRef = useRef<Animation[]>([]);
     const releaseScrollRef = useRef<(() => void) | null>(null);
     const closeGenerationRef = useRef(0);
-    const [shadeVisible, setShadeVisible] = useState(false);
+    const phaseRef = useRef<OverlayPhase>("closed");
+    const [phase, setPhaseState] = useState<OverlayPhase>("closed");
+
+    const setPhase = useCallback((next: OverlayPhase) => {
+      phaseRef.current = next;
+      setPhaseState(next);
+    }, []);
 
     useEffect(() => { originRef.current = origin; }, [origin]);
 
     const close = useCallback(async () => {
       const dialog = dialogRef.current;
       const currentOrigin = originRef.current;
-      if (!dialog?.open || !currentOrigin || closingRef.current) return;
-      closingRef.current = true;
-      setShadeVisible(false);
+      if (!dialog?.open || !currentOrigin || phaseRef.current === "closing") return;
+      setPhase("closing");
       const closeGeneration = ++closeGenerationRef.current;
       let animations = animationsRef.current.filter((animation) => animation.playState !== "idle");
       if (animations.length) animations.forEach((animation) => animation.reverse());
@@ -90,16 +90,16 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       if (closeGeneration !== closeGenerationRef.current) return;
       dialog.close();
       animationsRef.current = [];
-      closingRef.current = false;
-    }, []);
+      setPhase("closed");
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }, [setPhase]);
 
     const keepOpen = useCallback(() => {
       closeGenerationRef.current += 1;
-      closingRef.current = false;
-      setShadeVisible(true);
+      setPhase("open");
       animationsRef.current.forEach((animation) => animation.cancel());
       animationsRef.current = [];
-    }, []);
+    }, [setPhase]);
 
     useImperativeHandle(ref, () => ({ close, keepOpen }), [close, keepOpen]);
 
@@ -119,12 +119,16 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       if (!dialog) return;
       let animationFrame = 0;
       if (activeFeature && origin && !dialog.open) {
-        setShadeVisible(true);
+        setPhase("opening");
         releaseScrollRef.current ??= lockDocumentScroll();
         dialog.style.height = `${origin.availableHeight}px`;
         dialog.show();
         animationFrame = requestAnimationFrame(() => {
-          animationsRef.current = startAnimations(dialog, origin);
+          const animations = startAnimations(dialog, origin);
+          animationsRef.current = animations;
+          void waitForAnimations(animations).then(() => {
+            if (phaseRef.current === "opening") setPhase("open");
+          });
         });
       }
       return () => {
@@ -133,7 +137,22 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
         animationsRef.current = [];
         dialog.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
       };
-    }, [activeFeature, origin]);
+    }, [activeFeature, origin, setPhase]);
+
+    useEffect(() => {
+      if (!activeFeature) return;
+      const updateHeight = () => {
+        const dialog = dialogRef.current;
+        const dock = document.querySelector<HTMLElement>(".floating-dock");
+        if (dialog && dock) dialog.style.height = `${Math.max(0, Math.floor(dock.getBoundingClientRect().y - 8))}px`;
+      };
+      window.addEventListener("resize", updateHeight);
+      window.visualViewport?.addEventListener("resize", updateHeight);
+      return () => {
+        window.removeEventListener("resize", updateHeight);
+        window.visualViewport?.removeEventListener("resize", updateHeight);
+      };
+    }, [activeFeature]);
 
     useEffect(() => {
       if (!activeFeature || !dialogRef.current?.open) return;
@@ -149,10 +168,10 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
     return (
       <>
         <button
-          className={`overlay-shade${shadeVisible ? " is-visible" : ""}`}
+          className={`overlay-shade${phase === "opening" || phase === "open" ? " is-visible" : ""}`}
           type="button"
           aria-label="Close overlay"
-          disabled={!shadeVisible}
+          disabled={phase !== "opening" && phase !== "open"}
           onClick={() => void close()}
         />
         <dialog

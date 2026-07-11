@@ -9,7 +9,8 @@
 # build output and tooling cache
 /.vite/
 /dist/
-/.wrangler/
+/test-results/
+/playwright-report/
 
 # misc
 .DS_Store

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0 - 2026-07-11
+
+- Centralize overlay, shade, and dock motion timing and track overlay lifecycle with explicit phases.
+- Resize open overlays with the viewport and announce live panel switches to assistive technology.
+- Add single-entry removal and confirmed clear-all controls for device-local reading history.
+- Add focused Chromium regressions for overlay switching, scroll stability, verse centering, history, and resizing.
+- Add a GitHub Actions quality gate and update Vite to the security-patched 8.1 release.
+- Remove the obsolete Wrangler cache ignore and generalize shared settings control styling.
+
 ## 0.17.2 - 2026-07-11
 
 - Cancel in-flight verse reveals before they can scroll behind a newly opened overlay.

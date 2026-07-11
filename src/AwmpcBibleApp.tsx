@@ -11,12 +11,13 @@ import { HistoryPanel } from "./ui/HistoryPanel";
 import { NavigationPanel } from "./ui/NavigationPanel";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import { Skeleton } from "./ui/Skeleton";
-import type { FeatureId, OverlayOrigin } from "./ui/features";
+import { featureTitle, type FeatureId, type OverlayOrigin } from "./ui/features";
 import { verseElementId } from "./ui/transitionVerseView";
 import { isTrustedReadingTap, useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
 
 export function AwmpcBibleApp() {
   const overlayRef = useRef<FeatureOverlayHandle>(null);
+  const selectionCloseRef = useRef(false);
   const readingPaneRef = useRef<HTMLElement>(null);
   const library = useBibleLibrary();
   const [passage, setPassage] = useState<Passage>({ book: "", chapter: "", verses: [] });
@@ -24,10 +25,13 @@ export function AwmpcBibleApp() {
   const navigation = useStagedNavigation(library.books, library.requestChapter, library.invalidate);
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
   const [overlayOrigin, setOverlayOrigin] = useState<OverlayOrigin | null>(null);
-  const { entries: history, record: recordHistory } = useBibleHistory();
+  const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory } = useBibleHistory();
   const { settings, update: updateSettings } = useBibleSettings();
   const { textScale, verseFont, appearance } = settings;
-  const closeOverlay = useCallback(async () => { await overlayRef.current?.close(); }, []);
+  const closeOverlay = useCallback(async () => {
+    selectionCloseRef.current = true;
+    try { await overlayRef.current?.close(); } finally { selectionCloseRef.current = false; }
+  }, []);
   const { chooseVerse, cancel: cancelVerseSelection } = useChooseVerse({
     passage,
     readingPaneRef,
@@ -61,7 +65,7 @@ export function AwmpcBibleApp() {
 
   function finishOverlayClose() {
     const closedFeature = activeFeature;
-    cancelVerseSelection();
+    if (!selectionCloseRef.current) cancelVerseSelection();
     navigation.abandon();
     setActiveFeature(null);
     setOverlayOrigin(null);
@@ -98,11 +102,12 @@ export function AwmpcBibleApp() {
         </div>
       </div>
       <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={openFeature} />
+      <p className="visually-hidden" role="status" aria-live="polite">{activeFeature ? `${featureTitle(activeFeature)} overlay open` : ""}</p>
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (
           <NavigationPanel books={library.books} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={library.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => void chooseVerse({ book: navigation.state.book, chapter: navigation.state.chapter, verse }, { prefetchedVerses: navigation.state.verses })} />
         )}
-        {activeFeature === "history" && <HistoryPanel entries={history} onSelect={(entry) => void chooseVerse(entry, { recordHistory: false })} />}
+        {activeFeature === "history" && <HistoryPanel entries={history} onSelect={(entry) => void chooseVerse(entry, { recordHistory: false })} onRemove={removeHistory} onClear={clearHistory} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}
         {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={(value) => updateSettings({ textScale: value })} verseFont={verseFont} onVerseFontChange={(value) => updateSettings({ verseFont: value })} appearance={appearance} onAppearanceChange={(value) => updateSettings({ appearance: value })} />}
       </FeatureOverlay>

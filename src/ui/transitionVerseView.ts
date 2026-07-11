@@ -1,12 +1,11 @@
+import { motionEasing, READER_FADE_DURATION_MS } from "./motion.ts";
+
 export type VerseTransitionEnvironment = Readonly<{
   prefersReducedMotion: () => boolean;
   afterPaint: () => Promise<void>;
   scrollToTop: () => void;
   findTarget: (id: string) => HTMLElement | null;
 }>;
-
-const FADE_DURATION_MS = 180;
-const FALLBACK_EASING = "cubic-bezier(.42, 0, .58, 1)";
 
 function browserEnvironment(): VerseTransitionEnvironment {
   return {
@@ -17,15 +16,10 @@ function browserEnvironment(): VerseTransitionEnvironment {
   };
 }
 
-function motionEasing(): string {
-  if (typeof getComputedStyle === "undefined") return FALLBACK_EASING;
-  return getComputedStyle(document.documentElement).getPropertyValue("--motion-easing").trim() || FALLBACK_EASING;
-}
-
 async function fade(pane: HTMLElement, from: number, to: number, signal?: AbortSignal): Promise<void> {
   signal?.throwIfAborted();
   const animation = pane.animate([{ opacity: from }, { opacity: to }], {
-    duration: FADE_DURATION_MS,
+    duration: READER_FADE_DURATION_MS,
     easing: motionEasing(),
     fill: "forwards",
   });
