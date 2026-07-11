@@ -37,12 +37,13 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
 });
 
 test("panels retain semantic native controls", async () => {
-  const [app, navigation, history, overlay, profile] = await Promise.all([
+  const [app, navigation, history, overlay, profile, styles] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),
     read("../src/ui/NavigationPanel.tsx"),
     read("../src/ui/HistoryPanel.tsx"),
     read("../src/ui/FeatureOverlay.tsx"),
     read("../src/ui/ProfilePanel.tsx"),
+    read("../src/styles.css"),
   ]);
   assert.match(navigation, /Old Testament/);
   assert.match(navigation, /New Testament/);
@@ -57,6 +58,10 @@ test("panels retain semantic native controls", async () => {
   assert.match(app, /overlayRef\.current\?\.keepOpen\(\)/);
   assert.match(overlay, /closeGenerationRef/);
   assert.match(overlay, /content\.scrollTop = 0/);
+  assert.match(overlay, /setShadeVisible\(false\)/);
+  assert.match(overlay, /setShadeVisible\(true\)/);
+  assert.match(styles, /\.overlay-shade\s*\{[^}]*opacity:\s*0[^}]*transition:\s*opacity 210ms var\(--motion-easing\)/);
+  assert.match(styles, /\.overlay-shade\.is-visible\s*\{[^}]*opacity:\s*1/);
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
   assert.match(profile, /<select/);

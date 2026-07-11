@@ -97,7 +97,6 @@ export function AwmpcBibleApp() {
           </main>
         </div>
       </div>
-      {activeFeature && <button className="overlay-shade" type="button" aria-label="Close overlay" onClick={() => void overlayRef.current?.close()} />}
       <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={openFeature} />
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (

@@ -94,7 +94,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .floating-dock { position: fixed; z-index: 12; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), 0 16px 44px rgba(0, 0, 0, .18); backdrop-filter: blur(28px) saturate(150%); transition: translate 240ms var(--motion-easing), opacity 240ms var(--motion-easing); }
 .floating-dock.is-hidden { opacity: 0; translate: 0 calc(100% + max(1rem, env(safe-area-inset-bottom)) + 1rem); pointer-events: none; }
 .floating-dock.is-hidden:focus-within { opacity: 1; translate: 0 0; pointer-events: auto; }
-.overlay-shade { position: fixed; z-index: 9; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: var(--overlay-backdrop); cursor: default; }
+.overlay-shade { position: fixed; z-index: 9; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; opacity: 0; background: var(--overlay-backdrop); pointer-events: none; cursor: default; transition: opacity 210ms var(--motion-easing); }
+.overlay-shade.is-visible { opacity: 1; pointer-events: auto; }
 .dock-scroll { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(64px, auto); gap: .25rem; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .dock-scroll::-webkit-scrollbar { display: none; }
 .dock-button { display: grid; min-width: 64px; min-height: 52px; place-items: center; gap: .2rem; padding: .38rem .65rem; border: 0; border-radius: 16px; background: transparent; cursor: pointer; color: var(--muted); font-size: .66rem; font-weight: 720; transition: background-color 140ms ease, color 140ms ease, transform 140ms ease; }
@@ -174,6 +175,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .skeleton span { animation: none; }
   .dock-button { transition: none; }
   .floating-dock { transition: none; }
+  .overlay-shade { transition: none; }
 }
 
 @supports (transition-timing-function: linear(0, 1)) {

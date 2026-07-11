@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, type ReactNode } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from "react";
 import { featureTitle, type FeatureId, type OverlayOrigin } from "./features";
 import { lockDocumentScroll } from "./scrollLock";
 
@@ -65,6 +65,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
     const animationsRef = useRef<Animation[]>([]);
     const releaseScrollRef = useRef<(() => void) | null>(null);
     const closeGenerationRef = useRef(0);
+    const [shadeVisible, setShadeVisible] = useState(false);
 
     useEffect(() => { originRef.current = origin; }, [origin]);
 
@@ -73,6 +74,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       const currentOrigin = originRef.current;
       if (!dialog?.open || !currentOrigin || closingRef.current) return;
       closingRef.current = true;
+      setShadeVisible(false);
       const closeGeneration = ++closeGenerationRef.current;
       let animations = animationsRef.current.filter((animation) => animation.playState !== "idle");
       if (animations.length) animations.forEach((animation) => animation.reverse());
@@ -94,6 +96,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
     const keepOpen = useCallback(() => {
       closeGenerationRef.current += 1;
       closingRef.current = false;
+      setShadeVisible(true);
       animationsRef.current.forEach((animation) => animation.cancel());
       animationsRef.current = [];
     }, []);
@@ -116,6 +119,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       if (!dialog) return;
       let animationFrame = 0;
       if (activeFeature && origin && !dialog.open) {
+        setShadeVisible(true);
         releaseScrollRef.current ??= lockDocumentScroll();
         dialog.style.height = `${origin.availableHeight}px`;
         dialog.show();
@@ -143,7 +147,15 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
     }, []);
 
     return (
-      <dialog
+      <>
+        <button
+          className={`overlay-shade${shadeVisible ? " is-visible" : ""}`}
+          type="button"
+          aria-label="Close overlay"
+          disabled={!shadeVisible}
+          onClick={() => void close()}
+        />
+        <dialog
         ref={dialogRef}
         id="feature-overlay"
         className="feature-overlay"
@@ -166,7 +178,8 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
           </header>
           <div className="overlay-content">{children}</div>
         </div>
-      </dialog>
+        </dialog>
+      </>
     );
   },
 );

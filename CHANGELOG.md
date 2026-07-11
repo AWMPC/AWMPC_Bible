@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.17.1 - 2026-07-11
+
+- Fade the background shade smoothly alongside overlay opening and closing.
+- Preserve shade continuity when rapidly switching between overlay features.
+
 ## 0.17.0 - 2026-07-11
 
 - Keep the floating dock foregrounded and interactive while an overlay is open.
