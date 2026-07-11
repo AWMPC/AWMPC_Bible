@@ -2,6 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export type ScrollIntent = Readonly<{ direction: -1 | 1; recordedAt: number }>;
 
+export function isTrustedReadingTap(isTrusted: boolean, detail: number, interactiveTarget: boolean): boolean {
+  return isTrusted && detail > 0 && !interactiveTarget;
+}
+
 export function nextDockVisibility(
   visible: boolean,
   previousY: number,

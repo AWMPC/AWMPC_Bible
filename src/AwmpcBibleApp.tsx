@@ -1,219 +1,60 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import DataWorker from "./data/data.worker?worker";
-import type { Book, ChapterTarget, Verse, WorkerRequest, WorkerResponse } from "./data/contracts";
-import { LocalHistoryStore, type HistoryEntry, type HistoryStore } from "./history/HistoryStore";
-import { LocalSettingsStore, type SettingsStore } from "./settings/SettingsStore";
-import { DEFAULT_TEXT_SCALE, type TextScale } from "./settings/textScale";
-import { DEFAULT_VERSE_FONT, type VerseFont } from "./settings/verseFont";
-import { DEFAULT_APPEARANCE, type Appearance } from "./settings/appearance";
+import { useBibleLibrary, type Passage } from "./data/useBibleLibrary";
+import { useBibleHistory } from "./history/useBibleHistory";
+import { useStagedNavigation } from "./navigation/useStagedNavigation";
+import { useChooseVerse } from "./selection/useChooseVerse";
+import { useBibleSettings } from "./settings/useBibleSettings";
+import { EmptyFeature } from "./ui/EmptyFeature";
 import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
+import { HistoryPanel } from "./ui/HistoryPanel";
+import { NavigationPanel } from "./ui/NavigationPanel";
 import { ProfilePanel } from "./ui/ProfilePanel";
+import { Skeleton } from "./ui/Skeleton";
 import type { FeatureId, OverlayOrigin } from "./ui/features";
-import { groupBooksByTestament } from "./ui/testaments";
-import { transitionVerseView, verseElementId } from "./ui/transitionVerseView";
-import { useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
+import { verseElementId } from "./ui/transitionVerseView";
+import { isTrustedReadingTap, useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
 
 export function AwmpcBibleApp() {
-  const workerRef = useRef<Worker | null>(null);
-  const requestRef = useRef(0);
-  const latestChapterRequestRef = useRef<Record<ChapterTarget, number>>({ reader: 0, navigation: 0, selection: 0 });
-  const chapterResolverRef = useRef(new Map<number, (verses: Verse[] | null) => void>());
-  const selectionGenerationRef = useRef(0);
   const overlayRef = useRef<FeatureOverlayHandle>(null);
   const readingPaneRef = useRef<HTMLElement>(null);
-  const navigationSelectionRef = useRef(false);
-  const historyStoreRef = useRef<HistoryStore | null>(null);
-  const settingsStoreRef = useRef<SettingsStore | null>(null);
-  const [books, setBooks] = useState<Book[]>([]);
-  const [book, setBook] = useState("");
-  const [chapter, setChapter] = useState("");
-  const [verses, setVerses] = useState<Verse[]>([]);
-  const [navigationBook, setNavigationBook] = useState("");
-  const [navigationChapter, setNavigationChapter] = useState("");
-  const [navigationVerses, setNavigationVerses] = useState<Verse[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [error, setError] = useState("");
+  const library = useBibleLibrary();
+  const [passage, setPassage] = useState<Passage>({ book: "", chapter: "", verses: [] });
+  const { book, chapter, verses } = passage;
+  const navigation = useStagedNavigation(library.books, library.requestChapter, library.invalidate);
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
   const [overlayOrigin, setOverlayOrigin] = useState<OverlayOrigin | null>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [textScale, setTextScale] = useState<TextScale>(DEFAULT_TEXT_SCALE);
-  const [verseFont, setVerseFont] = useState<VerseFont>(DEFAULT_VERSE_FONT);
-  const [appearance, setAppearance] = useState<Appearance>(DEFAULT_APPEARANCE);
-
-  const send = useCallback((message: WorkerRequest) => workerRef.current?.postMessage(message), []);
-  const requestChapter = useCallback((target: ChapterTarget, nextBook: string, nextChapter: string): Promise<Verse[] | null> => {
-    const requestId = ++requestRef.current;
-    latestChapterRequestRef.current[target] = requestId;
-    if (target === "reader") setVerses([]);
-    else if (target === "navigation") setNavigationVerses([]);
-    const result = new Promise<Verse[] | null>((resolve) => chapterResolverRef.current.set(requestId, resolve));
-    send({ type: "chapter", requestId, target, book: nextBook, chapter: nextChapter });
-    return result;
-  }, [send]);
+  const { entries: history, record: recordHistory } = useBibleHistory();
+  const { settings, update: updateSettings } = useBibleSettings();
+  const { textScale, verseFont, appearance } = settings;
+  const closeOverlay = useCallback(async () => { await overlayRef.current?.close(); }, []);
+  const { chooseVerse, cancel: cancelVerseSelection } = useChooseVerse({
+    passage,
+    readingPaneRef,
+    requestChapter: library.requestChapter,
+    cancelRequest: () => library.invalidate("selection"),
+    commit: setPassage,
+    recordHistory,
+    closeOverlay,
+  });
 
   useEffect(() => {
-    const worker = new DataWorker();
-    workerRef.current = worker;
-    worker.onmessage = ({ data }: MessageEvent<WorkerResponse>) => {
-      if (data.type === "ready") {
-        setBooks(data.books);
-        const first = data.books[0];
-        if (first) {
-          setBook(first.name);
-          setChapter(first.chapters[0]);
-          void requestChapter("reader", first.name, first.chapters[0]);
-        }
-        setStatus("ready");
-      } else if (data.type === "chapter" && data.requestId === latestChapterRequestRef.current[data.target]) {
-        chapterResolverRef.current.get(data.requestId)?.(data.verses);
-        chapterResolverRef.current.delete(data.requestId);
-        if (data.target === "reader") setVerses(data.verses);
-        else if (data.target === "navigation") setNavigationVerses(data.verses);
-      } else if (data.type === "chapter") {
-        chapterResolverRef.current.get(data.requestId)?.(data.verses);
-        chapterResolverRef.current.delete(data.requestId);
-      } else if (data.type === "error" && "requestId" in data) {
-        chapterResolverRef.current.get(data.requestId)?.(null);
-        chapterResolverRef.current.delete(data.requestId);
-      } else if (data.type === "error") {
-        setError(data.message);
-        setStatus("error");
-      }
-    };
-    worker.onerror = () => {
-      setError("AWMPC Bible could not start. Please reload and try again.");
-      setStatus("error");
-    };
-    send({ type: "load" });
-    return () => {
-      chapterResolverRef.current.forEach((resolve) => resolve(null));
-      chapterResolverRef.current.clear();
-      worker.terminate();
-      workerRef.current = null;
-    };
-  }, [requestChapter, send]);
+    if (library.initialPassage && !passage.book) setPassage(library.initialPassage);
+  }, [library.initialPassage, passage.book]);
 
-  useEffect(() => {
-    try {
-      const store = new LocalHistoryStore(window.localStorage);
-      historyStoreRef.current = store;
-      void store.list().then(setHistory);
-    } catch {
-      historyStoreRef.current = null;
-    }
-    return () => { historyStoreRef.current = null; };
-  }, []);
-
-  useEffect(() => {
-    try {
-      const store = new LocalSettingsStore(window.localStorage);
-      settingsStoreRef.current = store;
-      const settings = store.load();
-      setTextScale(settings.textScale);
-      setVerseFont(settings.verseFont);
-      setAppearance(settings.appearance);
-    } catch {
-      settingsStoreRef.current = null;
-    }
-    return () => { settingsStoreRef.current = null; };
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const previous = root.dataset.appearance;
-    root.dataset.appearance = appearance;
-    return () => {
-      if (previous) root.dataset.appearance = previous;
-      else delete root.dataset.appearance;
-    };
-  }, [appearance]);
-
-  const navigationChapters = books.find((item) => item.name === navigationBook)?.chapters ?? [];
   const { visible: dockVisible, toggle: toggleDockVisibility } = useUserScrollDockVisibility(activeFeature === null);
-
-  function chooseBook(nextBook: string) {
-    const firstChapter = books.find((item) => item.name === nextBook)?.chapters[0] ?? "1";
-    setNavigationBook(nextBook);
-    setNavigationChapter(firstChapter);
-    void requestChapter("navigation", nextBook, firstChapter);
-  }
-
-  function chooseChapter(nextChapter: string) {
-    setNavigationChapter(nextChapter);
-    void requestChapter("navigation", navigationBook, nextChapter);
-  }
-
-  async function selectVerse(
-    location: { book: string; chapter: string; verse: string },
-    options: { prefetchedVerses?: Verse[]; recordHistory?: boolean } = {},
-  ) {
-    if (navigationSelectionRef.current) return;
-    navigationSelectionRef.current = true;
-    const generation = ++selectionGenerationRef.current;
-    const selectedBook = location.book;
-    const selectedChapter = location.chapter;
-    const selectedVerses = options.prefetchedVerses
-      ?? (book === selectedBook && chapter === selectedChapter ? verses : await requestChapter("selection", selectedBook, selectedChapter));
-    if (generation !== selectionGenerationRef.current || !selectedVerses?.some((item) => item.number === location.verse)) {
-      navigationSelectionRef.current = false;
-      return;
-    }
-    const commit = () => {
-      setBook(selectedBook);
-      setChapter(selectedChapter);
-      setVerses(selectedVerses);
-    };
-    const store = options.recordHistory === false ? null : historyStoreRef.current;
-    if (store) {
-      void store.add({ book: selectedBook, chapter: selectedChapter, verse: location.verse })
-        .then((entry) => setHistory((current) => [entry, ...current].slice(0, 200)))
-        .catch(() => undefined);
-    }
-    try {
-      const pane = readingPaneRef.current;
-      if (pane) {
-        await transitionVerseView(pane, verseElementId(selectedChapter, location.verse), commit, async () => { await overlayRef.current?.close(); });
-      } else {
-        commit();
-        await overlayRef.current?.close();
-      }
-    } finally {
-      navigationSelectionRef.current = false;
-    }
-  }
-
-  function chooseTextScale(scale: TextScale) {
-    setTextScale(scale);
-    settingsStoreRef.current?.save({ textScale: scale, verseFont, appearance });
-  }
-
-  function chooseVerseFont(font: VerseFont) {
-    setVerseFont(font);
-    settingsStoreRef.current?.save({ textScale, verseFont: font, appearance });
-  }
-
-  function chooseAppearance(nextAppearance: Appearance) {
-    setAppearance(nextAppearance);
-    settingsStoreRef.current?.save({ textScale, verseFont, appearance: nextAppearance });
-  }
 
   function openFeature(feature: FeatureId, origin: OverlayOrigin) {
     if (feature === "navigation") {
-      latestChapterRequestRef.current.navigation = ++requestRef.current;
-      navigationSelectionRef.current = false;
-      setNavigationBook(book);
-      setNavigationChapter(chapter);
-      setNavigationVerses(verses);
+      navigation.openFrom(passage);
     }
     setOverlayOrigin(origin);
     setActiveFeature(feature);
   }
 
   function finishOverlayClose() {
-    selectionGenerationRef.current += 1;
-    latestChapterRequestRef.current.navigation = ++requestRef.current;
-    navigationSelectionRef.current = false;
+    cancelVerseSelection();
+    navigation.abandon();
     setActiveFeature(null);
     setOverlayOrigin(null);
   }
@@ -227,9 +68,12 @@ export function AwmpcBibleApp() {
           id="reading-pane"
           className="reading-pane"
           tabIndex={-1}
-          onClick={(event) => { if (event.nativeEvent.isTrusted && event.detail > 0) toggleDockVisibility(); }}
+          onClick={(event) => {
+            const interactive = event.target instanceof Element && Boolean(event.target.closest("a, button, input, select, textarea, [contenteditable='true']"));
+            if (isTrustedReadingTap(event.nativeEvent.isTrusted, event.detail, interactive)) toggleDockVisibility();
+          }}
         >
-          {status === "error" ? <section className="error-card" role="alert"><h1>Unable to open the text</h1><p>{error}</p></section> : (
+          {library.status === "error" ? <section className="error-card" role="alert"><h1>Unable to open the text</h1><p>{library.error}</p></section> : (
             <>
               <div className="reading-header">
                 <h1>{book || "Preparing your library"}</h1>
@@ -243,82 +87,12 @@ export function AwmpcBibleApp() {
       <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={openFeature} />
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (
-          <NavigationPanel books={books} book={navigationBook} chapters={navigationChapters} chapter={navigationChapter} verses={navigationVerses} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} onVerse={(verse) => void selectVerse({ book: navigationBook, chapter: navigationChapter, verse }, { prefetchedVerses: navigationVerses })} />
+          <NavigationPanel books={library.books} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={library.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => void chooseVerse({ book: navigation.state.book, chapter: navigation.state.chapter, verse }, { prefetchedVerses: navigation.state.verses })} />
         )}
-        {activeFeature === "history" && <HistoryPanel entries={history} onSelect={(entry) => void selectVerse(entry, { recordHistory: false })} />}
+        {activeFeature === "history" && <HistoryPanel entries={history} onSelect={(entry) => void chooseVerse(entry, { recordHistory: false })} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}
-        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={chooseTextScale} verseFont={verseFont} onVerseFontChange={chooseVerseFont} appearance={appearance} onAppearanceChange={chooseAppearance} />}
+        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={(value) => updateSettings({ textScale: value })} verseFont={verseFont} onVerseFontChange={(value) => updateSettings({ verseFont: value })} appearance={appearance} onAppearanceChange={(value) => updateSettings({ appearance: value })} />}
       </FeatureOverlay>
     </div>
   );
-}
-
-type NavigationPanelProps = {
-  books: Book[];
-  book: string;
-  chapters: string[];
-  chapter: string;
-  verses: Verse[];
-  loading: boolean;
-  onBook: (book: string) => void;
-  onChapter: (chapter: string) => void;
-  onVerse: (verse: string) => void;
-};
-
-function NavigationPanel({ books, book, chapters, chapter, verses, loading, onBook, onChapter, onVerse }: NavigationPanelProps) {
-  if (loading) return <Skeleton rows={8} />;
-  const testamentBooks = groupBooksByTestament(books);
-  return (
-    <div className="navigation-panel">
-      <section aria-labelledby="books-title">
-        <h3 id="books-title">Books</h3>
-        <TestamentBookGroup id="old-testament-title" title="Old Testament" books={testamentBooks.old} currentBook={book} onBook={onBook} />
-        <TestamentBookGroup id="new-testament-title" title="New Testament" books={testamentBooks.new} currentBook={book} onBook={onBook} />
-        {testamentBooks.other.length > 0 && <TestamentBookGroup id="other-books-title" title="Other Books" books={testamentBooks.other} currentBook={book} onBook={onBook} />}
-      </section>
-      <section aria-labelledby="chapters-title">
-        <h3 id="chapters-title">Chapters</h3>
-        <div className="choice-grid chapter-grid">{chapters.map((item) => (
-          <button key={item} type="button" aria-current={chapter === item ? "page" : undefined} onClick={() => onChapter(item)}>{item}</button>
-        ))}</div>
-      </section>
-      <section aria-labelledby="verses-title">
-        <h3 id="verses-title">Verses</h3>
-        <div className="choice-grid verse-grid">{verses.map((item) => (
-          <button key={item.number} type="button" onClick={() => onVerse(item.number)}>{item.number}</button>
-        ))}</div>
-      </section>
-    </div>
-  );
-}
-
-function TestamentBookGroup({ id, title, books, currentBook, onBook }: { id: string; title: string; books: Book[]; currentBook: string; onBook: (book: string) => void }) {
-  return (
-    <section className="testament-group" aria-labelledby={id}>
-      <h4 id={id}>{title}</h4>
-      <div className="choice-grid books-grid">{books.map((item) => (
-        <button key={item.name} type="button" aria-current={currentBook === item.name ? "page" : undefined} onClick={() => onBook(item.name)}>{item.name}</button>
-      ))}</div>
-    </section>
-  );
-}
-
-function HistoryPanel({ entries, onSelect }: { entries: HistoryEntry[]; onSelect: (entry: HistoryEntry) => void }) {
-  if (!entries.length) return <EmptyFeature title="No reading history yet" detail="Verses selected through Navigate will appear here on this device." />;
-  return <ol className="history-list">{entries.map((entry) => (
-    <li key={entry.id}>
-      <button type="button" onClick={() => onSelect(entry)}>
-        <span><strong>{entry.book}</strong> {entry.chapter}:{entry.verse}</span>
-        <time dateTime={entry.visitedAt}>{new Date(entry.visitedAt).toLocaleString()}</time>
-      </button>
-    </li>
-  ))}</ol>;
-}
-
-function EmptyFeature({ title, detail }: { title: string; detail: string }) {
-  return <div className="empty-feature"><span aria-hidden="true" /><h3>{title}</h3><p>{detail}</p></div>;
-}
-
-function Skeleton({ rows, text = false }: { rows: number; text?: boolean }) {
-  return <div className={text ? "skeleton text-skeleton" : "skeleton"} aria-label="Loading text" aria-busy="true">{Array.from({ length: rows }, (_, index) => <span key={index} />)}</div>;
 }
