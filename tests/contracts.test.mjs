@@ -28,8 +28,12 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(overlay, /OVERLAY_DURATION_MS = 150/);
   assert.match(styles, /font:\s*700 calc\(var\(--verse-text-size\) \* 1\.5\)/);
   assert.match(styles, /\.chapter-indicator strong\s*\{[^}]*display:\s*inline/);
-  assert.match(styles, /\.reading-pane article\s*\{[^}]*max-width:\s*70ch/);
+  assert.match(styles, /\.reading-pane article\s*\{[^}]*max-width:\s*calc\(70ch \+ var\(--verse-number-gutter\) \+ var\(--verse-column-gap\)\)/);
   assert.match(styles, /\.verses\s*\{[^}]*gap:\s*\.75rem/);
+  assert.match(styles, /\.workspace\s*\{[^}]*width:\s*min\(100%, calc\(70ch \+ var\(--verse-number-gutter\)/);
+  assert.match(styles, /--verse-column-gap:\s*\.4rem/);
+  assert.match(styles, /grid-template-columns:\s*var\(--verse-number-gutter\) minmax\(0, 1fr\)/);
+  assert.match(styles, /data-text-scale="standard"[^}]*--verse-line-height:\s*1\.5/);
 });
 
 test("panels retain semantic native controls", async () => {

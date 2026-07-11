@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.2 - 2026-07-11
+
+- Fit the reading card to the 70-character text measure, verse-number gutter, and responsive margins.
+- Tighten the verse-number column gap and line height at every reading scale.
+
 ## 0.16.1 - 2026-07-11
 
 - Shorten overlay opening and closing to 150 milliseconds.
