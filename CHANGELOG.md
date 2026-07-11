@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.20.0 - 2026-07-11
+
+- Smoothly advance the Navigation overlay from a user-selected book to Chapters.
+- Smoothly advance from a user-selected chapter to Verses while its content loads.
+- Scope progression scrolling to the overlay, cancel stale scheduled scrolls, and respect reduced motion.
+- Keep initial overlay opening, data updates, and the background reader free from automatic scrolling.
+
 ## 0.19.1 - 2026-07-11
 
 - Animate inline footnote markers into and out of the verse flow to avoid abrupt text jumps.

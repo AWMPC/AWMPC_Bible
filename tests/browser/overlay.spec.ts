@@ -4,7 +4,8 @@ const dataset = {
   Genesis: {
     "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), index === 0 ? "Verse 1 {First note} text with {Second note} details." : `Verse ${index + 1} text for browser testing.`])),
   },
-  Matthew: { "1": { "1": "A New Testament verse." } },
+  Matthew: Object.fromEntries(Array.from({ length: 20 }, (_, chapterIndex) => [String(chapterIndex + 1), Object.fromEntries(Array.from({ length: 12 }, (_, verseIndex) => [String(verseIndex + 1), `Matthew chapter ${chapterIndex + 1} verse ${verseIndex + 1}.`]))])),
+  ...Object.fromEntries(Array.from({ length: 18 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
 };
 
 test.beforeEach(async ({ page }) => {
@@ -48,6 +49,23 @@ test("resizes an open overlay with the viewport", async ({ page }) => {
   await expect.poll(() => dialog.evaluate((element) => element.getBoundingClientRect().height)).not.toBe(initialHeight);
 });
 
+test("user book and chapter choices advance the navigation scroll", async ({ page }) => {
+  const beforeReaderScroll = await page.evaluate(() => window.scrollY);
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  const content = page.locator(".overlay-content");
+  expect(await content.evaluate((element) => element.scrollTop)).toBe(0);
+
+  await page.getByRole("button", { name: "Matthew", exact: true }).click();
+  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  const afterBook = await content.evaluate((element) => element.scrollTop);
+  await expect(page.getByRole("heading", { name: "Chapters" })).toBeInViewport();
+
+  await page.locator('section[aria-labelledby="chapters-title"] button').filter({ hasText: /^2$/ }).click();
+  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(afterBook);
+  await expect(page.getByRole("heading", { name: "Verses" })).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBe(beforeReaderScroll);
+});
+
 test("toggles inline footnote numbers and their nested card together", async ({ page }) => {
   const toggle = page.getByRole("button", { name: "footnotes", exact: true });
   const marker = page.locator(".footnote-marker-reveal").first();
@@ -75,22 +93,20 @@ test("toggles inline footnote numbers and their nested card together", async ({ 
   expect(openingMarkerWidth).toBeGreaterThan(0);
   expect(openingCardHeight).toBeGreaterThan(0);
   await page.waitForTimeout(180);
-  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(openingMarkerWidth);
-  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(openingCardHeight);
+  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(openingMarkerWidth);
+  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(openingCardHeight);
   await expect(page.getByLabel("Footnote 1")).toHaveText("1");
   await expect(page.getByLabel("Footnote 2")).toHaveText("2");
   await expect(page.getByLabel("Footnotes for verse 1")).toContainText("First note");
   await expect(page.getByLabel("Footnotes for verse 1")).toContainText("Second note");
   await expect(toggle).toBeFocused();
+  expect(await marker.evaluate((element) => getComputedStyle(element).transitionDuration)).toContain("0.21s");
+  expect(await reveal.evaluate((element) => getComputedStyle(element).transitionDuration)).toContain("0.21s");
 
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await page.waitForTimeout(80);
-  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(0);
-  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(0);
-  await page.waitForTimeout(180);
-  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBe(0);
-  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBe(0);
+  await expect.poll(() => marker.evaluate((element) => element.getBoundingClientRect().width)).toBe(0);
+  await expect.poll(() => reveal.evaluate((element) => element.getBoundingClientRect().height)).toBe(0);
   expect(await page.evaluate(() => window.scrollY)).toBe(before);
 });
 

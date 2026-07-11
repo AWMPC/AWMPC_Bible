@@ -9,6 +9,7 @@ import { transitionVerseView, verseElementId } from "../src/ui/transitionVerseVi
 import { textScaleAt, TEXT_SCALES } from "../src/settings/textScale.ts";
 import { APPEARANCES, isAppearance } from "../src/settings/appearance.ts";
 import { VERSE_FONTS, isVerseFont } from "../src/settings/verseFont.ts";
+import { scrollNavigationSection } from "../src/ui/navigationScroll.ts";
 
 test("testament grouping preserves order and unknown books", () => {
   const books = ["Genesis", "Malachi", "Matthew", "Revelation", "Future Book"].map((name) => ({ name, chapters: ["1"] }));
@@ -30,6 +31,18 @@ test("settings allowlists and scale snapping remain exact", () => {
 
 test("overlay origin stops above the dock", () => {
   assert.deepEqual(createOverlayOrigin({ x: 640, y: 720, width: 72, height: 52 }, { x: 600, y: 708, width: 360, height: 60 }), { x: 640, y: 720, width: 72, height: 52, availableHeight: 700 });
+});
+
+test("navigation progression scrolls only its overlay container and respects reduced motion", () => {
+  const calls = [];
+  const container = { scrollTop: 120, getBoundingClientRect: () => ({ top: 80 }), scrollTo: (options) => calls.push(options) };
+  const target = { getBoundingClientRect: () => ({ top: 260 }) };
+  scrollNavigationSection(container, target, false);
+  scrollNavigationSection(container, target, true);
+  assert.deepEqual(calls, [
+    { top: 300, behavior: "smooth" },
+    { top: 300, behavior: "auto" },
+  ]);
 });
 
 test("scroll lock restores prior styles idempotently", () => {
