@@ -17,7 +17,9 @@ import { useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
 export function AwmpcBibleApp() {
   const workerRef = useRef<Worker | null>(null);
   const requestRef = useRef(0);
-  const latestChapterRequestRef = useRef<Record<ChapterTarget, number>>({ reader: 0, navigation: 0 });
+  const latestChapterRequestRef = useRef<Record<ChapterTarget, number>>({ reader: 0, navigation: 0, selection: 0 });
+  const chapterResolverRef = useRef(new Map<number, (verses: Verse[] | null) => void>());
+  const selectionGenerationRef = useRef(0);
   const overlayRef = useRef<FeatureOverlayHandle>(null);
   const readingPaneRef = useRef<HTMLElement>(null);
   const navigationSelectionRef = useRef(false);
@@ -40,12 +42,14 @@ export function AwmpcBibleApp() {
   const [appearance, setAppearance] = useState<Appearance>(DEFAULT_APPEARANCE);
 
   const send = useCallback((message: WorkerRequest) => workerRef.current?.postMessage(message), []);
-  const requestChapter = useCallback((target: ChapterTarget, nextBook: string, nextChapter: string) => {
+  const requestChapter = useCallback((target: ChapterTarget, nextBook: string, nextChapter: string): Promise<Verse[] | null> => {
     const requestId = ++requestRef.current;
     latestChapterRequestRef.current[target] = requestId;
     if (target === "reader") setVerses([]);
-    else setNavigationVerses([]);
+    else if (target === "navigation") setNavigationVerses([]);
+    const result = new Promise<Verse[] | null>((resolve) => chapterResolverRef.current.set(requestId, resolve));
     send({ type: "chapter", requestId, target, book: nextBook, chapter: nextChapter });
+    return result;
   }, [send]);
 
   useEffect(() => {
@@ -58,12 +62,20 @@ export function AwmpcBibleApp() {
         if (first) {
           setBook(first.name);
           setChapter(first.chapters[0]);
-          requestChapter("reader", first.name, first.chapters[0]);
+          void requestChapter("reader", first.name, first.chapters[0]);
         }
         setStatus("ready");
       } else if (data.type === "chapter" && data.requestId === latestChapterRequestRef.current[data.target]) {
+        chapterResolverRef.current.get(data.requestId)?.(data.verses);
+        chapterResolverRef.current.delete(data.requestId);
         if (data.target === "reader") setVerses(data.verses);
-        else setNavigationVerses(data.verses);
+        else if (data.target === "navigation") setNavigationVerses(data.verses);
+      } else if (data.type === "chapter") {
+        chapterResolverRef.current.get(data.requestId)?.(data.verses);
+        chapterResolverRef.current.delete(data.requestId);
+      } else if (data.type === "error" && "requestId" in data) {
+        chapterResolverRef.current.get(data.requestId)?.(null);
+        chapterResolverRef.current.delete(data.requestId);
       } else if (data.type === "error") {
         setError(data.message);
         setStatus("error");
@@ -75,6 +87,8 @@ export function AwmpcBibleApp() {
     };
     send({ type: "load" });
     return () => {
+      chapterResolverRef.current.forEach((resolve) => resolve(null));
+      chapterResolverRef.current.clear();
       worker.terminate();
       workerRef.current = null;
     };
@@ -122,35 +136,44 @@ export function AwmpcBibleApp() {
     const firstChapter = books.find((item) => item.name === nextBook)?.chapters[0] ?? "1";
     setNavigationBook(nextBook);
     setNavigationChapter(firstChapter);
-    requestChapter("navigation", nextBook, firstChapter);
+    void requestChapter("navigation", nextBook, firstChapter);
   }
 
   function chooseChapter(nextChapter: string) {
     setNavigationChapter(nextChapter);
-    requestChapter("navigation", navigationBook, nextChapter);
+    void requestChapter("navigation", navigationBook, nextChapter);
   }
 
-  async function chooseVerse(verse: string) {
-    if (navigationSelectionRef.current || !navigationVerses.some((item) => item.number === verse)) return;
+  async function selectVerse(
+    location: { book: string; chapter: string; verse: string },
+    options: { prefetchedVerses?: Verse[]; recordHistory?: boolean } = {},
+  ) {
+    if (navigationSelectionRef.current) return;
     navigationSelectionRef.current = true;
-    const selectedBook = navigationBook;
-    const selectedChapter = navigationChapter;
-    const selectedVerses = navigationVerses;
+    const generation = ++selectionGenerationRef.current;
+    const selectedBook = location.book;
+    const selectedChapter = location.chapter;
+    const selectedVerses = options.prefetchedVerses
+      ?? (book === selectedBook && chapter === selectedChapter ? verses : await requestChapter("selection", selectedBook, selectedChapter));
+    if (generation !== selectionGenerationRef.current || !selectedVerses?.some((item) => item.number === location.verse)) {
+      navigationSelectionRef.current = false;
+      return;
+    }
     const commit = () => {
       setBook(selectedBook);
       setChapter(selectedChapter);
       setVerses(selectedVerses);
     };
-    const store = historyStoreRef.current;
+    const store = options.recordHistory === false ? null : historyStoreRef.current;
     if (store) {
-      void store.add({ book: selectedBook, chapter: selectedChapter, verse })
+      void store.add({ book: selectedBook, chapter: selectedChapter, verse: location.verse })
         .then((entry) => setHistory((current) => [entry, ...current].slice(0, 200)))
         .catch(() => undefined);
     }
     try {
       const pane = readingPaneRef.current;
       if (pane) {
-        await transitionVerseView(pane, verseElementId(selectedChapter, verse), commit, async () => { await overlayRef.current?.close(); });
+        await transitionVerseView(pane, verseElementId(selectedChapter, location.verse), commit, async () => { await overlayRef.current?.close(); });
       } else {
         commit();
         await overlayRef.current?.close();
@@ -188,6 +211,7 @@ export function AwmpcBibleApp() {
   }
 
   function finishOverlayClose() {
+    selectionGenerationRef.current += 1;
     latestChapterRequestRef.current.navigation = ++requestRef.current;
     navigationSelectionRef.current = false;
     setActiveFeature(null);
@@ -219,9 +243,9 @@ export function AwmpcBibleApp() {
       <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={openFeature} />
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (
-          <NavigationPanel books={books} book={navigationBook} chapters={navigationChapters} chapter={navigationChapter} verses={navigationVerses} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} onVerse={(verse) => void chooseVerse(verse)} />
+          <NavigationPanel books={books} book={navigationBook} chapters={navigationChapters} chapter={navigationChapter} verses={navigationVerses} loading={status === "loading"} onBook={chooseBook} onChapter={chooseChapter} onVerse={(verse) => void selectVerse({ book: navigationBook, chapter: navigationChapter, verse }, { prefetchedVerses: navigationVerses })} />
         )}
-        {activeFeature === "history" && <HistoryPanel entries={history} />}
+        {activeFeature === "history" && <HistoryPanel entries={history} onSelect={(entry) => void selectVerse(entry, { recordHistory: false })} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}
         {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={chooseTextScale} verseFont={verseFont} onVerseFontChange={chooseVerseFont} appearance={appearance} onAppearanceChange={chooseAppearance} />}
       </FeatureOverlay>
@@ -279,12 +303,14 @@ function TestamentBookGroup({ id, title, books, currentBook, onBook }: { id: str
   );
 }
 
-function HistoryPanel({ entries }: { entries: HistoryEntry[] }) {
+function HistoryPanel({ entries, onSelect }: { entries: HistoryEntry[]; onSelect: (entry: HistoryEntry) => void }) {
   if (!entries.length) return <EmptyFeature title="No reading history yet" detail="Verses selected through Navigate will appear here on this device." />;
   return <ol className="history-list">{entries.map((entry) => (
     <li key={entry.id}>
-      <p><strong>{entry.book}</strong> {entry.chapter}:{entry.verse}</p>
-      <time dateTime={entry.visitedAt}>{new Date(entry.visitedAt).toLocaleString()}</time>
+      <button type="button" onClick={() => onSelect(entry)}>
+        <span><strong>{entry.book}</strong> {entry.chapter}:{entry.verse}</span>
+        <time dateTime={entry.visitedAt}>{new Date(entry.visitedAt).toLocaleString()}</time>
+      </button>
     </li>
   ))}</ol>;
 }

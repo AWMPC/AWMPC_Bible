@@ -228,19 +228,29 @@ test("navigation stages books and chapters until a verse selection commits the r
     readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/data/contracts.ts", import.meta.url), "utf8"),
   ]);
-  assert.match(contracts, /ChapterTarget = "reader" \| "navigation"/);
+  assert.match(contracts, /ChapterTarget = "reader" \| "navigation" \| "selection"/);
   assert.match(appSource, /latestChapterRequestRef/);
   assert.match(appSource, /setNavigationBook\(nextBook\)/);
   assert.match(appSource, /setNavigationChapter\(nextChapter\)/);
   assert.doesNotMatch(appSource.match(/function chooseBook[\s\S]*?\n  }/)?.[0] ?? "", /setBook\(/);
   assert.doesNotMatch(appSource.match(/function chooseChapter[\s\S]*?\n  }/)?.[0] ?? "", /setChapter\(/);
-  const verseSelection = appSource.match(/async function chooseVerse[\s\S]*?\n  }/)?.[0] ?? "";
+  const verseSelection = appSource.match(/async function selectVerse[\s\S]*?\n  }/)?.[0] ?? "";
   assert.match(verseSelection, /setBook\(selectedBook\)/);
   assert.match(verseSelection, /setChapter\(selectedChapter\)/);
   assert.match(verseSelection, /setVerses\(selectedVerses\)/);
   assert.match(verseSelection, /book: selectedBook, chapter: selectedChapter, verse/);
   assert.match(verseSelection, /navigationSelectionRef\.current/);
   assert.match(appSource, /function finishOverlayClose\(\)[\s\S]*?latestChapterRequestRef\.current\.navigation = \+\+requestRef\.current/);
+});
+
+test("history and future results share verse selection without duplicating history", async () => {
+  const appSource = await readFile(new URL("../src/AwmpcBibleApp.tsx", import.meta.url), "utf8");
+  assert.match(appSource, /async function selectVerse/);
+  assert.match(appSource, /options\.prefetchedVerses/);
+  assert.match(appSource, /requestChapter\("selection", selectedBook, selectedChapter\)/);
+  assert.match(appSource, /<HistoryPanel entries=\{history\} onSelect=\{\(entry\) => void selectVerse\(entry, \{ recordHistory: false \}\)\}/);
+  assert.match(appSource, /options\.recordHistory === false \? null : historyStoreRef\.current/);
+  assert.match(appSource, /<button type="button" onClick=\{\(\) => onSelect\(entry\)\}>/);
 });
 
 test("document scroll lock restores styles without issuing a scroll", () => {

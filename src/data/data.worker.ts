@@ -39,15 +39,20 @@ async function fetchWithBackoff(): Promise<string> {
 }
 
 self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
-  try {
-    if (data.type === "load") {
+  if (data.type === "load") {
+    try {
       library = parseLibrary(await fetchWithBackoff());
       post({ type: "ready", books: listBooks(library) });
-    } else if (data.type === "chapter" && library) {
-      post({ ...data, type: "chapter", verses: readChapter(library, data.book, data.chapter) });
+    } catch (error) {
+      library = null;
+      post({ type: "error", message: error instanceof Error ? error.message : "The library could not be read." });
     }
-  } catch (error) {
-    library = null;
-    post({ type: "error", message: error instanceof Error ? error.message : "The library could not be read." });
+  } else if (data.type === "chapter") {
+    try {
+      if (!library) throw new Error("The library is not ready.");
+      post({ ...data, type: "chapter", verses: readChapter(library, data.book, data.chapter) });
+    } catch (error) {
+      post({ type: "error", requestId: data.requestId, target: data.target, message: error instanceof Error ? error.message : "That chapter could not be read." });
+    }
   }
 };

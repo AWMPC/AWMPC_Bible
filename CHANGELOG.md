@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0 - 2026-07-10
+
+- Route history selections through the shared verse transition and centered reveal flow.
+- Load history passages without changing the reader until selection is ready.
+- Avoid creating duplicate history entries when navigating from history itself.
+- Preserve the loaded library when an individual chapter request fails.
+
 ## 0.14.0 - 2026-07-10
 
 - Fade the verse view during passage changes, then scroll smoothly from the chapter top to center the selected verse.
