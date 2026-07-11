@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.0 - 2026-07-11
+
+- Move each footnote control into the verse-number rail directly beneath its number.
+- Replace visible footnote text with a square, accessible magnifying-glass icon control.
+- Preserve press, marker, card, reduced-motion, keyboard, and forced-colors behavior.
+- Disable verse-list scroll anchoring so expanding a footnote cannot shift the reader viewport.
+
 ## 0.20.0 - 2026-07-11
 
 - Smoothly advance the Navigation overlay from a user-selected book to Chapters.

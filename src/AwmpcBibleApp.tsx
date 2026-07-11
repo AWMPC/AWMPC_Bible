@@ -96,7 +96,7 @@ export function AwmpcBibleApp() {
                 <h1>{book || "Preparing your library"}</h1>
                 {chapter && <p className="chapter-indicator">Chapter <strong>{chapter}</strong></p>}
               </div>
-              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}><span aria-label={`Verse ${verse.number}`}>{verse.number}</span><VerseWithFootnotes verse={verse} /></li>)}</ol></article>}
+              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}><VerseWithFootnotes verse={verse} /></li>)}</ol></article>}
             </>
           )}
           </main>

@@ -55,7 +55,7 @@ button, input, select, a { -webkit-tap-highlight-color: transparent; }
 button:focus:not(:focus-visible), input:focus:not(:focus-visible), select:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
-.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: calc(var(--verse-number-size) * 2.1); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --workspace-inline-padding: clamp(.5rem, 1.5vw, 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: radial-gradient(circle at 78% 8%, var(--glow-one), transparent 30%), radial-gradient(circle at 8% 82%, var(--glow-two), transparent 28%), var(--bg); }
+.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2.75rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --workspace-inline-padding: clamp(.5rem, 1.5vw, 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: radial-gradient(circle at 78% 8%, var(--glow-one), transparent 30%), radial-gradient(circle at 8% 82%, var(--glow-two), transparent 28%), var(--bg); }
 .awmpc-bible-shell[data-text-scale="compact"] { --verse-text-size: 1rem; --verse-number-size: .64rem; --verse-line-height: 1.46; }
 .awmpc-bible-shell[data-text-scale="standard"] { --verse-text-size: 1.2rem; --verse-number-size: .72rem; --verse-line-height: 1.5; }
 .awmpc-bible-shell[data-text-scale="comfortable"] { --verse-text-size: 1.4rem; --verse-number-size: .8rem; --verse-line-height: 1.52; }
@@ -80,17 +80,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .chapter-indicator { margin: 0; color: var(--muted); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
 .chapter-indicator strong { display: inline; margin-left: .3em; color: var(--ink); font: 700 1.7rem/1 ui-serif, Georgia, serif; }
 .reading-pane article { width: 100%; max-width: calc(70ch + var(--verse-number-gutter) + var(--verse-column-gap)); margin: 2rem auto 0; font-family: var(--verse-font-family); font-size: var(--verse-text-size); }
-.verses { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
+.verses { display: grid; gap: .75rem; margin: 0; padding: 0; overflow-anchor: none; list-style: none; }
 .verses li { display: grid; grid-template-columns: var(--verse-number-gutter) minmax(0, 1fr); gap: var(--verse-column-gap); }
 .verses li:focus-visible { border-radius: 12px; outline: 3px solid var(--accent); outline-offset: 8px; }
-.verses li > span { padding-top: .28rem; color: var(--accent); font-family: var(--verse-font-family); font-size: var(--verse-number-size); font-weight: 800; }
+.verse-rail { display: flex; min-width: 0; align-items: center; flex-direction: column; gap: .2rem; }
+.verse-number { padding-top: .28rem; color: var(--accent); font-family: var(--verse-font-family); font-size: var(--verse-number-size); font-weight: 800; }
 .verse-content > p { margin: 0; font: 400 var(--verse-text-size)/var(--verse-line-height) var(--verse-font-family); text-wrap: pretty; overflow-wrap: anywhere; }
 .footnote-marker-reveal { display: inline-block; max-width: 0; overflow: clip; opacity: 0; transform: scale(.7); transform-origin: left bottom; vertical-align: baseline; transition: max-width var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), transform var(--motion-duration) var(--motion-easing); }
 .verse-content[data-footnotes-expanded] .footnote-marker-reveal { max-width: 2em; opacity: 1; transform: scale(1); }
 .footnote-marker { margin-left: .12em; color: var(--accent); font-size: .62em; font-weight: 800; line-height: 0; vertical-align: super; }
-.footnotes-toggle { min-height: 44px; margin-top: .35rem; padding: .25rem .55rem; border: 0; border-radius: 10px; color: var(--accent); background: var(--card); cursor: pointer; font-size: .72rem; font-weight: 750; letter-spacing: .02em; transition: background-color 140ms ease, color 140ms ease, transform 140ms ease; }
+.footnotes-toggle { display: grid; width: 2.75rem; aspect-ratio: 1; place-items: center; padding: 0; border: 0; border-radius: 12px; color: var(--accent); background: var(--card); cursor: pointer; transition: background-color 140ms ease, color 140ms ease, transform 140ms ease; }
 .footnotes-toggle[aria-expanded="true"] { background: var(--surface-strong); box-shadow: var(--inner-highlight); }
 .footnotes-toggle:active { transform: scale(.96); }
+.footnotes-symbol { position: relative; width: .78rem; aspect-ratio: 1; border: 2px solid currentColor; border-radius: 50%; }
+.footnotes-symbol::after { position: absolute; width: .42rem; height: 2px; right: -.34rem; bottom: -.2rem; background: currentColor; border-radius: 2px; content: ""; transform: rotate(45deg); transform-origin: left center; }
 .footnotes-reveal { display: grid; grid-template-rows: 0fr; opacity: 0; transform: scale(.985); transform-origin: top; transition: grid-template-rows var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), transform var(--motion-duration) var(--motion-easing); }
 .verse-content[data-footnotes-expanded] .footnotes-reveal { grid-template-rows: 1fr; opacity: 1; transform: scale(1); }
 .footnotes-reveal-inner { min-height: 0; overflow: hidden; }
@@ -209,5 +212,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 @media (forced-colors: active) {
   .reading-pane, .floating-dock, .feature-overlay { border: 1px solid CanvasText; }
+  .footnotes-toggle { border: 1px solid ButtonText; color: ButtonText; }
+  .footnotes-toggle[aria-expanded="true"] { color: HighlightText; background: Highlight; border-color: Highlight; }
   .dock-button[aria-expanded="true"], .choice-grid button[aria-current="page"] { color: HighlightText; background: Highlight; }
 }
