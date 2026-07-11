@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { fetchDatasetText } from "../src/data/fetchDataset.ts";
-import { LIMITS, parseLibrary } from "../src/data/library.ts";
+import { LIMITS, parseInlineFootnotes, parseLibrary, readChapter } from "../src/data/library.ts";
 import { dispatchChapterRequest } from "../src/data/chapterRequests.ts";
 
 const noWait = async () => {};
@@ -37,6 +37,35 @@ test("rejects empty books and chapters and noncanonical numeric keys", () => {
     assert.throws(() => parseLibrary(JSON.stringify({ Example: { [key]: { "1": "text" } } })), /canonical positive integers/);
     assert.throws(() => parseLibrary(JSON.stringify({ Example: { "1": { [key]: "text" } } })), /canonical positive integers/);
   }
+});
+
+test("normalizes legacy inline and structured footnotes without changing plain verses", () => {
+  assert.deepEqual(parseInlineFootnotes("Plain text."), { text: "Plain text." });
+  assert.deepEqual(parseInlineFootnotes("Before {First note} middle {Second [2-3] note} after."), {
+    text: "Before  middle  after.",
+    segments: ["Before ", { footnote: "1" }, " middle ", { footnote: "2" }, " after."],
+    footnotes: [{ number: "1", text: "First note" }, { number: "2", text: "Second [2-3] note" }],
+  });
+
+  const library = parseLibrary(JSON.stringify({ Example: { "1": {
+    "1": "Legacy {note} text.",
+    "2": { segments: ["Structured ", { footnote: "1" }, " text."], footnotes: [{ number: "1", text: "Detail" }] },
+  } } }));
+  assert.deepEqual(readChapter(library, "Example", "1"), [
+    { number: "1", text: "Legacy  text.", segments: ["Legacy ", { footnote: "1" }, " text."], footnotes: [{ number: "1", text: "note" }] },
+    { number: "2", text: "Structured  text.", segments: ["Structured ", { footnote: "1" }, " text."], footnotes: [{ number: "1", text: "Detail" }] },
+  ]);
+});
+
+test("rejects malformed, dangling, duplicate, and unbounded footnotes", () => {
+  for (const verse of [
+    "Text {unfinished",
+    { segments: ["Text", { footnote: "1" }], footnotes: [{ number: "1", text: "One" }, { number: "1", text: "Duplicate" }] },
+    { segments: ["Text", { footnote: "2" }], footnotes: [{ number: "1", text: "Missing" }] },
+    { segments: ["Text", { footnote: "01" }], footnotes: [{ number: "01", text: "Bad number" }] },
+    { segments: ["Text", { footnote: "1" }], footnotes: [{ number: "1", text: "" }] },
+    { segments: ["Text", { footnote: "1" }], footnotes: [{ number: "1", text: "x" }], extra: true },
+  ]) assert.throws(() => parseLibrary(JSON.stringify({ Example: { "1": { "1": verse } } })), /footnote|marker|verse entry/i);
 });
 
 test("streams data and enforces the byte limit when length is absent or understated", async () => {
