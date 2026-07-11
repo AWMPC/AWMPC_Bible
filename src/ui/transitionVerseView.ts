@@ -22,14 +22,22 @@ function motionEasing(): string {
   return getComputedStyle(document.documentElement).getPropertyValue("--motion-easing").trim() || FALLBACK_EASING;
 }
 
-async function fade(pane: HTMLElement, from: number, to: number): Promise<void> {
+async function fade(pane: HTMLElement, from: number, to: number, signal?: AbortSignal): Promise<void> {
+  signal?.throwIfAborted();
   const animation = pane.animate([{ opacity: from }, { opacity: to }], {
     duration: FADE_DURATION_MS,
     easing: motionEasing(),
     fill: "forwards",
   });
-  await animation.finished.catch(() => undefined);
-  animation.cancel();
+  const cancel = () => animation.cancel();
+  signal?.addEventListener("abort", cancel, { once: true });
+  try {
+    await animation.finished.catch(() => undefined);
+    signal?.throwIfAborted();
+  } finally {
+    signal?.removeEventListener("abort", cancel);
+    animation.cancel();
+  }
 }
 
 export function verseElementId(chapter: string, verse: string): string {
@@ -42,20 +50,28 @@ export async function transitionVerseView(
   commit: () => void,
   closeOverlay: () => Promise<void>,
   environment: VerseTransitionEnvironment = browserEnvironment(),
+  signal?: AbortSignal,
 ): Promise<void> {
   const reducedMotion = environment.prefersReducedMotion();
   try {
-    if (!reducedMotion) await fade(pane, 1, 0);
+    signal?.throwIfAborted();
+    if (!reducedMotion) await fade(pane, 1, 0, signal);
+    signal?.throwIfAborted();
     pane.style.opacity = "0";
     commit();
     await closeOverlay();
+    signal?.throwIfAborted();
     await environment.afterPaint();
+    signal?.throwIfAborted();
     const target = environment.findTarget(targetId);
     if (reducedMotion) {
+      signal?.throwIfAborted();
       target?.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
     } else {
+      signal?.throwIfAborted();
       environment.scrollToTop();
-      await fade(pane, 0, 1);
+      await fade(pane, 0, 1, signal);
+      signal?.throwIfAborted();
       target?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
     }
   } finally {

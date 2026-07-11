@@ -18,12 +18,41 @@ type MinimalStorage = Pick<Storage, "getItem" | "setItem">;
 const STORAGE_KEY = "awmpc-bible.history.v1";
 const LEGACY_STORAGE_KEY = "quiet-reader.history.v1";
 const DEFAULT_LIMIT = 200;
+const POSITIVE_INTEGER = /^[1-9]\d*$/;
+
+export function mergeHistoryEntries(
+  preferred: readonly HistoryEntry[],
+  fallback: readonly HistoryEntry[],
+  limit = DEFAULT_LIMIT,
+): HistoryEntry[] {
+  const seen = new Set<string>();
+  return [...preferred, ...fallback].filter(({ id }) => {
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  }).slice(0, limit);
+}
+
+function isBoundedText(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 160 && value.trim() === value;
+}
+
+function isCanonicalTimestamp(value: unknown): value is string {
+  if (typeof value !== "string" || value.length > 40) return false;
+  const timestamp = new Date(value);
+  return !Number.isNaN(timestamp.valueOf()) && timestamp.toISOString() === value;
+}
 
 function isEntry(value: unknown): value is HistoryEntry {
   if (!value || typeof value !== "object") return false;
   const entry = value as Partial<HistoryEntry>;
-  return [entry.id, entry.book, entry.chapter, entry.verse, entry.visitedAt]
-    .every((field) => typeof field === "string" && field.length > 0 && field.length <= 160);
+  return isBoundedText(entry.id)
+    && isBoundedText(entry.book)
+    && typeof entry.chapter === "string"
+    && POSITIVE_INTEGER.test(entry.chapter)
+    && typeof entry.verse === "string"
+    && POSITIVE_INTEGER.test(entry.verse)
+    && isCanonicalTimestamp(entry.visitedAt);
 }
 
 export class LocalHistoryStore implements HistoryStore {

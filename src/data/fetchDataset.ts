@@ -81,6 +81,7 @@ export async function fetchDatasetText(url: string, options: FetchDatasetOptions
         signal: controller.signal,
       });
       if (!response.ok) {
+        await response.body?.cancel().catch(() => undefined);
         throw new DatasetLoadError(`Data request failed (${response.status}).`, isRetryableStatus(response.status));
       }
       return await readBoundedBody(response, controller.signal);

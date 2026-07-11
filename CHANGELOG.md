@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.2 - 2026-07-11
+
+- Cancel in-flight verse reveals before they can scroll behind a newly opened overlay.
+- Settle chapter requests safely when the data worker is unavailable, not ready, or fails.
+- Preserve newly recorded history during asynchronous hydration and reject malformed stored entries.
+- Cancel unsuccessful dataset response streams before retrying or reporting an error.
+
 ## 0.17.1 - 2026-07-11
 
 - Fade the background shade smoothly alongside overlay opening and closing.

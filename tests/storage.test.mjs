@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { LocalHistoryStore } from "../src/history/HistoryStore.ts";
+import { LocalHistoryStore, mergeHistoryEntries } from "../src/history/HistoryStore.ts";
 import { LocalSettingsStore } from "../src/settings/SettingsStore.ts";
 
 test("history timestamps, bounds, validates, and migrates references", async () => {
@@ -31,6 +31,34 @@ test("history and settings tolerate malformed or unavailable storage", async () 
   const unavailableSettings = new LocalSettingsStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
   assert.deepEqual(unavailableSettings.load(), { textScale: "standard", verseFont: "system-serif", appearance: "auto" });
   assert.doesNotThrow(() => unavailableSettings.save({ textScale: "large", verseFont: "rounded", appearance: "night" }));
+});
+
+test("history rejects malformed references and timestamps", async () => {
+  const valid = { id: "valid", book: "John", chapter: "3", verse: "16", visitedAt: "2026-07-10T20:30:00.000Z" };
+  const malformed = [
+    { ...valid, id: " padded " },
+    { ...valid, book: " John" },
+    { ...valid, chapter: "03" },
+    { ...valid, chapter: "0" },
+    { ...valid, verse: "sixteen" },
+    { ...valid, visitedAt: "yesterday" },
+    { ...valid, visitedAt: "2026-07-10T20:30:00Z" },
+  ];
+  const storage = { getItem: () => JSON.stringify([valid, ...malformed]), setItem: () => {} };
+  assert.deepEqual(await new LocalHistoryStore(storage).list(), [valid]);
+});
+
+test("history hydration preserves entries recorded while loading", () => {
+  const hydrated = [
+    { id: "older", book: "John", chapter: "3", verse: "15", visitedAt: "2026-07-10T20:29:00.000Z" },
+    { id: "shared", book: "John", chapter: "3", verse: "16", visitedAt: "2026-07-10T20:30:00.000Z" },
+  ];
+  const recorded = [
+    { id: "new", book: "Romans", chapter: "8", verse: "1", visitedAt: "2026-07-10T20:31:00.000Z" },
+    hydrated[1],
+  ];
+  assert.deepEqual(mergeHistoryEntries(recorded, hydrated), [recorded[0], hydrated[1], hydrated[0]]);
+  assert.deepEqual(mergeHistoryEntries(recorded, hydrated, 2), [recorded[0], hydrated[1]]);
 });
 
 test("settings validate, round-trip, and migrate independently", () => {

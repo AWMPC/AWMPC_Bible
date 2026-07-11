@@ -21,11 +21,14 @@ type ChooseVerseDependencies = {
 export function useChooseVerse({ passage, readingPaneRef, requestChapter, cancelRequest, commit, recordHistory, closeOverlay }: ChooseVerseDependencies) {
   const generationRef = useRef(0);
   const selectingRef = useRef(false);
+  const transitionAbortRef = useRef<AbortController | null>(null);
 
   const chooseVerse = useCallback(async (location: VerseLocation, options: ChooseVerseOptions = {}) => {
     if (selectingRef.current) return;
     selectingRef.current = true;
     const generation = ++generationRef.current;
+    const transitionAbort = new AbortController();
+    transitionAbortRef.current = transitionAbort;
     try {
       await runVerseSelection(location, options, {
         currentPassage: passage,
@@ -34,21 +37,28 @@ export function useChooseVerse({ passage, readingPaneRef, requestChapter, cancel
         recordHistory,
         reveal: async (nextPassage, verse) => {
           const pane = readingPaneRef.current;
-          if (pane) await transitionVerseView(pane, verseElementId(nextPassage.chapter, verse), () => commit(nextPassage), closeOverlay);
+          if (pane) await transitionVerseView(pane, verseElementId(nextPassage.chapter, verse), () => commit(nextPassage), closeOverlay, undefined, transitionAbort.signal);
           else {
             commit(nextPassage);
             await closeOverlay();
           }
         },
       });
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) throw error;
     } finally {
-      if (generation === generationRef.current) selectingRef.current = false;
+      if (generation === generationRef.current) {
+        selectingRef.current = false;
+        transitionAbortRef.current = null;
+      }
     }
   }, [closeOverlay, commit, passage, readingPaneRef, recordHistory, requestChapter]);
 
   const cancel = useCallback(() => {
     generationRef.current += 1;
     selectingRef.current = false;
+    transitionAbortRef.current?.abort();
+    transitionAbortRef.current = null;
     cancelRequest();
   }, [cancelRequest]);
 

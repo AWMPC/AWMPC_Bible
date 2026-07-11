@@ -86,3 +86,30 @@ test("verse reveal performs the ordered fade and centered scroll", async () => {
   assert.deepEqual(events, ["commit", "close", "paint", "top", ["target", { behavior: "smooth", block: "center", inline: "nearest" }], "restore"]);
   assert.deepEqual(animations, [[{ opacity: 1 }, { opacity: 0 }], [{ opacity: 0 }, { opacity: 1 }]]);
 });
+
+test("verse reveal cancellation after overlay close prevents late paint and scroll", async () => {
+  const events = [];
+  const controller = new AbortController();
+  let releaseClose;
+  const closeFinished = new Promise((resolve) => { releaseClose = resolve; });
+  const pane = { style: { opacity: "", removeProperty: () => events.push("restore") } };
+  const transition = transitionVerseView(
+    pane,
+    verseElementId("3", "16"),
+    () => events.push("commit"),
+    async () => { events.push("close"); await closeFinished; },
+    {
+      prefersReducedMotion: () => true,
+      afterPaint: async () => events.push("paint"),
+      scrollToTop: () => events.push("top"),
+      findTarget: () => ({ scrollIntoView: () => events.push("target") }),
+    },
+    controller.signal,
+  );
+
+  await Promise.resolve();
+  controller.abort();
+  releaseClose();
+  await assert.rejects(transition, { name: "AbortError" });
+  assert.deepEqual(events, ["commit", "close", "restore"]);
+});

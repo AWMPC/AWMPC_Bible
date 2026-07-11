@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LocalHistoryStore, type HistoryEntry, type HistorySelection, type HistoryStore } from "./HistoryStore";
+import { LocalHistoryStore, mergeHistoryEntries, type HistoryEntry, type HistorySelection, type HistoryStore } from "./HistoryStore";
 
 const createLocalHistoryStore = () => new LocalHistoryStore(window.localStorage);
 
@@ -14,7 +14,9 @@ export function useBibleHistory(createStore: () => HistoryStore = createLocalHis
       const store = createStore();
       storeRef.current = store;
       void store.list().then((history) => {
-        if (generation === generationRef.current) setEntries(history);
+        if (generation === generationRef.current) {
+          setEntries((current) => mergeHistoryEntries(current, history));
+        }
       }).catch(() => undefined);
     } catch {
       storeRef.current = null;
@@ -29,7 +31,9 @@ export function useBibleHistory(createStore: () => HistoryStore = createLocalHis
     const store = storeRef.current;
     if (!store) return;
     void store.add(selection).then((entry) => {
-      if (store === storeRef.current) setEntries((current) => [entry, ...current].slice(0, 200));
+      if (store === storeRef.current) {
+        setEntries((current) => mergeHistoryEntries([entry], current));
+      }
     }).catch(() => undefined);
   }, []);
 
