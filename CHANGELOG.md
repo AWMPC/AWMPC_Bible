@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.0 - 2026-07-11
+
+- Extract existing inline brace footnotes into ordered, numbered verse metadata without changing plain verses.
+- Add an accessible `footnotes` toggle beneath annotated verses with synchronized inline markers and a nested note card.
+- Accept a bounded, validated segment-based verse shape for precise future footnote placement.
+- Keep footnote expansion local to each passage and independent from reader scrolling, navigation, and history.
+
 ## 0.18.0 - 2026-07-11
 
 - Centralize overlay, shade, and dock motion timing and track overlay lifecycle with explicit phases.

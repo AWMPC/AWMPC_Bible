@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const dataset = {
   Genesis: {
-    "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), `Verse ${index + 1} text for browser testing.`])),
+    "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), index === 0 ? "Verse 1 {First note} text with {Second note} details." : `Verse ${index + 1} text for browser testing.`])),
   },
   Matthew: { "1": { "1": "A New Testament verse." } },
 };
@@ -46,4 +46,26 @@ test("resizes an open overlay with the viewport", async ({ page }) => {
   const initialHeight = await dialog.evaluate((element) => element.getBoundingClientRect().height);
   await page.setViewportSize({ width: 800, height: 900 });
   await expect.poll(() => dialog.evaluate((element) => element.getBoundingClientRect().height)).not.toBe(initialHeight);
+});
+
+test("toggles inline footnote numbers and their nested card together", async ({ page }) => {
+  const toggle = page.getByRole("button", { name: "footnotes", exact: true });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByLabel("Footnote 1")).toHaveCount(0);
+  await expect(page.getByLabel("Footnotes for verse 1")).toHaveCount(0);
+  const before = await page.evaluate(() => window.scrollY);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByLabel("Footnote 1")).toHaveText("1");
+  await expect(page.getByLabel("Footnote 2")).toHaveText("2");
+  await expect(page.getByLabel("Footnotes for verse 1")).toContainText("First note");
+  await expect(page.getByLabel("Footnotes for verse 1")).toContainText("Second note");
+  await expect(toggle).toBeFocused();
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByLabel("Footnote 1")).toHaveCount(0);
+  await expect(page.getByLabel("Footnotes for verse 1")).toHaveCount(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
 });

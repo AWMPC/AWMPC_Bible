@@ -59,6 +59,26 @@ dataset response same-origin and serve it with the correct JSON content type.
 The local dataset belongs at `public/data/bible-*.json`. Those files are ignored
 at every directory depth and must be provisioned separately during deployment.
 
+### Footnotes
+
+Existing string verses may place footnote text inside balanced single braces at
+the intended inline position. AWMPC Bible removes that text from the reading
+line and numbers each note by occurrence. Braces are therefore reserved for
+footnotes inside string verses.
+
+New datasets may represent a verse explicitly for precise placement:
+
+```json
+{
+  "segments": ["Sample text", { "footnote": "1" }, " continues."],
+  "footnotes": [{ "number": "1", "text": "A concise explanatory note." }]
+}
+```
+
+Marker numbers must be unique canonical positive integers and every marker must
+have exactly one matching note. All values are validated and rendered only as
+text.
+
 ## Persistence direction
 
 Reading history, search history, preferences, and identity are intentionally not

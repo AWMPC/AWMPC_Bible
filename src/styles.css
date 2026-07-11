@@ -84,7 +84,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .verses li { display: grid; grid-template-columns: var(--verse-number-gutter) minmax(0, 1fr); gap: var(--verse-column-gap); }
 .verses li:focus-visible { border-radius: 12px; outline: 3px solid var(--accent); outline-offset: 8px; }
 .verses li > span { padding-top: .28rem; color: var(--accent); font-family: var(--verse-font-family); font-size: var(--verse-number-size); font-weight: 800; }
-.verses p { margin: 0; font: 400 var(--verse-text-size)/var(--verse-line-height) var(--verse-font-family); text-wrap: pretty; overflow-wrap: anywhere; }
+.verse-content > p { margin: 0; font: 400 var(--verse-text-size)/var(--verse-line-height) var(--verse-font-family); text-wrap: pretty; overflow-wrap: anywhere; }
+.footnote-marker { margin-left: .12em; color: var(--accent); font-size: .62em; font-weight: 800; line-height: 0; vertical-align: super; }
+.footnotes-toggle { min-height: 44px; margin-top: .35rem; padding: .25rem .55rem; border: 0; border-radius: 10px; color: var(--accent); background: var(--card); cursor: pointer; font-size: .72rem; font-weight: 750; letter-spacing: .02em; }
+.footnotes-toggle[aria-expanded="true"] { background: var(--surface-strong); box-shadow: var(--inner-highlight); }
+.footnotes-card { margin-top: .45rem; padding: .75rem; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: var(--inner-highlight); }
+.footnotes-card ol { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
+.footnotes-card li { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: .35rem; }
+.footnotes-card li > span { color: var(--accent); font-size: .72rem; font-weight: 800; }
+.footnotes-card p { margin: 0; color: var(--muted); font: 400 .84rem/1.45 var(--verse-font-family); }
 .skeleton { display: grid; gap: .75rem; }
 .skeleton span { display: block; height: 2.4rem; border-radius: 12px; background: linear-gradient(100deg, var(--accent-soft) 30%, color-mix(in srgb, var(--surface-solid) 70%, var(--surface-strong)) 50%, var(--accent-soft) 70%); background-size: 220% 100%; animation: shimmer 1.25s infinite linear; }
 .text-skeleton { max-width: 800px; margin: 3rem auto; }
