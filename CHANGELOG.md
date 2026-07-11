@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.1 - 2026-07-11
+
+- Animate inline footnote markers into and out of the verse flow to avoid abrupt text jumps.
+- Expand and collapse nested footnote cards with the shared symmetric Liquid Glass motion.
+- Give the footnotes control the same pressed-scale feedback as floating dock buttons.
+- Preserve immediate state changes when reduced motion is requested.
+
 ## 0.19.0 - 2026-07-11
 
 - Extract existing inline brace footnotes into ordered, numbered verse metadata without changing plain verses.

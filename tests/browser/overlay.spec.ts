@@ -50,13 +50,33 @@ test("resizes an open overlay with the viewport", async ({ page }) => {
 
 test("toggles inline footnote numbers and their nested card together", async ({ page }) => {
   const toggle = page.getByRole("button", { name: "footnotes", exact: true });
+  const marker = page.locator(".footnote-marker-reveal").first();
+  const reveal = page.locator(".footnotes-reveal").first();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByLabel("Footnote 1")).toHaveCount(0);
-  await expect(page.getByLabel("Footnotes for verse 1")).toHaveCount(0);
+  await expect(marker).toHaveAttribute("aria-hidden", "true");
+  await expect(reveal).toHaveAttribute("aria-hidden", "true");
+  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBe(0);
+  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBe(0);
   const before = await page.evaluate(() => window.scrollY);
+
+  const box = await toggle.boundingBox();
+  if (!box) throw new Error("The footnotes toggle is not measurable.");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect.poll(() => toggle.evaluate((element) => getComputedStyle(element).transform)).not.toBe("none");
+  await page.mouse.move(box.x - 10, box.y - 10);
+  await page.mouse.up();
 
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await page.waitForTimeout(80);
+  const openingMarkerWidth = await marker.evaluate((element) => element.getBoundingClientRect().width);
+  const openingCardHeight = await reveal.evaluate((element) => element.getBoundingClientRect().height);
+  expect(openingMarkerWidth).toBeGreaterThan(0);
+  expect(openingCardHeight).toBeGreaterThan(0);
+  await page.waitForTimeout(180);
+  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(openingMarkerWidth);
+  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(openingCardHeight);
   await expect(page.getByLabel("Footnote 1")).toHaveText("1");
   await expect(page.getByLabel("Footnote 2")).toHaveText("2");
   await expect(page.getByLabel("Footnotes for verse 1")).toContainText("First note");
@@ -65,7 +85,23 @@ test("toggles inline footnote numbers and their nested card together", async ({ 
 
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByLabel("Footnote 1")).toHaveCount(0);
-  await expect(page.getByLabel("Footnotes for verse 1")).toHaveCount(0);
+  await page.waitForTimeout(80);
+  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(0);
+  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(0);
+  await page.waitForTimeout(180);
+  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBe(0);
+  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBe(0);
   expect(await page.evaluate(() => window.scrollY)).toBe(before);
+});
+
+test("removes footnote motion when reduced motion is requested", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const toggle = page.getByRole("button", { name: "footnotes", exact: true });
+  const marker = page.locator(".footnote-marker-reveal").first();
+  const reveal = page.locator(".footnotes-reveal").first();
+  await toggle.click();
+  expect(await marker.evaluate((element) => getComputedStyle(element).transitionDuration)).toBe("0s");
+  expect(await reveal.evaluate((element) => getComputedStyle(element).transitionDuration)).toBe("0s");
+  expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(0);
+  expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(0);
 });

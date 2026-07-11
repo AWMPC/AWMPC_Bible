@@ -8,15 +8,19 @@ export function VerseWithFootnotes({ verse }: { verse: Verse }) {
   const segments = verse.segments ?? [verse.text];
 
   return (
-    <div className="verse-content">
+    <div className="verse-content" data-footnotes-expanded={expanded || undefined}>
       <p>{segments.map((segment, index) => typeof segment === "string"
         ? <span key={index}>{segment}</span>
-        : expanded && <sup className="footnote-marker" aria-label={`Footnote ${segment.footnote}`} key={index}>{segment.footnote}</sup>)}</p>
+        : <span className="footnote-marker-reveal" aria-hidden={!expanded} key={index}><sup className="footnote-marker" aria-label={`Footnote ${segment.footnote}`}>{segment.footnote}</sup></span>)}</p>
       {footnotes.length > 0 && <>
         <button className="footnotes-toggle" type="button" aria-expanded={expanded} aria-controls={cardId} onClick={() => setExpanded((value) => !value)}>footnotes</button>
-        {expanded && <aside className="footnotes-card" id={cardId} aria-label={`Footnotes for verse ${verse.number}`}>
-          <ol>{footnotes.map((footnote) => <li key={footnote.number}><span aria-hidden="true">{footnote.number}</span><p>{footnote.text}</p></li>)}</ol>
-        </aside>}
+        <div className="footnotes-reveal" aria-hidden={!expanded} inert={!expanded}>
+          <div className="footnotes-reveal-inner">
+            <aside className="footnotes-card" id={cardId} aria-label={`Footnotes for verse ${verse.number}`}>
+              <ol>{footnotes.map((footnote) => <li key={footnote.number}><span aria-hidden="true">{footnote.number}</span><p>{footnote.text}</p></li>)}</ol>
+            </aside>
+          </div>
+        </div>
       </>}
     </div>
   );
