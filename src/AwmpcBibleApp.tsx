@@ -9,16 +9,20 @@ import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
 import { HistoryPanel } from "./ui/HistoryPanel";
 import { NavigationPanel } from "./ui/NavigationPanel";
+import { ReadingLocationControls } from "./ui/ReadingLocationControls";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import { Skeleton } from "./ui/Skeleton";
 import { featureTitle, type FeatureId, type OverlayOrigin } from "./ui/features";
 import { verseElementId } from "./ui/transitionVerseView";
-import { isTrustedReadingTap, useUserScrollDockVisibility } from "./ui/useUserScrollDockVisibility";
+import { isTrustedReadingTap, useUserScrollChromeVisibility } from "./ui/useUserScrollDockVisibility";
 import { VerseWithFootnotes } from "./ui/VerseWithFootnotes";
+import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
 
 export function AwmpcBibleApp() {
   const overlayRef = useRef<FeatureOverlayHandle>(null);
   const selectionCloseRef = useRef(false);
+  const overlayTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const navigationRequestIdRef = useRef(0);
   const readingPaneRef = useRef<HTMLElement>(null);
   const library = useBibleLibrary();
   const [passage, setPassage] = useState<Passage>({ book: "", chapter: "", verses: [] });
@@ -26,6 +30,7 @@ export function AwmpcBibleApp() {
   const navigation = useStagedNavigation(library.books, library.requestChapter, library.invalidate);
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
   const [overlayOrigin, setOverlayOrigin] = useState<OverlayOrigin | null>(null);
+  const [navigationSectionRequest, setNavigationSectionRequest] = useState<NavigationSectionRequest | null>(null);
   const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory } = useBibleHistory();
   const { settings, update: updateSettings } = useBibleSettings();
   const { textScale, verseFont, appearance } = settings;
@@ -47,9 +52,10 @@ export function AwmpcBibleApp() {
     if (library.initialPassage && !passage.book) setPassage(library.initialPassage);
   }, [library.initialPassage, passage.book]);
 
-  const { visible: dockVisible, toggle: toggleDockVisibility } = useUserScrollDockVisibility(activeFeature === null);
+  const { visible: chromeVisible, toggle: toggleChromeVisibility } = useUserScrollChromeVisibility(activeFeature === null);
 
-  function openFeature(feature: FeatureId, origin: OverlayOrigin) {
+  function openFeature(feature: FeatureId, origin: OverlayOrigin, trigger: HTMLButtonElement) {
+    overlayTriggerRef.current = trigger;
     if (feature === activeFeature) {
       void overlayRef.current?.close();
       return;
@@ -60,8 +66,19 @@ export function AwmpcBibleApp() {
     if (feature === "navigation") {
       navigation.openFrom(passage);
     }
+    setNavigationSectionRequest(null);
     setOverlayOrigin(origin);
     setActiveFeature(feature);
+  }
+
+  function openNavigationAt(section: NavigationSection, origin: OverlayOrigin, trigger: HTMLButtonElement) {
+    overlayTriggerRef.current = trigger;
+    overlayRef.current?.keepOpen();
+    cancelVerseSelection();
+    navigation.openFrom(passage);
+    setNavigationSectionRequest({ section, id: ++navigationRequestIdRef.current });
+    setOverlayOrigin(origin);
+    setActiveFeature("navigation");
   }
 
   function finishOverlayClose() {
@@ -70,8 +87,11 @@ export function AwmpcBibleApp() {
     navigation.abandon();
     setActiveFeature(null);
     setOverlayOrigin(null);
+    setNavigationSectionRequest(null);
     requestAnimationFrame(() => {
-      if (closedFeature) document.querySelector<HTMLButtonElement>(`.dock-button[data-feature="${closedFeature}"]`)?.focus({ preventScroll: true });
+      const trigger = overlayTriggerRef.current;
+      overlayTriggerRef.current = null;
+      if (closedFeature && trigger?.isConnected) trigger.focus({ preventScroll: true });
     });
   }
 
@@ -87,26 +107,21 @@ export function AwmpcBibleApp() {
           tabIndex={-1}
           onClick={(event) => {
             const interactive = event.target instanceof Element && Boolean(event.target.closest("a, button, input, select, textarea, [contenteditable='true']"));
-            if (isTrustedReadingTap(event.nativeEvent.isTrusted, event.detail, interactive)) toggleDockVisibility();
+            if (isTrustedReadingTap(event.nativeEvent.isTrusted, event.detail, interactive)) toggleChromeVisibility();
           }}
         >
           {library.status === "error" ? <section className="error-card" role="alert"><h1>Unable to open the text</h1><p>{library.error}</p></section> : (
-            <>
-              <div className="reading-header">
-                <h1>{book || "Preparing your library"}</h1>
-                {chapter && <p className="chapter-indicator">Chapter <strong>{chapter}</strong></p>}
-              </div>
-              {verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}><VerseWithFootnotes verse={verse} /></li>)}</ol></article>}
-            </>
+            verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}><VerseWithFootnotes verse={verse} /></li>)}</ol></article>
           )}
           </main>
         </div>
       </div>
-      <FloatingDock activeFeature={activeFeature} visible={dockVisible} onOpen={openFeature} />
+      <ReadingLocationControls book={book} chapter={chapter} visible={chromeVisible} activeSection={activeFeature === "navigation" ? navigationSectionRequest?.section ?? null : null} onNavigate={openNavigationAt} />
+      <FloatingDock activeFeature={activeFeature} visible={chromeVisible} onOpen={openFeature} />
       <p className="visually-hidden" role="status" aria-live="polite">{activeFeature ? `${featureTitle(activeFeature)} overlay open` : ""}</p>
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (
-          <NavigationPanel books={library.books} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={library.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => void chooseVerse({ book: navigation.state.book, chapter: navigation.state.chapter, verse }, { prefetchedVerses: navigation.state.verses })} />
+          <NavigationPanel books={library.books} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={library.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} sectionRequest={navigationSectionRequest} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => void chooseVerse({ book: navigation.state.book, chapter: navigation.state.chapter, verse }, { prefetchedVerses: navigation.state.verses })} />
         )}
         {activeFeature === "history" && <HistoryPanel entries={history} onSelect={(entry) => void chooseVerse(entry, { recordHistory: false })} onRemove={removeHistory} onClear={clearHistory} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}

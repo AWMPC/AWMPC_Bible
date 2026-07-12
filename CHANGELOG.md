@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.0 - 2026-07-12
+
+- Replace the reader header with independent top-left Book and top-right Chapter Liquid Glass controls.
+- Open Navigation directly at Books or Chapters from the corresponding reading-location control.
+- Hide the top controls upward with the bottom dock's shared user-scroll and reader-tap visibility state.
+- Keep top controls foregrounded during overlays, support live section retargeting, and restore focus to the true trigger.
+- Remove all in-card book and chapter header markup so the reading surface contains only verses.
+
 ## 0.22.0 - 2026-07-11
 
 - Append the footnote information control directly to the end of each annotated verse.

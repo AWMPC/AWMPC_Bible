@@ -27,8 +27,7 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(styles, /--motion-easing:\s*linear\(/);
   assert.match(motion, /MOTION_DURATION_MS = 210/);
   assert.match(styles, /--motion-duration:\s*210ms/);
-  assert.match(styles, /font:\s*700 calc\(var\(--verse-text-size\) \* 1\.5\)/);
-  assert.match(styles, /\.chapter-indicator strong\s*\{[^}]*display:\s*inline/);
+  assert.doesNotMatch(styles, /\.reading-header|\.chapter-indicator/);
   assert.match(styles, /\.reading-pane article\s*\{[^}]*max-width:\s*calc\(70ch \+ var\(--verse-number-gutter\) \+ var\(--verse-column-gap\)\)/);
   assert.match(styles, /\.verses\s*\{[^}]*gap:\s*\.75rem/);
   assert.match(styles, /\.workspace\s*\{[^}]*width:\s*min\(100%, calc\(70ch \+ var\(--verse-number-gutter\)/);
@@ -55,6 +54,9 @@ test("panels retain semantic native controls", async () => {
   assert.doesNotMatch(overlay, /showModal\(\)/);
   assert.match(overlay, /onCancel/);
   assert.match(app, /inert=\{activeFeature !== null\}/);
+  assert.match(app, /<ReadingLocationControls[^>]*visible=\{chromeVisible\}/);
+  assert.match(app, /<FloatingDock[^>]*visible=\{chromeVisible\}/);
+  assert.doesNotMatch(app, /reading-header|chapter-indicator/);
   assert.match(app, /feature === activeFeature/);
   assert.match(app, /overlayRef\.current\?\.keepOpen\(\)/);
   assert.match(overlay, /closeGenerationRef/);
@@ -62,6 +64,7 @@ test("panels retain semantic native controls", async () => {
   assert.match(overlay, /type OverlayPhase = "closed" \| "opening" \| "open" \| "closing"/);
   assert.match(styles, /\.overlay-shade\s*\{[^}]*opacity:\s*0[^}]*transition:\s*opacity var\(--motion-duration\) var\(--motion-easing\)/);
   assert.match(styles, /\.overlay-shade\.is-visible\s*\{[^}]*opacity:\s*1/);
+  assert.match(styles, /\.reading-location-controls\.is-hidden \.reading-location-button\s*\{[^}]*translate:\s*0 calc\(-100%/);
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
   assert.match(profile, /<select/);

@@ -30,12 +30,12 @@ function isIgnoredTarget(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest(".feature-overlay, .dock-scroll"));
 }
 
-export type DockVisibility = Readonly<{
+export type ChromeVisibility = Readonly<{
   visible: boolean;
   toggle: () => void;
 }>;
 
-export function useUserScrollDockVisibility(enabled: boolean): DockVisibility {
+export function useUserScrollChromeVisibility(enabled: boolean): ChromeVisibility {
   const [visible, setVisible] = useState(true);
   const visibleRef = useRef(true);
   const previousY = useRef(0);

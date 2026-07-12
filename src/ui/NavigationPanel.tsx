@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { Book, Verse } from "../data/contracts";
 import { scrollNavigationSection } from "./navigationScroll";
+import type { NavigationSectionRequest } from "./navigationTarget";
 import { groupBooksByTestament } from "./testaments";
 import { Skeleton } from "./Skeleton";
 
@@ -16,9 +17,11 @@ export type NavigationPanelProps = {
   onBook: (book: string) => void;
   onChapter: (chapter: string) => void;
   onVerse: (verse: string) => void;
+  sectionRequest?: NavigationSectionRequest | null;
 };
 
-export function NavigationPanel({ books, book, chapters, chapter, verses, initialLoading, versesLoading, error, onBook, onChapter, onVerse }: NavigationPanelProps) {
+export function NavigationPanel({ books, book, chapters, chapter, verses, initialLoading, versesLoading, error, onBook, onChapter, onVerse, sectionRequest }: NavigationPanelProps) {
+  const booksRef = useRef<HTMLElement>(null);
   const chaptersRef = useRef<HTMLElement>(null);
   const versesRef = useRef<HTMLElement>(null);
   const scrollFrameRef = useRef(0);
@@ -35,6 +38,11 @@ export function NavigationPanel({ books, book, chapters, chapter, verses, initia
 
   useEffect(() => () => cancelAnimationFrame(scrollFrameRef.current), []);
 
+  useEffect(() => {
+    if (initialLoading || !sectionRequest) return;
+    scheduleScroll(sectionRequest.section === "books" ? booksRef.current : chaptersRef.current);
+  }, [initialLoading, scheduleScroll, sectionRequest]);
+
   const chooseBook = useCallback((nextBook: string) => {
     onBook(nextBook);
     scheduleScroll(chaptersRef.current);
@@ -49,7 +57,7 @@ export function NavigationPanel({ books, book, chapters, chapter, verses, initia
   const testamentBooks = groupBooksByTestament(books);
   return (
     <div className="navigation-panel">
-      <section aria-labelledby="books-title">
+      <section ref={booksRef} aria-labelledby="books-title">
         <h3 id="books-title">Books</h3>
         <TestamentBookGroup id="old-testament-title" title="Old Testament" books={testamentBooks.old} currentBook={book} onBook={chooseBook} />
         <TestamentBookGroup id="new-testament-title" title="New Testament" books={testamentBooks.new} currentBook={book} onBook={chooseBook} />

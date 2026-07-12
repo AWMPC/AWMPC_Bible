@@ -11,7 +11,43 @@ const dataset = {
 test.beforeEach(async ({ page }) => {
   await page.route("**/data/bible-en.json", (route) => route.fulfill({ json: dataset }));
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Genesis" })).toBeVisible();
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
+test("top reading controls target navigation sections without a reader header", async ({ page }) => {
+  const book = page.getByRole("button", { name: "Choose book, currently Genesis" });
+  const chapter = page.getByRole("button", { name: "Choose chapter, currently chapter 1" });
+  await expect(book).toHaveText("Genesis");
+  await expect(chapter).toHaveText("Chapter 1");
+  await expect(page.locator(".reading-header")).toHaveCount(0);
+
+  await book.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Books", exact: true })).toBeInViewport();
+  await expect.poll(() => page.locator(".overlay-content").evaluate((element) => element.scrollTop)).toBeLessThanOrEqual(3);
+
+  await chapter.click();
+  await expect.poll(() => page.locator(".overlay-content").evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await expect(page.getByRole("heading", { name: "Chapters" })).toBeInViewport();
+  await page.locator(".overlay-close").click();
+  await expect(chapter).toBeFocused();
+});
+
+test("top reading controls and bottom dock share hide and tap visibility", async ({ page }) => {
+  const controls = page.locator(".reading-location-controls");
+  const dock = page.locator(".floating-dock");
+  await page.mouse.wheel(0, 700);
+  await expect(controls).toHaveClass(/is-hidden/);
+  await expect(dock).toHaveClass(/is-hidden/);
+  await expect.poll(() => page.locator(".book-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
+  await expect.poll(() => dock.evaluate((element) => element.getBoundingClientRect().y)).toBeGreaterThanOrEqual(await page.evaluate(() => innerHeight));
+
+  await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
+  await expect(controls).not.toHaveClass(/is-hidden/);
+  await expect(dock).not.toHaveClass(/is-hidden/);
+  await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
+  await expect(controls).toHaveClass(/is-hidden/);
+  await expect(dock).toHaveClass(/is-hidden/);
 });
 
 test("switches and closes overlays without moving the reader", async ({ page }) => {

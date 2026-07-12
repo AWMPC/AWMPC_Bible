@@ -13,12 +13,13 @@ server and can be served from a VM, CDN, or any static web host.
 - The main thread receives only navigation metadata and the selected chapter.
 - A focused Liquid Glass interface uses native CSS effects with graceful fallbacks.
 - A data-driven bottom dock scales to additional AWMPC Bible tools without duplicating overlay infrastructure.
+- Separate floating Book and Chapter controls open Navigation directly at the corresponding selection list.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
 - Verse selections create bounded, device-local history entries containing only references and timestamps.
 - Profile offers five meaningful, snapping text scales for every verse and verse number.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
-- The floating dock responds only to recent user-invoked scrolling, not programmatic navigation.
+- The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
 - Profile selects among privacy-safe local Serif, Sans, Rounded, and Monospace verse fonts.
 - Appearance supports explicit Day or Night modes and an Auto mode that follows the system.
 - The acceleration boundary leaves room for WASM search/indexing and optional

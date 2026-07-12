@@ -3,7 +3,7 @@ import { createOverlayOrigin, DOCK_FEATURES, type FeatureId, type OverlayOrigin 
 type FloatingDockProps = {
   activeFeature: FeatureId | null;
   visible: boolean;
-  onOpen: (feature: FeatureId, origin: OverlayOrigin) => void;
+  onOpen: (feature: FeatureId, origin: OverlayOrigin, trigger: HTMLButtonElement) => void;
 };
 
 export function FloatingDock({ activeFeature, visible, onOpen }: FloatingDockProps) {
@@ -23,7 +23,7 @@ export function FloatingDock({ activeFeature, visible, onOpen }: FloatingDockPro
             onClick={(event) => {
               const button = event.currentTarget.getBoundingClientRect();
               const dock = event.currentTarget.closest("nav")?.getBoundingClientRect();
-              if (dock) onOpen(feature.id, createOverlayOrigin(button, dock));
+              if (dock) onOpen(feature.id, createOverlayOrigin(button, dock), event.currentTarget);
             }}
           >
             <span className={`dock-symbol dock-symbol-${feature.id}`} aria-hidden="true" />
