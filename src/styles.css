@@ -83,17 +83,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .verses { display: grid; gap: .75rem; margin: 0; padding: 0; overflow-anchor: none; list-style: none; }
 .verses > li { display: grid; grid-template-columns: var(--verse-number-gutter) minmax(0, 1fr); column-gap: var(--verse-column-gap); }
 .verses > li:focus-visible { border-radius: 12px; outline: 3px solid var(--accent); outline-offset: 8px; }
-.verse-rail { display: flex; min-width: 0; height: 100%; align-items: center; justify-content: space-between; flex-direction: column; gap: .2rem; padding-bottom: .08rem; }
+.verse-rail { display: flex; min-width: 0; align-items: center; flex-direction: column; }
 .verse-number { padding-top: .28rem; color: var(--accent); font-family: var(--verse-font-family); font-size: var(--verse-number-size); font-weight: 800; }
 .verse-content > p { margin: 0; font: 400 var(--verse-text-size)/var(--verse-line-height) var(--verse-font-family); text-wrap: pretty; overflow-wrap: anywhere; }
 .footnote-marker-reveal { display: inline-block; max-width: 0; overflow: clip; opacity: 0; transform: scale(.7); transform-origin: left bottom; vertical-align: baseline; transition: max-width var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), transform var(--motion-duration) var(--motion-easing); }
 .verse-content[data-footnotes-expanded] .footnote-marker-reveal { max-width: 2em; opacity: 1; transform: scale(1); }
 .footnote-marker { margin-left: .12em; color: var(--accent); font-size: .62em; font-weight: 800; line-height: 0; vertical-align: super; }
-.footnotes-toggle { position: relative; display: grid; width: 2rem; aspect-ratio: 1; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--muted) 26%, transparent); border-radius: 9px; color: color-mix(in srgb, var(--muted) 68%, transparent); background: color-mix(in srgb, var(--card) 48%, transparent); cursor: pointer; transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease; }
-.footnotes-toggle::after { position: absolute; inset: -.375rem; content: ""; }
-.footnotes-toggle:hover, .footnotes-toggle[aria-expanded="true"] { border-color: color-mix(in srgb, var(--muted) 44%, transparent); color: color-mix(in srgb, var(--muted) 84%, transparent); background: color-mix(in srgb, var(--surface-strong) 58%, transparent); }
+.footnotes-toggle { position: relative; display: inline-grid; width: 1em; height: 1em; place-items: center; margin-left: .3em; padding: 0; border: 0; color: color-mix(in srgb, var(--muted) 68%, transparent); background: transparent; cursor: pointer; font: inherit; line-height: 1; vertical-align: -.12em; transition: color 140ms ease, transform 140ms ease; }
+.footnotes-toggle::after { position: absolute; inset: -.2em; content: ""; }
+.footnotes-toggle:hover, .footnotes-toggle[aria-expanded="true"] { color: color-mix(in srgb, var(--muted) 84%, transparent); }
 .footnotes-toggle:active { transform: scale(.96); }
-.footnotes-symbol { width: 1.05rem; aspect-ratio: 1; overflow: visible; }
+.footnotes-symbol { width: 100%; height: 100%; overflow: visible; }
 .footnotes-reveal { display: grid; grid-column: 2; grid-template-rows: 0fr; opacity: 0; transform: scale(.985); transform-origin: top; transition: grid-template-rows var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), transform var(--motion-duration) var(--motion-easing); }
 .footnotes-reveal[data-footnotes-expanded] { grid-template-rows: 1fr; opacity: 1; transform: scale(1); }
 .footnotes-reveal-inner { min-height: 0; overflow: hidden; }
@@ -212,7 +212,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 @media (forced-colors: active) {
   .reading-pane, .floating-dock, .feature-overlay { border: 1px solid CanvasText; }
-  .footnotes-toggle { border: 1px solid ButtonText; color: ButtonText; }
-  .footnotes-toggle[aria-expanded="true"] { color: HighlightText; background: Highlight; border-color: Highlight; }
+  .footnotes-toggle { border: 0; color: ButtonText; }
+  .footnotes-toggle[aria-expanded="true"] { color: Highlight; background: transparent; }
   .dock-button[aria-expanded="true"], .choice-grid button[aria-current="page"] { color: HighlightText; background: Highlight; }
 }

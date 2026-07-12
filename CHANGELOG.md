@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.22.0 - 2026-07-11
+
+- Append the footnote information control directly to the end of each annotated verse.
+- Remove the outer button border and background while retaining native button semantics.
+- Size the button and information icon with `1em` so they follow every verse text scale.
+- Keep the expanding footnote card aligned beneath the verse text in its own grid row.
+
 ## 0.21.2 - 2026-07-11
 
 - Lower the information icon and button border to translucent muted tones beneath verse-number emphasis.
