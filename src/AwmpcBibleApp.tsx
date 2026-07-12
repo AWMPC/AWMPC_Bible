@@ -116,7 +116,7 @@ export function AwmpcBibleApp() {
           </main>
         </div>
       </div>
-      <ReadingLocationControls book={book} chapter={chapter} visible={chromeVisible} activeSection={activeFeature === "navigation" ? navigationSectionRequest?.section ?? null : null} obscured={activeFeature !== null} onNavigate={openNavigationAt} />
+      <ReadingLocationControls book={book} chapter={chapter} visible={chromeVisible && activeFeature === null} activeSection={activeFeature === "navigation" ? navigationSectionRequest?.section ?? null : null} obscured={activeFeature !== null} onNavigate={openNavigationAt} />
       <FloatingDock activeFeature={activeFeature} visible={chromeVisible} onOpen={openFeature} />
       <p className="visually-hidden" role="status" aria-live="polite">{activeFeature ? `${featureTitle(activeFeature)} overlay open` : ""}</p>
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>

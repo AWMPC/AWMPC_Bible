@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.23.2 - 2026-07-12
+
+- Hide both top reading-location controls upward immediately after either control opens Navigation.
+- Prevent focused obscured controls from overriding their hidden state during an overlay.
+- Keep the bottom dock visible and foregrounded while top controls are hidden.
+- Restore both top controls and focus to the initiating control when Navigation closes.
+
 ## 0.23.1 - 2026-07-12
 
 - Target Chapters with transform-independent layout offsets after the overlay scroll reset.

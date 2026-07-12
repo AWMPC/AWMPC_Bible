@@ -54,7 +54,7 @@ test("panels retain semantic native controls", async () => {
   assert.doesNotMatch(overlay, /showModal\(\)/);
   assert.match(overlay, /onCancel/);
   assert.match(app, /inert=\{activeFeature !== null\}/);
-  assert.match(app, /<ReadingLocationControls[^>]*visible=\{chromeVisible\}/);
+  assert.match(app, /<ReadingLocationControls[^>]*visible=\{chromeVisible && activeFeature === null\}/);
   assert.match(app, /<FloatingDock[^>]*visible=\{chromeVisible\}/);
   assert.doesNotMatch(app, /reading-header|chapter-indicator/);
   assert.match(app, /feature === activeFeature/);

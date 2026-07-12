@@ -23,14 +23,21 @@ test("top reading controls target navigation sections without a reader header", 
 
   await book.click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
+  await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
+  await expect.poll(() => page.locator(".book-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
   await expect(page.getByRole("heading", { name: "Books", exact: true })).toBeInViewport();
   await expect(page.locator(".reading-location-controls")).toHaveAttribute("inert", "");
   await expect(page.locator(".reading-location-controls")).toHaveAttribute("aria-hidden", "true");
   expect(await page.locator(".reading-location-controls").evaluate((element) => Number(getComputedStyle(element).zIndex))).toBeLessThan(await page.getByRole("dialog").evaluate((element) => Number(getComputedStyle(element).zIndex)));
   await page.locator(".overlay-close").click();
+  await expect(page.locator(".reading-location-controls")).not.toHaveClass(/is-hidden/);
   await expect(book).toBeFocused();
 
   await chapter.click();
+  await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
+  await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
+  await expect.poll(() => page.locator(".chapter-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
   const content = page.locator(".overlay-content");
   const chaptersHeading = page.getByRole("heading", { name: "Chapters" });
   await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(1000);
@@ -41,6 +48,7 @@ test("top reading controls target navigation sections without a reader header", 
     return contentBox && headingBox ? Math.abs(headingBox.y - contentBox.y) : 999;
   }).toBeLessThan(6);
   await page.locator(".overlay-close").click();
+  await expect(page.locator(".reading-location-controls")).not.toHaveClass(/is-hidden/);
   await expect(chapter).toBeFocused();
 });
 

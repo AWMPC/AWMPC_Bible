@@ -113,7 +113,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .reading-location-button:hover, .reading-location-button[aria-expanded="true"] { background: var(--surface-strong); }
 .reading-location-button:active { transform: scale(.96); }
 .reading-location-controls.is-hidden .reading-location-button { opacity: 0; translate: 0 calc(-100% - max(1rem, env(safe-area-inset-top)) - 1rem); pointer-events: none; }
-.reading-location-controls.is-hidden:focus-within .reading-location-button { opacity: 1; translate: 0 0; pointer-events: auto; }
+.reading-location-controls.is-hidden:not(.is-obscured):focus-within .reading-location-button { opacity: 1; translate: 0 0; pointer-events: auto; }
 .reading-location-controls.is-obscured .reading-location-button { pointer-events: none; }
 
 .floating-dock { position: fixed; z-index: 12; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), 0 16px 44px rgba(0, 0, 0, .18); backdrop-filter: blur(28px) saturate(150%); transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
