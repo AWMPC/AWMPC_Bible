@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.2 - 2026-07-11
+
+- Lower the information icon and button border to translucent muted tones beneath verse-number emphasis.
+- Reduce the information icon stroke while preserving focus-visible and forced-colors clarity.
+- Anchor the control at the bottom of the verse text row within the verse-number column.
+- Keep the expanding footnote card on its own row so it cannot reposition the control.
+
 ## 0.21.1 - 2026-07-11
 
 - Reduce the visible verse-rail footnote control from 44 to 32 pixels square.

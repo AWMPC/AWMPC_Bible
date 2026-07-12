@@ -69,6 +69,7 @@ test("user book and chapter choices advance the navigation scroll", async ({ pag
 test("toggles inline footnote numbers and their nested card together", async ({ page }) => {
   const toggle = page.locator(".footnotes-toggle").first();
   const number = page.locator(".verse-number").first();
+  const rail = page.locator(".verse-rail").first();
   const marker = page.locator(".footnote-marker-reveal").first();
   const reveal = page.locator(".footnotes-reveal").first();
   await expect(toggle).toHaveAccessibleName("Show footnotes for verse 1");
@@ -77,13 +78,17 @@ test("toggles inline footnote numbers and their nested card together", async ({ 
   await expect(toggle.locator(".footnotes-symbol")).toHaveCount(1);
   const toggleBox = await toggle.boundingBox();
   const numberBox = await number.boundingBox();
-  if (!toggleBox || !numberBox) throw new Error("The verse rail is not measurable.");
+  const railBox = await rail.boundingBox();
+  if (!toggleBox || !numberBox || !railBox) throw new Error("The verse rail is not measurable.");
   expect(Math.abs(toggleBox.width - toggleBox.height)).toBeLessThan(0.5);
   expect(toggleBox.width).toBeGreaterThanOrEqual(32);
   expect(toggleBox.width).toBeLessThan(44);
   expect(toggleBox.y).toBeGreaterThan(numberBox.y);
+  expect(Math.abs(toggleBox.y + toggleBox.height - (railBox.y + railBox.height))).toBeLessThan(2);
   expect(await toggle.evaluate((element) => getComputedStyle(element).borderStyle)).toBe("solid");
   expect(await toggle.evaluate((element) => getComputedStyle(element).borderWidth)).toBe("1px");
+  expect(await toggle.evaluate((element) => getComputedStyle(element).color)).not.toBe(await number.evaluate((element) => getComputedStyle(element).color));
+  expect(await toggle.evaluate((element) => getComputedStyle(element).borderColor)).not.toBe(await number.evaluate((element) => getComputedStyle(element).color));
   await expect(toggle.locator(".footnotes-symbol circle")).toHaveCount(2);
   await expect(toggle.locator(".footnotes-symbol path")).toHaveCount(1);
   await expect(page.locator(".verses > li").nth(1).locator(".footnotes-toggle")).toHaveCount(0);
@@ -118,6 +123,7 @@ test("toggles inline footnote numbers and their nested card together", async ({ 
   await expect(card).toContainText("First note");
   await expect(card).toContainText("Second note");
   await expect(toggle).toBeFocused();
+  expect((await toggle.boundingBox())?.y).toBe(toggleBox.y);
   expect(await marker.evaluate((element) => getComputedStyle(element).transitionDuration)).toContain("0.21s");
   expect(await reveal.evaluate((element) => getComputedStyle(element).transitionDuration)).toContain("0.21s");
 
