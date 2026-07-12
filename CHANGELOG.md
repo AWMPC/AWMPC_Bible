@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.23.1 - 2026-07-12
+
+- Target Chapters with transform-independent layout offsets after the overlay scroll reset.
+- Validate direct Chapter entry against a full 66-book browser fixture.
+- Place top reading-location controls beneath the shade and Navigation overlay while keeping the dock foregrounded.
+- Make covered top controls inert and hidden from assistive technology until the overlay closes.
+
 ## 0.23.0 - 2026-07-12
 
 - Replace the reader header with independent top-left Book and top-right Chapter Liquid Glass controls.

@@ -5,7 +5,7 @@ const dataset = {
     "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), index === 0 ? "Verse 1 {First note} text with {Second note} details." : `Verse ${index + 1} text for browser testing.`])),
   },
   Matthew: Object.fromEntries(Array.from({ length: 20 }, (_, chapterIndex) => [String(chapterIndex + 1), Object.fromEntries(Array.from({ length: 12 }, (_, verseIndex) => [String(verseIndex + 1), `Matthew chapter ${chapterIndex + 1} verse ${verseIndex + 1}.`]))])),
-  ...Object.fromEntries(Array.from({ length: 18 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
+  ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
 };
 
 test.beforeEach(async ({ page }) => {
@@ -24,11 +24,22 @@ test("top reading controls target navigation sections without a reader header", 
   await book.click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Books", exact: true })).toBeInViewport();
-  await expect.poll(() => page.locator(".overlay-content").evaluate((element) => element.scrollTop)).toBeLessThanOrEqual(3);
+  await expect(page.locator(".reading-location-controls")).toHaveAttribute("inert", "");
+  await expect(page.locator(".reading-location-controls")).toHaveAttribute("aria-hidden", "true");
+  expect(await page.locator(".reading-location-controls").evaluate((element) => Number(getComputedStyle(element).zIndex))).toBeLessThan(await page.getByRole("dialog").evaluate((element) => Number(getComputedStyle(element).zIndex)));
+  await page.locator(".overlay-close").click();
+  await expect(book).toBeFocused();
 
   await chapter.click();
-  await expect.poll(() => page.locator(".overlay-content").evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-  await expect(page.getByRole("heading", { name: "Chapters" })).toBeInViewport();
+  const content = page.locator(".overlay-content");
+  const chaptersHeading = page.getByRole("heading", { name: "Chapters" });
+  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(1000);
+  await expect(chaptersHeading).toBeInViewport();
+  await expect.poll(async () => {
+    const contentBox = await content.boundingBox();
+    const headingBox = await chaptersHeading.boundingBox();
+    return contentBox && headingBox ? Math.abs(headingBox.y - contentBox.y) : 999;
+  }).toBeLessThan(6);
   await page.locator(".overlay-close").click();
   await expect(chapter).toBeFocused();
 });

@@ -35,13 +35,13 @@ test("overlay origin stops above the dock", () => {
 
 test("navigation progression scrolls only its overlay container and respects reduced motion", () => {
   const calls = [];
-  const container = { scrollTop: 120, getBoundingClientRect: () => ({ top: 80 }), scrollTo: (options) => calls.push(options) };
-  const target = { getBoundingClientRect: () => ({ top: 260 }) };
+  const container = { scrollTo: (options) => calls.push(options) };
+  const target = { offsetTop: 780, getBoundingClientRect: () => ({ top: -400 }) };
   scrollNavigationSection(container, target, false);
   scrollNavigationSection(container, target, true);
   assert.deepEqual(calls, [
-    { top: 300, behavior: "smooth" },
-    { top: 300, behavior: "auto" },
+    { top: 780, behavior: "smooth" },
+    { top: 780, behavior: "auto" },
   ]);
 });
 

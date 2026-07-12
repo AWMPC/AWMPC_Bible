@@ -1,11 +1,9 @@
-export type ScrollContainer = Pick<HTMLElement, "scrollTop" | "getBoundingClientRect" | "scrollTo">;
-export type ScrollTarget = Pick<HTMLElement, "getBoundingClientRect">;
+export type ScrollContainer = Pick<HTMLElement, "scrollTo">;
+export type ScrollTarget = Pick<HTMLElement, "offsetTop">;
 
 export function scrollNavigationSection(container: ScrollContainer, target: ScrollTarget, reducedMotion: boolean): void {
-  const containerRect = container.getBoundingClientRect();
-  const targetRect = target.getBoundingClientRect();
   container.scrollTo({
-    top: Math.max(0, container.scrollTop + targetRect.top - containerRect.top),
+    top: Math.max(0, target.offsetTop),
     behavior: reducedMotion ? "auto" : "smooth",
   });
 }

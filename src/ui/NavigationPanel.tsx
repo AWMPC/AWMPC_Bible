@@ -29,10 +29,12 @@ export function NavigationPanel({ books, book, chapters, chapter, verses, initia
   const scheduleScroll = useCallback((target: HTMLElement | null) => {
     cancelAnimationFrame(scrollFrameRef.current);
     scrollFrameRef.current = requestAnimationFrame(() => {
-      const container = target?.closest<HTMLElement>(".overlay-content");
-      if (container && target) {
-        scrollNavigationSection(container, target, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-      }
+      scrollFrameRef.current = requestAnimationFrame(() => {
+        const container = target?.closest<HTMLElement>(".overlay-content");
+        if (container && target) {
+          scrollNavigationSection(container, target, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        }
+      });
     });
   }, []);
 
