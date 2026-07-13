@@ -110,6 +110,10 @@ test("panels retain semantic native controls", async () => {
   assert.match(navigation, /book-choice-secondary/);
   assert.match(history, /history-language/);
   assert.match(search, /type="search"/);
+  assert.match(search, /ref=\{inputRef\}/);
+  assert.match(app, /initialFocusRef=\{activeFeature === "search" \? searchInputRef : undefined\}/);
+  assert.match(overlayLifecycle, /initialFocusRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(overlayLifecycle, /cancelAnimationFrame\(animationFrame\)/);
   assert.match(search, /aria-busy/);
   assert.match(search, /<Skeleton/);
   assert.doesNotMatch(search, /dangerouslySetInnerHTML|innerHTML/);

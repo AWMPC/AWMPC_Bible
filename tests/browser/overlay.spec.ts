@@ -187,6 +187,7 @@ test("stacks primary and secondary verses with localized book labels and actions
 test("fuzzy search selects through chooseVerse and records one history entry", async ({ page }) => {
   await page.getByRole("button", { name: "Search" }).click();
   const input = page.getByRole("searchbox", { name: "Search active Bible text" });
+  await expect(input).toBeFocused();
   await input.fill("Mathew chapter 2 verse 5");
   const result = page.locator(".search-results button").filter({ hasText: /Matthew 2:5/ });
   await expect(result).toContainText("English");
@@ -197,6 +198,16 @@ test("fuzzy search selects through chooseVerse and records one history entry", a
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^Matthew 2:5/ })).toBeVisible();
   await expect(page.locator(".history-list > li")).toHaveCount(1);
+});
+
+test("focuses search when opening it directly or switching from another sheet", async ({ page }) => {
+  const search = page.getByRole("searchbox", { name: "Search active Bible text" });
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(search).toBeFocused();
+  await page.getByRole("button", { name: "Reading history" }).click();
+  await expect(page.locator(".overlay-close")).toBeFocused();
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(search).toBeFocused();
 });
 
 test("search joins punctuation within names without joining separate words", async ({ page }) => {

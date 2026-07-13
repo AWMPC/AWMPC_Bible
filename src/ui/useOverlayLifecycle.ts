@@ -107,7 +107,6 @@ export function useOverlayLifecycle({ active, origin, dialogRef, surfaceRef, ini
     releaseScrollRef.current ??= lockDocumentScroll();
     dialog.show();
     const animationFrame = requestAnimationFrame(() => {
-      initialFocusRef.current?.focus({ preventScroll: true });
       const animations = startAnimations(dialog, surfaceRef.current, origin);
       animationsRef.current = animations;
       void waitForAnimations(animations).then(() => {
@@ -121,6 +120,12 @@ export function useOverlayLifecycle({ active, origin, dialogRef, surfaceRef, ini
       dialog.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
     };
   }, [active, dialogRef, initialFocusRef, origin, setPhase, surfaceRef]);
+
+  useEffect(() => {
+    if (!active) return;
+    const animationFrame = requestAnimationFrame(() => initialFocusRef.current?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(animationFrame);
+  }, [active, initialFocusRef]);
 
   const handleDialogClose = useCallback(() => {
     releaseScrollRef.current?.();

@@ -45,6 +45,7 @@ export function AwmpcBibleApp() {
   const shellRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLElement>(null);
   const overlayContentRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const initialVerseLinkRef = useRef<LinkedVerse | null>(parseVerseLink(window.location.href));
   const [pendingVerseLink, setPendingVerseLink] = useState<LinkedVerse | null>(initialVerseLinkRef.current);
   const { settings, update: updateSettings, setPrimaryBibleLanguage, setSecondaryBibleLanguage } = useBibleSettings(initialVerseLinkRef.current?.bibleLanguage);
@@ -315,12 +316,12 @@ export function AwmpcBibleApp() {
       <FloatingDock ref={dockRef} activeFeature={activeFeature} visible={chromeVisible} onOpen={openFeature} />
       <p className="visually-hidden" role="status" aria-live="polite">{readerStatus || (activeFeature ? `${featureTitle(activeFeature)} overlay open` : "")}</p>
       <VerseActionsMenu target={verseActionTarget} onClose={closeVerseActions} onStatus={setReaderStatus} />
-      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} dockRef={dockRef} contentRef={overlayContentRef} onClose={finishOverlayClose}>
+      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} dockRef={dockRef} contentRef={overlayContentRef} initialFocusRef={activeFeature === "search" ? searchInputRef : undefined} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (
           <NavigationPanel books={primaryLibrary.books} secondaryBooks={secondaryLibrary.books} secondaryLanguage={secondaryBibleLanguage} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={primaryLibrary.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} sectionRequest={navigationSectionRequest} scrollContainerRef={overlayContentRef} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => selectVerseReference({ bibleLanguage: primaryBibleLanguage, book: navigation.state.book, chapter: navigation.state.chapter, verse }, { recordHistory: true, prefetchedVerses: navigation.state.verses })} />
         )}
         {activeFeature === "history" && <HistoryPanel entries={history} onSelect={selectHistoryEntry} onRemove={removeHistory} onClear={clearHistory} />}
-        {activeFeature === "search" && <SearchPanel query={bibleSearch.query} status={bibleSearch.status} results={bibleSearch.results} onQueryChange={bibleSearch.setQuery} onSelect={selectSearchResult} />}
+        {activeFeature === "search" && <SearchPanel query={bibleSearch.query} status={bibleSearch.status} results={bibleSearch.results} inputRef={searchInputRef} onQueryChange={bibleSearch.setQuery} onSelect={selectSearchResult} />}
         {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={(value) => updateSettings({ textScale: value })} verseFont={verseFont} onVerseFontChange={(value) => updateSettings({ verseFont: value })} appearance={appearance} onAppearanceChange={(value) => updateSettings({ appearance: value })} primaryBibleLanguage={primaryBibleLanguage} secondaryBibleLanguage={secondaryBibleLanguage} onPrimaryBibleLanguageChange={changeLanguage} onSecondaryBibleLanguageChange={changeSecondaryLanguage} />}
       </FeatureOverlay>
     </div>

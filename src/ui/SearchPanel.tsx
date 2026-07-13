@@ -1,5 +1,6 @@
 import { BIBLE_LANGUAGE_OPTIONS } from "../settings/bibleLanguage";
 import type { BibleSearchStatus, LocalizedSearchResult } from "../search/useBibleSearch";
+import type { RefObject } from "react";
 import { EmptyFeature } from "./EmptyFeature";
 import { Skeleton } from "./Skeleton";
 
@@ -7,18 +8,19 @@ type SearchPanelProps = {
   query: string;
   status: BibleSearchStatus;
   results: LocalizedSearchResult[];
+  inputRef: RefObject<HTMLInputElement | null>;
   onQueryChange: (query: string) => void;
   onSelect: (result: LocalizedSearchResult) => void;
 };
 
-export function SearchPanel({ query, status, results, onQueryChange, onSelect }: SearchPanelProps) {
+export function SearchPanel({ query, status, results, inputRef, onQueryChange, onSelect }: SearchPanelProps) {
   const shortQuery = Array.from(query.trim()).length < 2;
   return (
     <section className="search-panel" aria-labelledby="search-panel-title" aria-busy={status === "loading" || undefined}>
       <h3 className="visually-hidden" id="search-panel-title">Search Bible text</h3>
       <form role="search" onSubmit={(event) => event.preventDefault()}>
         <label htmlFor="bible-search">Search active Bible text</label>
-        <input id="bible-search" type="search" inputMode="search" maxLength={120} autoComplete="off" spellCheck="false" value={query} onChange={(event) => onQueryChange(event.currentTarget.value)} placeholder="Words or phrase" />
+        <input ref={inputRef} id="bible-search" type="search" inputMode="search" maxLength={120} autoComplete="off" spellCheck="false" value={query} onChange={(event) => onQueryChange(event.currentTarget.value)} placeholder="Words or phrase" />
       </form>
       <p className="search-status" role="status" aria-live="polite">{status === "loading" ? "Searching…" : status === "ready" ? `${results.length} result${results.length === 1 ? "" : "s"}` : ""}</p>
       {shortQuery ? <EmptyFeature title="Search the active text" detail="Enter at least two characters. Close matches and minor spelling differences are included." />

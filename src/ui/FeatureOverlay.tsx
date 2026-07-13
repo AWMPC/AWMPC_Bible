@@ -17,15 +17,17 @@ type FeatureOverlayProps = {
   origin: OverlayOrigin | null;
   dockRef: RefObject<HTMLElement | null>;
   contentRef: RefObject<HTMLDivElement | null>;
+  initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
   onClose: () => void;
 };
 
 export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayProps>(
-  function FeatureOverlay({ activeFeature, origin, dockRef, contentRef, children, onClose }, ref) {
+  function FeatureOverlay({ activeFeature, origin, dockRef, contentRef, initialFocusRef, children, onClose }, ref) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const surfaceRef = useRef<HTMLDivElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const focusTargetRef = initialFocusRef ?? closeButtonRef;
     const active = activeFeature !== null;
 
     useOverlayViewport({
@@ -39,7 +41,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       origin,
       dialogRef,
       surfaceRef,
-      initialFocusRef: closeButtonRef,
+      initialFocusRef: focusTargetRef,
     });
 
     useImperativeHandle(ref, () => ({ close, keepOpen }), [close, keepOpen]);
