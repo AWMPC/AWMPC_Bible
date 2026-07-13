@@ -23,6 +23,8 @@ server and can be served from a VM, CDN, or any static web host.
 - Profile selects among privacy-safe local Serif, Sans, Rounded, and Monospace verse fonts.
 - Appearance supports explicit Day or Night modes and an Auto mode that follows the system.
 - Profile switches between separately provisioned English and Korean Bible datasets.
+- Language changes preserve the verse crossing the viewport midpoint and recenter its translated counterpart.
+- Verse-number menus copy plain verse text or a bounded, deployable deep link to that verse.
 - The acceleration boundary leaves room for WASM search/indexing and optional
   WebGPU effects without making either necessary for correct reading.
 

@@ -8,7 +8,7 @@ const dataset = {
   ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
 };
 
-const koreanDataset = { "창세기": { "1": { "1": "태초에 하나님이 천지를 창조하시니라." } } };
+const koreanDataset = { "창세기": { "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), `한국어 시험 구절 ${index + 1} 본문은 언어별 줄 길이가 달라도 같은 구절을 유지합니다. `.repeat(3).trim()])) } };
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/data/bible-en.json", (route) => route.fulfill({ json: dataset }));
@@ -18,11 +18,22 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("switches between the local English and Korean datasets", async ({ page }) => {
+  await page.locator("#verse-1-40").scrollIntoViewIfNeeded();
+  await page.evaluate(() => document.getElementById("verse-1-40")?.scrollIntoView({ block: "center" }));
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   const language = page.getByRole("combobox", { name: "Language" });
   await language.selectOption("ko");
-  await expect(page.locator('article[aria-label="창세기 chapter 1"]')).toContainText("태초에");
+  const koreanTarget = page.locator("#verse-1-40");
+  await expect(page.locator('article[aria-label="창세기 chapter 1"]')).toBeVisible();
+  await expect.poll(async () => {
+    const box = await koreanTarget.boundingBox();
+    return box ? Math.abs(box.y + box.height / 2 - (await page.evaluate(() => innerHeight / 2))) : 999;
+  }).toBeLessThan(6);
+  const anchoredScroll = await page.evaluate(() => scrollY);
+  await page.locator(".overlay-close").click();
+  expect(await page.evaluate(() => scrollY)).toBe(anchoredScroll);
 
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
   await language.selectOption("en");
   await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
 });
@@ -63,6 +74,12 @@ test("first verse begins at the reading pane's normal inset", async ({ page }) =
     const geometry = await measure();
     expect(Math.abs(geometry.actual - geometry.expected)).toBeLessThan(1);
     expect(geometry.paddingDifference).toBeLessThan(1);
+    const clearance = await page.evaluate(() => {
+      const pane = document.querySelector<HTMLElement>(".reading-pane")!.getBoundingClientRect();
+      const controls = Array.from(document.querySelectorAll<HTMLElement>(".reading-location-button"), (element) => element.getBoundingClientRect());
+      return pane.top - Math.max(...controls.map(({ bottom }) => bottom));
+    });
+    expect(clearance).toBeGreaterThanOrEqual(15);
   }
 });
 
@@ -87,6 +104,7 @@ test("chapter depth changes day and night backgrounds without following overlay 
   const nightStart = await background();
   expect(nightEnd).not.toBe(nightStart);
   expect(nightStart).not.toBe(dayStart);
+  await expect(shell).toHaveCSS("background-image", "none");
 
   await page.getByRole("button", { name: "Navigate books and chapters" }).click();
   const beforeOverlayScroll = await progress();
@@ -107,7 +125,7 @@ test("top reading controls target navigation sections without a reader header", 
   await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
   await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
   await expect.poll(() => page.locator(".book-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
-  await expect(page.getByRole("heading", { name: "Books", exact: true })).toBeInViewport();
+  await expect(page.locator('section[aria-labelledby="books-title"] button[aria-current="page"]')).toBeInViewport();
   await expect(page.locator(".reading-location-controls")).toHaveAttribute("inert", "");
   await expect(page.locator(".reading-location-controls")).toHaveAttribute("aria-hidden", "true");
   expect(await page.locator(".reading-location-controls").evaluate((element) => Number(getComputedStyle(element).zIndex))).toBeLessThan(await page.getByRole("dialog").evaluate((element) => Number(getComputedStyle(element).zIndex)));
@@ -120,14 +138,14 @@ test("top reading controls target navigation sections without a reader header", 
   await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
   await expect.poll(() => page.locator(".chapter-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
   const content = page.locator(".overlay-content");
-  const chaptersHeading = page.getByRole("heading", { name: "Chapters" });
+  const selectedChapter = page.locator('section[aria-labelledby="chapters-title"] button[aria-current="page"]');
   await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(1000);
-  await expect(chaptersHeading).toBeInViewport();
+  await expect(selectedChapter).toBeInViewport();
   await expect.poll(async () => {
     const contentBox = await content.boundingBox();
-    const headingBox = await chaptersHeading.boundingBox();
-    return contentBox && headingBox ? Math.abs(headingBox.y - contentBox.y) : 999;
-  }).toBeLessThan(6);
+    const selectedBox = await selectedChapter.boundingBox();
+    return contentBox && selectedBox ? Math.abs(selectedBox.y + selectedBox.height / 2 - (contentBox.y + contentBox.height / 2)) : 999;
+  }).toBeLessThan(10);
   await page.locator(".overlay-close").click();
   await expect(page.locator(".reading-location-controls")).not.toHaveClass(/is-hidden/);
   await expect(chapter).toBeFocused();
@@ -178,6 +196,39 @@ test("selecting a verse centers it and records one removable history entry", asy
   await expect(page.getByText("No reading history yet")).toBeVisible();
 });
 
+test("verse number actions copy plain text and a loadable centered link", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.locator("#verse-1-40").scrollIntoViewIfNeeded();
+  const trigger = page.getByRole("button", { name: "Actions for verse 40", exact: true });
+  await trigger.click();
+  const menu = page.getByRole("menu", { name: "Genesis 1:40 actions" });
+  await expect(menu).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitem", { name: "Copy Link" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(menu).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "Copy Verse" }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("Verse 40 text for browser testing.\n— Genesis 1:40");
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "Copy Link" }).click();
+  const link = await page.evaluate(() => navigator.clipboard.readText());
+  expect(new URL(link).searchParams.get("verse")).toBe("40");
+  await page.goto(link);
+  const linkedVerse = page.locator("#verse-1-40");
+  await expect(linkedVerse).toBeInViewport();
+  await expect.poll(async () => {
+    const box = await linkedVerse.boundingBox();
+    return box ? Math.abs(box.y + box.height / 2 - (await page.evaluate(() => innerHeight / 2))) : 999;
+  }).toBeLessThan(6);
+  await page.getByRole("button", { name: "Reading history" }).click();
+  await expect(page.getByText("No reading history yet")).toBeVisible();
+});
+
 test("resizes an open overlay with the viewport", async ({ page }) => {
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   const dialog = page.getByRole("dialog");
@@ -201,6 +252,18 @@ test("user book and chapter choices advance the navigation scroll", async ({ pag
   await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(afterBook);
   await expect(page.getByRole("heading", { name: "Verses" })).toBeInViewport();
   expect(await page.evaluate(() => window.scrollY)).toBe(beforeReaderScroll);
+
+  await page.locator('section[aria-labelledby="verses-title"] button').filter({ hasText: /^1$/ }).click();
+  await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
+  await page.getByRole("button", { name: "Choose book, currently Matthew" }).click();
+  const selectedBook = page.locator('section[aria-labelledby="books-title"] button[aria-current="page"]');
+  await expect(selectedBook).toHaveText("Matthew");
+  await expect(selectedBook).toBeInViewport();
+  await page.locator(".overlay-close").click();
+  await page.getByRole("button", { name: "Choose chapter, currently chapter 2" }).click();
+  const selectedChapter = page.locator('section[aria-labelledby="chapters-title"] button[aria-current="page"]');
+  await expect(selectedChapter).toHaveText("2");
+  await expect(selectedChapter).toBeInViewport();
 });
 
 test("toggles inline footnote numbers and their nested card together", async ({ page }) => {

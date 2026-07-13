@@ -12,6 +12,8 @@ import { VERSE_FONTS, isVerseFont } from "../src/settings/verseFont.ts";
 import { scrollNavigationSection } from "../src/ui/navigationScroll.ts";
 import { BIBLE_LANGUAGE_OPTIONS, isBibleLanguage } from "../src/settings/bibleLanguage.ts";
 import { chapterScrollProgress } from "../src/ui/useChapterScrollProgress.ts";
+import { middleVerseFromRects, nearestNumericValue } from "../src/ui/middleVerse.ts";
+import { createVerseLink, formatVerseForCopy, parseVerseLink } from "../src/links/verseLinks.ts";
 
 test("chapter scroll progress is exact through the chapter's scrollable range", () => {
   const base = { viewportHeight: 800, chapterTop: 100, chapterHeight: 2800 };
@@ -65,14 +67,36 @@ test("overlay origin stops above the dock", () => {
 
 test("navigation progression scrolls only its overlay container and respects reduced motion", () => {
   const calls = [];
-  const container = { scrollTo: (options) => calls.push(options) };
-  const target = { offsetTop: 780, getBoundingClientRect: () => ({ top: -400 }) };
+  const container = { scrollTop: 300, clientHeight: 600, scrollHeight: 2000, getBoundingClientRect: () => ({ top: 100 }), scrollTo: (options) => calls.push(options) };
+  const section = { offsetTop: 500, offsetParent: container };
+  const target = { offsetTop: 280, offsetHeight: 40, offsetParent: section, getBoundingClientRect: () => ({ top: 580 }) };
   scrollNavigationSection(container, target, false);
-  scrollNavigationSection(container, target, true);
+  scrollNavigationSection(container, target, true, "center");
   assert.deepEqual(calls, [
     { top: 780, behavior: "smooth" },
-    { top: 780, behavior: "auto" },
+    { top: 500, behavior: "auto" },
   ]);
+});
+
+test("middle verse targeting is exact and deterministic across gaps", () => {
+  const verses = [
+    { number: "4", top: 100, bottom: 180 },
+    { number: "5", top: 200, bottom: 280 },
+  ];
+  assert.equal(middleVerseFromRects(verses, 240), "5");
+  assert.equal(middleVerseFromRects(verses, 190), "4");
+  assert.equal(middleVerseFromRects([], 200), null);
+  assert.equal(nearestNumericValue(["1", "5", "9"], "7"), "5");
+});
+
+test("verse links are bounded, deployable references with plain copy text", () => {
+  const location = { bibleLanguage: "ko", book: "창세기", chapter: "1", verse: "16" };
+  const link = createVerseLink(location, "https://reader.example/apps/bible/index.html?private=value#old");
+  assert.equal(link, "https://reader.example/apps/bible/index.html?lang=ko&book=%EC%B0%BD%EC%84%B8%EA%B8%B0&chapter=1&verse=16");
+  assert.deepEqual(parseVerseLink(link), location);
+  assert.equal(parseVerseLink("https://reader.example/?lang=en&book=Genesis&chapter=01&verse=1"), null);
+  assert.equal(parseVerseLink("not a URL"), null);
+  assert.equal(formatVerseForCopy({ book: "Genesis", chapter: "1", verse: "1", text: "In the beginning" }), "In the beginning\n— Genesis 1:1");
 });
 
 test("scroll lock restores prior styles idempotently", () => {

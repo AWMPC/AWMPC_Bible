@@ -35,6 +35,10 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(styles, /\.verses\s*\{[^}]*gap:\s*\.75rem/);
   assert.match(styles, /\.workspace\s*\{[^}]*width:\s*min\(100%, calc\(70ch \+ var\(--verse-number-gutter\)/);
   assert.match(styles, /--verse-column-gap:\s*\.4rem/);
+  assert.match(styles, /--location-controls-clearance:/);
+  assert.match(styles, /\.workspace\s*\{[^}]*padding:\s*var\(--location-controls-clearance\)/);
+  assert.match(styles, /\.awmpc-bible-shell\s*\{[^}]*background:\s*var\(--bg\)/);
+  assert.doesNotMatch(styles, /radial-gradient|--(?:day-|night-)?glow-(?:one|two)|\.awmpc-bible-shell::before|\.awmpc-bible-shell::after/);
   assert.match(styles, /grid-template-columns:\s*var\(--verse-number-gutter\) minmax\(0, 1fr\)/);
   assert.match(styles, /data-text-scale="standard"[^}]*--verse-line-height:\s*1\.5/);
 });
@@ -64,13 +68,14 @@ test("chapter progress drives day and night water palettes", async () => {
 });
 
 test("panels retain semantic native controls", async () => {
-  const [app, navigation, history, overlay, overlayLifecycle, profile, styles] = await Promise.all([
+  const [app, navigation, history, overlay, overlayLifecycle, profile, verseActions, styles] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),
     read("../src/ui/NavigationPanel.tsx"),
     read("../src/ui/HistoryPanel.tsx"),
     read("../src/ui/FeatureOverlay.tsx"),
     read("../src/ui/useOverlayLifecycle.ts"),
     read("../src/ui/ProfilePanel.tsx"),
+    read("../src/ui/VerseActionsMenu.tsx"),
     read("../src/styles.css"),
   ]);
   assert.match(navigation, /Old Testament/);
@@ -93,6 +98,9 @@ test("panels retain semantic native controls", async () => {
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
   assert.match(profile, /<select/);
+  assert.match(verseActions, /role="menu"/);
+  assert.match(verseActions, />Copy Verse</);
+  assert.match(verseActions, />Copy Link</);
 });
 
 test("overlay geometry uses owned refs instead of global selectors", async () => {
