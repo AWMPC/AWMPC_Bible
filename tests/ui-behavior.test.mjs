@@ -14,6 +14,7 @@ import { BIBLE_LANGUAGE_OPTIONS, isBibleLanguage } from "../src/settings/bibleLa
 import { chapterScrollProgress } from "../src/ui/useChapterScrollProgress.ts";
 import { middleVerseFromRects, nearestNumericValue } from "../src/ui/middleVerse.ts";
 import { createVerseLink, formatVerseForCopy, parseVerseLink } from "../src/links/verseLinks.ts";
+import { pairedBookName, versesByNumber } from "../src/data/dualLanguage.ts";
 
 test("chapter scroll progress is exact through the chapter's scrollable range", () => {
   const base = { viewportHeight: 800, chapterTop: 100, chapterHeight: 2800 };
@@ -46,6 +47,17 @@ test("testament grouping recognizes Korean book names", () => {
   assert.deepEqual(grouped.old.map((item) => item.name), ["창세기", "말라기"]);
   assert.deepEqual(grouped.new.map((item) => item.name), ["마태복음", "요한계시록"]);
   assert.deepEqual(grouped.other, []);
+});
+
+test("dual-language books and verses pair by stable identity", () => {
+  const english = ["Genesis", "Matthew"].map((name) => ({ name, chapters: ["1"] }));
+  const korean = ["창세기", "마태복음"].map((name) => ({ name, chapters: ["1"] }));
+  assert.equal(pairedBookName("Matthew", english, korean), "마태복음");
+  assert.equal(pairedBookName("Missing", english, korean), null);
+  assert.equal(pairedBookName("Matthew", english, korean.slice(0, 1)), null);
+  const pairedVerses = versesByNumber([{ number: "2", text: "Two" }, { number: "4", text: "Four" }]);
+  assert.equal(pairedVerses.get("4")?.text, "Four");
+  assert.equal(pairedVerses.has("3"), false);
 });
 
 test("settings allowlists and scale snapping remain exact", () => {

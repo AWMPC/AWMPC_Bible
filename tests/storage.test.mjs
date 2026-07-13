@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { LocalHistoryStore, mergeHistoryEntries } from "../src/history/HistoryStore.ts";
-import { LocalSettingsStore } from "../src/settings/SettingsStore.ts";
+import { activeBibleLanguages, LocalSettingsStore, normalizeBibleSettings, withPrimaryBibleLanguage, withSecondaryBibleLanguage } from "../src/settings/SettingsStore.ts";
+
+const defaultSettings = { textScale: "standard", verseFont: "system-serif", appearance: "auto", primaryBibleLanguage: "en", secondaryBibleLanguage: null };
 
 test("history timestamps, bounds, validates, and migrates references", async () => {
   const values = new Map();
@@ -94,8 +96,8 @@ test("history and settings tolerate malformed or unavailable storage", async () 
   assert.equal((await unavailableHistory.add({ book: "Example", chapter: "1", verse: "1" })).id, "id");
 
   const unavailableSettings = new LocalSettingsStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
-  assert.deepEqual(unavailableSettings.load(), { textScale: "standard", verseFont: "system-serif", appearance: "auto", bibleLanguage: "en" });
-  assert.doesNotThrow(() => unavailableSettings.save({ textScale: "large", verseFont: "rounded", appearance: "night", bibleLanguage: "ko" }));
+  assert.deepEqual(unavailableSettings.load(), defaultSettings);
+  assert.doesNotThrow(() => unavailableSettings.save({ textScale: "large", verseFont: "rounded", appearance: "night", primaryBibleLanguage: "ko", secondaryBibleLanguage: "en" }));
 });
 
 test("history rejects malformed references and timestamps", async () => {
@@ -143,12 +145,22 @@ test("settings validate, round-trip, and migrate independently", () => {
   const values = new Map([["quiet-reader.settings.v1", '{"textScale":"large"}']]);
   const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
   const store = new LocalSettingsStore(storage);
-  assert.deepEqual(store.load(), { textScale: "large", verseFont: "system-serif", appearance: "auto", bibleLanguage: "en" });
-  store.save({ textScale: "compact", verseFont: "monospace", appearance: "day", bibleLanguage: "ko" });
-  assert.deepEqual(store.load(), { textScale: "compact", verseFont: "monospace", appearance: "day", bibleLanguage: "ko" });
+  assert.deepEqual(store.load(), { ...defaultSettings, textScale: "large" });
+  assert.ok(values.has("awmpc-bible.settings.v2"));
+  store.save({ textScale: "compact", verseFont: "monospace", appearance: "day", primaryBibleLanguage: "ko", secondaryBibleLanguage: "en" });
+  assert.deepEqual(store.load(), { textScale: "compact", verseFont: "monospace", appearance: "day", primaryBibleLanguage: "ko", secondaryBibleLanguage: "en" });
 });
 
 test("settings reject unsupported Bible languages", () => {
   const storage = { getItem: () => '{"bibleLanguage":"remote"}', setItem: () => {} };
-  assert.equal(new LocalSettingsStore(storage).load().bibleLanguage, "en");
+  assert.deepEqual(new LocalSettingsStore(storage).load(), defaultSettings);
+  assert.deepEqual(normalizeBibleSettings({ primaryBibleLanguage: "en", secondaryBibleLanguage: "en" }), defaultSettings);
+});
+
+test("dual-language settings enforce distinct ordered active languages", () => {
+  const dual = withSecondaryBibleLanguage(defaultSettings, "ko");
+  assert.deepEqual(activeBibleLanguages(dual), ["en", "ko"]);
+  const swapped = withPrimaryBibleLanguage(dual, "ko");
+  assert.deepEqual(activeBibleLanguages(swapped), ["ko", "en"]);
+  assert.deepEqual(activeBibleLanguages(withSecondaryBibleLanguage(swapped, null)), ["ko"]);
 });

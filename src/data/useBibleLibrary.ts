@@ -5,9 +5,9 @@ import type { Book, ChapterTarget, Verse, WorkerRequest, WorkerResponse } from "
 import { bibleDatasetUrl, DEFAULT_BIBLE_LANGUAGE, type BibleLanguage } from "./languages";
 
 export type Passage = Readonly<{ book: string; chapter: string; verses: Verse[] }>;
-export type LibraryStatus = "loading" | "ready" | "error";
+export type LibraryStatus = "idle" | "loading" | "ready" | "error";
 
-export function useBibleLibrary(language: BibleLanguage = DEFAULT_BIBLE_LANGUAGE) {
+export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_LANGUAGE) {
   const workerRef = useRef<Worker | null>(null);
   const requestedLanguageRef = useRef(language);
   const workerLanguageRef = useRef<BibleLanguage | null>(null);
@@ -19,7 +19,7 @@ export function useBibleLibrary(language: BibleLanguage = DEFAULT_BIBLE_LANGUAGE
   const [status, setStatus] = useState<LibraryStatus>("loading");
   const [error, setError] = useState("");
   const [initialPassage, setInitialPassage] = useState<Passage | null>(null);
-  const [workerLanguage, setWorkerLanguage] = useState(language);
+  const [workerLanguage, setWorkerLanguage] = useState<BibleLanguage | null>(language);
 
   requestedLanguageRef.current = language;
 
@@ -51,6 +51,11 @@ export function useBibleLibrary(language: BibleLanguage = DEFAULT_BIBLE_LANGUAGE
     setError("");
     setInitialPassage(null);
     setWorkerLanguage(language);
+    if (language === null) {
+      workerLanguageRef.current = null;
+      setStatus("idle");
+      return;
+    }
     const worker = new DataWorker();
     workerRef.current = worker;
     workerLanguageRef.current = language;
