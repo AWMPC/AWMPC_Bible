@@ -46,6 +46,7 @@ test("top reading controls target navigation sections without a reader header", 
 
   await book.click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.locator(".overlay-close")).toBeFocused();
   await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
   await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
   await expect.poll(() => page.locator(".book-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
@@ -99,6 +100,7 @@ test("switches and closes overlays without moving the reader", async ({ page }) 
 
   await page.getByRole("button", { name: "Navigate books and chapters" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.locator(".overlay-close")).toBeFocused();
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
   await expect(page.getByText("Profile overlay open", { exact: true })).toHaveText("Profile overlay open");
@@ -180,12 +182,18 @@ test("toggles inline footnote numbers and their nested card together", async ({ 
   await toggle.click();
   await expect(toggle).toHaveAccessibleName("Hide footnotes for verse 1");
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await page.waitForTimeout(80);
+  await expect.poll(() => marker.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(0);
   const openingMarkerWidth = await marker.evaluate((element) => element.getBoundingClientRect().width);
   const openingCardHeight = await reveal.evaluate((element) => element.getBoundingClientRect().height);
   expect(openingMarkerWidth).toBeGreaterThan(0);
   expect(openingCardHeight).toBeGreaterThan(0);
-  await page.waitForTimeout(180);
+  await reveal.evaluate((element) => new Promise<void>((resolve) => {
+    if (getComputedStyle(element).transitionDuration === "0s") {
+      resolve();
+      return;
+    }
+    element.addEventListener("transitionend", () => resolve(), { once: true });
+  }));
   expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(openingMarkerWidth);
   expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(openingCardHeight);
   await expect(page.getByLabel("Footnote 1")).toHaveText("1");

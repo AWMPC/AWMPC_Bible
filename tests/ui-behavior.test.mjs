@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createOverlayOrigin } from "../src/ui/features.ts";
 import { groupBooksByTestament } from "../src/ui/testaments.ts";
 import { lockDocumentScroll } from "../src/ui/scrollLock.ts";
-import { isTrustedReadingTap, nextDockVisibility } from "../src/ui/useUserScrollDockVisibility.ts";
+import { isTrustedReadingTap, nextDockVisibility } from "../src/ui/useUserScrollChromeVisibility.ts";
 import { completeStagedNavigation, stagedNavigationFrom } from "../src/navigation/useStagedNavigation.ts";
 import { transitionVerseView, verseElementId } from "../src/ui/transitionVerseView.ts";
 import { textScaleAt, TEXT_SCALES } from "../src/settings/textScale.ts";

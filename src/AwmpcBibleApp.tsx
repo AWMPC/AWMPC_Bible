@@ -12,9 +12,9 @@ import { NavigationPanel } from "./ui/NavigationPanel";
 import { ReadingLocationControls } from "./ui/ReadingLocationControls";
 import { ProfilePanel } from "./ui/ProfilePanel";
 import { Skeleton } from "./ui/Skeleton";
-import { featureTitle, type FeatureId, type OverlayOrigin } from "./ui/features";
+import { createOverlayOrigin, featureTitle, type FeatureId, type OverlayOrigin } from "./ui/features";
 import { verseElementId } from "./ui/transitionVerseView";
-import { isTrustedReadingTap, useUserScrollChromeVisibility } from "./ui/useUserScrollDockVisibility";
+import { isTrustedReadingTap, useUserScrollChromeVisibility } from "./ui/useUserScrollChromeVisibility";
 import { VerseWithFootnotes } from "./ui/VerseWithFootnotes";
 import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
 
@@ -24,6 +24,8 @@ export function AwmpcBibleApp() {
   const overlayTriggerRef = useRef<HTMLButtonElement | null>(null);
   const navigationRequestIdRef = useRef(0);
   const readingPaneRef = useRef<HTMLElement>(null);
+  const dockRef = useRef<HTMLElement>(null);
+  const overlayContentRef = useRef<HTMLDivElement>(null);
   const library = useBibleLibrary();
   const [passage, setPassage] = useState<Passage>({ book: "", chapter: "", verses: [] });
   const { book, chapter, verses } = passage;
@@ -54,7 +56,10 @@ export function AwmpcBibleApp() {
 
   const { visible: chromeVisible, toggle: toggleChromeVisibility } = useUserScrollChromeVisibility(activeFeature === null);
 
-  function openFeature(feature: FeatureId, origin: OverlayOrigin, trigger: HTMLButtonElement) {
+  function openFeature(feature: FeatureId, trigger: HTMLButtonElement) {
+    const dock = dockRef.current;
+    if (!dock) return;
+    const origin = createOverlayOrigin(trigger.getBoundingClientRect(), dock.getBoundingClientRect());
     overlayTriggerRef.current = trigger;
     if (feature === activeFeature) {
       void overlayRef.current?.close();
@@ -116,12 +121,12 @@ export function AwmpcBibleApp() {
           </main>
         </div>
       </div>
-      <ReadingLocationControls book={book} chapter={chapter} visible={chromeVisible && activeFeature === null} activeSection={activeFeature === "navigation" ? navigationSectionRequest?.section ?? null : null} obscured={activeFeature !== null} onNavigate={openNavigationAt} />
-      <FloatingDock activeFeature={activeFeature} visible={chromeVisible} onOpen={openFeature} />
+      <ReadingLocationControls book={book} chapter={chapter} visible={chromeVisible && activeFeature === null} activeSection={activeFeature === "navigation" ? navigationSectionRequest?.section ?? null : null} obscured={activeFeature !== null} dockRef={dockRef} onNavigate={openNavigationAt} />
+      <FloatingDock ref={dockRef} activeFeature={activeFeature} visible={chromeVisible} onOpen={openFeature} />
       <p className="visually-hidden" role="status" aria-live="polite">{activeFeature ? `${featureTitle(activeFeature)} overlay open` : ""}</p>
-      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} onClose={finishOverlayClose}>
+      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} dockRef={dockRef} contentRef={overlayContentRef} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (
-          <NavigationPanel books={library.books} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={library.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} sectionRequest={navigationSectionRequest} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => void chooseVerse({ book: navigation.state.book, chapter: navigation.state.chapter, verse }, { prefetchedVerses: navigation.state.verses })} />
+          <NavigationPanel books={library.books} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={library.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} sectionRequest={navigationSectionRequest} scrollContainerRef={overlayContentRef} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => void chooseVerse({ book: navigation.state.book, chapter: navigation.state.chapter, verse }, { prefetchedVerses: navigation.state.verses })} />
         )}
         {activeFeature === "history" && <HistoryPanel entries={history} onSelect={(entry) => void chooseVerse(entry, { recordHistory: false })} onRemove={removeHistory} onClear={clearHistory} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}

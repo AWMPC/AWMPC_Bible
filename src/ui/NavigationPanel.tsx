@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { Book, Verse } from "../data/contracts";
 import { scrollNavigationSection } from "./navigationScroll";
 import type { NavigationSectionRequest } from "./navigationTarget";
@@ -18,9 +18,10 @@ export type NavigationPanelProps = {
   onChapter: (chapter: string) => void;
   onVerse: (verse: string) => void;
   sectionRequest?: NavigationSectionRequest | null;
+  scrollContainerRef: RefObject<HTMLElement | null>;
 };
 
-export function NavigationPanel({ books, book, chapters, chapter, verses, initialLoading, versesLoading, error, onBook, onChapter, onVerse, sectionRequest }: NavigationPanelProps) {
+export function NavigationPanel({ books, book, chapters, chapter, verses, initialLoading, versesLoading, error, onBook, onChapter, onVerse, sectionRequest, scrollContainerRef }: NavigationPanelProps) {
   const booksRef = useRef<HTMLElement>(null);
   const chaptersRef = useRef<HTMLElement>(null);
   const versesRef = useRef<HTMLElement>(null);
@@ -29,14 +30,12 @@ export function NavigationPanel({ books, book, chapters, chapter, verses, initia
   const scheduleScroll = useCallback((target: HTMLElement | null) => {
     cancelAnimationFrame(scrollFrameRef.current);
     scrollFrameRef.current = requestAnimationFrame(() => {
-      scrollFrameRef.current = requestAnimationFrame(() => {
-        const container = target?.closest<HTMLElement>(".overlay-content");
-        if (container && target) {
-          scrollNavigationSection(container, target, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-        }
-      });
+      const container = scrollContainerRef.current;
+      if (container && target) {
+        scrollNavigationSection(container, target, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      }
     });
-  }, []);
+  }, [scrollContainerRef]);
 
   useEffect(() => () => cancelAnimationFrame(scrollFrameRef.current), []);
 

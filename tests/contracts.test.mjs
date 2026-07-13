@@ -19,6 +19,7 @@ test("runtime remains a lean text-only Vite worker application", async () => {
 test("Liquid Glass accessibility and motion fallbacks remain present", async () => {
   const [styles, overlay, motion] = await Promise.all([read("../src/styles.css"), read("../src/ui/FeatureOverlay.tsx"), read("../src/ui/motion.ts")]);
   assert.match(styles, /backdrop-filter:/);
+  assert.match(styles, /-webkit-backdrop-filter:/);
   assert.match(styles, /@supports not/);
   assert.match(styles, /prefers-reduced-motion/);
   assert.match(styles, /forced-colors/);
@@ -39,11 +40,12 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
 });
 
 test("panels retain semantic native controls", async () => {
-  const [app, navigation, history, overlay, profile, styles] = await Promise.all([
+  const [app, navigation, history, overlay, overlayLifecycle, profile, styles] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),
     read("../src/ui/NavigationPanel.tsx"),
     read("../src/ui/HistoryPanel.tsx"),
     read("../src/ui/FeatureOverlay.tsx"),
+    read("../src/ui/useOverlayLifecycle.ts"),
     read("../src/ui/ProfilePanel.tsx"),
     read("../src/styles.css"),
   ]);
@@ -52,8 +54,8 @@ test("panels retain semantic native controls", async () => {
   assert.match(navigation, /aria-busy/);
   assert.match(history, /<button type="button"/);
   assert.match(overlay, /<dialog/);
-  assert.match(overlay, /dialog\.show\(\)/);
-  assert.doesNotMatch(overlay, /showModal\(\)/);
+  assert.match(overlayLifecycle, /dialog\.show\(\)/);
+  assert.doesNotMatch(overlayLifecycle, /showModal\(\)/);
   assert.match(overlay, /onCancel/);
   assert.match(app, /inert=\{activeFeature !== null\}/);
   assert.match(app, /<ReadingLocationControls[^>]*visible=\{chromeVisible && activeFeature === null\}/);
@@ -61,15 +63,23 @@ test("panels retain semantic native controls", async () => {
   assert.doesNotMatch(app, /reading-header|chapter-indicator/);
   assert.match(app, /feature === activeFeature/);
   assert.match(app, /overlayRef\.current\?\.keepOpen\(\)/);
-  assert.match(overlay, /closeGenerationRef/);
-  assert.match(overlay, /content\.scrollTop = 0/);
-  assert.match(overlay, /type OverlayPhase = "closed" \| "opening" \| "open" \| "closing"/);
   assert.match(styles, /\.overlay-shade\s*\{[^}]*opacity:\s*0[^}]*transition:\s*opacity var\(--motion-duration\) var\(--motion-easing\)/);
   assert.match(styles, /\.overlay-shade\.is-visible\s*\{[^}]*opacity:\s*1/);
   assert.match(styles, /\.reading-location-controls\.is-hidden \.reading-location-button\s*\{[^}]*translate:\s*0 calc\(-100%/);
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
   assert.match(profile, /<select/);
+});
+
+test("overlay geometry uses owned refs instead of global selectors", async () => {
+  const sources = await Promise.all([
+    read("../src/AwmpcBibleApp.tsx"),
+    read("../src/ui/FeatureOverlay.tsx"),
+    read("../src/ui/useOverlayViewport.ts"),
+    read("../src/ui/ReadingLocationControls.tsx"),
+    read("../src/ui/NavigationPanel.tsx"),
+  ]);
+  assert.doesNotMatch(sources.join("\n"), /document\.querySelector|\.closest<HTMLElement>/);
 });
 
 test("ordinary overlay close remains isolated from verse reveal scrolling", async () => {

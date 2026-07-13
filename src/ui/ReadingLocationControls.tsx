@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { createOverlayOrigin, type OverlayOrigin } from "./features";
 import type { NavigationSection } from "./navigationTarget";
 
@@ -7,12 +8,13 @@ type ReadingLocationControlsProps = {
   visible: boolean;
   activeSection: NavigationSection | null;
   obscured: boolean;
+  dockRef: RefObject<HTMLElement | null>;
   onNavigate: (section: NavigationSection, origin: OverlayOrigin, trigger: HTMLButtonElement) => void;
 };
 
-export function ReadingLocationControls({ book, chapter, visible, activeSection, obscured, onNavigate }: ReadingLocationControlsProps) {
+export function ReadingLocationControls({ book, chapter, visible, activeSection, obscured, dockRef, onNavigate }: ReadingLocationControlsProps) {
   const open = (section: NavigationSection, trigger: HTMLButtonElement) => {
-    const dock = document.querySelector<HTMLElement>(".floating-dock")?.getBoundingClientRect();
+    const dock = dockRef.current?.getBoundingClientRect();
     if (dock) onNavigate(section, createOverlayOrigin(trigger.getBoundingClientRect(), dock), trigger);
   };
 

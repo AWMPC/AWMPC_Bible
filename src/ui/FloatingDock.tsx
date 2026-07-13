@@ -1,14 +1,15 @@
-import { createOverlayOrigin, DOCK_FEATURES, type FeatureId, type OverlayOrigin } from "./features";
+import { forwardRef } from "react";
+import { DOCK_FEATURES, type FeatureId } from "./features";
 
 type FloatingDockProps = {
   activeFeature: FeatureId | null;
   visible: boolean;
-  onOpen: (feature: FeatureId, origin: OverlayOrigin, trigger: HTMLButtonElement) => void;
+  onOpen: (feature: FeatureId, trigger: HTMLButtonElement) => void;
 };
 
-export function FloatingDock({ activeFeature, visible, onOpen }: FloatingDockProps) {
+export const FloatingDock = forwardRef<HTMLElement, FloatingDockProps>(function FloatingDock({ activeFeature, visible, onOpen }, ref) {
   return (
-    <nav className={`floating-dock${visible ? "" : " is-hidden"}`} aria-label="AWMPC Bible tools">
+    <nav ref={ref} className={`floating-dock${visible ? "" : " is-hidden"}`} aria-label="AWMPC Bible tools">
       <div className="dock-scroll">
         {DOCK_FEATURES.map((feature) => (
           <button
@@ -20,11 +21,7 @@ export function FloatingDock({ activeFeature, visible, onOpen }: FloatingDockPro
             aria-haspopup="dialog"
             aria-controls="feature-overlay"
             aria-expanded={activeFeature === feature.id}
-            onClick={(event) => {
-              const button = event.currentTarget.getBoundingClientRect();
-              const dock = event.currentTarget.closest("nav")?.getBoundingClientRect();
-              if (dock) onOpen(feature.id, createOverlayOrigin(button, dock), event.currentTarget);
-            }}
+            onClick={(event) => onOpen(feature.id, event.currentTarget)}
           >
             <span className={`dock-symbol dock-symbol-${feature.id}`} aria-hidden="true" />
             <span>{feature.shortLabel}</span>
@@ -33,4 +30,4 @@ export function FloatingDock({ activeFeature, visible, onOpen }: FloatingDockPro
       </div>
     </nav>
   );
-}
+});
