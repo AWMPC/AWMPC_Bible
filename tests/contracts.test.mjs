@@ -100,6 +100,10 @@ test("panels retain semantic native controls", async () => {
   assert.match(styles, /\.reading-location-controls\.is-hidden \.reading-location-button\s*\{[^}]*translate:\s*0 calc\(-100%/);
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
+  assert.match(profile, /className="scale-marks" aria-hidden="true"/);
+  assert.match(profile, /className="scale-tick"/);
+  assert.match(styles, /--range-thumb-size:\s*30px/);
+  assert.doesNotMatch(styles, /\.scale-labels\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*1fr\)/);
   assert.match(profile, /<select/);
   assert.match(profile, />Primary language</);
   assert.match(profile, />Secondary language</);

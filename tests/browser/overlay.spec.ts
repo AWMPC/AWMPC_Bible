@@ -83,6 +83,43 @@ test("offers only Sans, Serif, and Mono fonts in that order", async ({ page }) =
   await expect(page.locator(".awmpc-bible-shell")).toHaveAttribute("data-verse-font", "monospace");
 });
 
+test("centers text-scale ticks and labels under every slider snap point", async ({ page }) => {
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  const slider = page.getByRole("slider", { name: "Verse text size" });
+  const labels = ["Compact", "Standard", "Comfortable", "Large", "Extra large"];
+  await expect(page.locator(".scale-mark")).toHaveCount(labels.length);
+  await expect(page.locator(".scale-label")).toHaveText(labels);
+  await expect(page.locator(".scale-marks")).toHaveAttribute("aria-hidden", "true");
+
+  for (let index = 0; index < labels.length; index += 1) {
+    await slider.fill(String(index));
+    await expect(slider).toHaveAttribute("aria-valuetext", labels[index]);
+    await expect(page.locator(".setting-heading output strong")).toHaveText(labels[index]);
+  }
+
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const geometry = await page.locator(".text-scale-control").evaluate((control) => {
+      const input = control.querySelector<HTMLInputElement>("input")!;
+      const inputRect = input.getBoundingClientRect();
+      const thumbSize = Number.parseFloat(getComputedStyle(control).getPropertyValue("--range-thumb-size"));
+      return Array.from(control.querySelectorAll<HTMLElement>(".scale-mark")).map((mark, index, marks) => {
+        const tick = mark.querySelector<HTMLElement>(".scale-tick")!.getBoundingClientRect();
+        const label = mark.querySelector<HTMLElement>(".scale-label")!.getBoundingClientRect();
+        const expected = inputRect.left + thumbSize / 2 + index / (marks.length - 1) * (inputRect.width - thumbSize);
+        return { expected, tickCenter: tick.left + tick.width / 2, labelCenter: label.left + label.width / 2, labelLeft: label.left, labelRight: label.right };
+      });
+    });
+    for (const mark of geometry) {
+      expect(Math.abs(mark.tickCenter - mark.expected)).toBeLessThan(1.1);
+      expect(Math.abs(mark.labelCenter - mark.expected)).toBeLessThan(1.1);
+      expect(mark.labelLeft).toBeGreaterThanOrEqual(0);
+      expect(mark.labelRight).toBeLessThanOrEqual(viewport.width);
+    }
+    for (let index = 1; index < geometry.length; index += 1) expect(geometry[index].labelLeft).toBeGreaterThan(geometry[index - 1].labelRight);
+  }
+});
+
 test("stacks primary and secondary verses with localized book labels and actions", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.getByRole("button", { name: "Profile and preferences" }).click();
