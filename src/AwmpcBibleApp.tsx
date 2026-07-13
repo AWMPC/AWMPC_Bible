@@ -5,6 +5,7 @@ import { useSecondaryPassage } from "./data/useSecondaryPassage";
 import { useBibleHistory } from "./history/useBibleHistory";
 import type { HistoryEntry } from "./history/HistoryStore";
 import { useStagedNavigation } from "./navigation/useStagedNavigation";
+import { useAdjacentChapterNavigation } from "./navigation/useAdjacentChapterNavigation";
 import { parseVerseLink, type LinkedVerse } from "./links/verseLinks";
 import { useChooseVerse } from "./selection/useChooseVerse";
 import { useLanguageVerseAnchor } from "./selection/useLanguageVerseAnchor";
@@ -23,6 +24,7 @@ import { createOverlayOrigin, featureTitle, type FeatureId, type OverlayOrigin }
 import { verseElementId } from "./ui/transitionVerseView";
 import { isTrustedReadingTap, useUserScrollChromeVisibility } from "./ui/useUserScrollChromeVisibility";
 import { useChapterScrollProgress } from "./ui/useChapterScrollProgress";
+import { useChapterSwipe } from "./ui/useChapterSwipe";
 import { middleVerseNumber } from "./ui/middleVerse";
 import { VerseWithFootnotes } from "./ui/VerseWithFootnotes";
 import { VerseActionsMenu, type VerseActionTarget } from "./ui/VerseActionsMenu";
@@ -68,6 +70,19 @@ export function AwmpcBibleApp() {
   const [verseActionTarget, setVerseActionTarget] = useState<VerseActionTarget | null>(null);
   const [readerStatus, setReaderStatus] = useState("");
   const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory } = useBibleHistory();
+  const swipeNavigationEnabled = activeFeature === null && verseActionTarget === null && primaryLibrary.status === "ready" && Boolean(book && chapter);
+  const chapterSwipe = useAdjacentChapterNavigation({
+    enabled: swipeNavigationEnabled,
+    books: primaryLibrary.books,
+    passage,
+    readingPaneRef,
+    requestChapter: primaryLibrary.requestChapter,
+    invalidate: primaryLibrary.invalidate,
+    commit: setPassage,
+    onStatus: setReaderStatus,
+  });
+  useChapterSwipe(readingPaneRef, swipeNavigationEnabled, chapterSwipe.canNavigate, chapterSwipe.navigate);
+  const cancelChapterSwipe = chapterSwipe.cancel;
   const recordHistoryForLanguage = useCallback((selection: { book: string; chapter: string; verse: string }) => {
     recordHistory({ ...selection, bibleLanguage: primaryBibleLanguage });
   }, [primaryBibleLanguage, recordHistory]);
@@ -113,6 +128,7 @@ export function AwmpcBibleApp() {
   }, []);
 
   const openVerseActions = useCallback((targetVerse: VerseActionTarget["verse"], trigger: HTMLButtonElement, language: BibleLanguage, localizedBook: string, localizedChapter: string) => {
+    cancelChapterSwipe();
     setReaderStatus("");
     if (verseActionTriggerRef.current === trigger) {
       closeVerseActions(true);
@@ -120,7 +136,7 @@ export function AwmpcBibleApp() {
     }
     verseActionTriggerRef.current = trigger;
     setVerseActionTarget({ bibleLanguage: language, book: localizedBook, chapter: localizedChapter, verse: targetVerse, trigger });
-  }, [closeVerseActions]);
+  }, [cancelChapterSwipe, closeVerseActions]);
 
   useEffect(() => {
     cancelVerseSelection();
@@ -190,6 +206,7 @@ export function AwmpcBibleApp() {
   function openFeature(feature: FeatureId, trigger: HTMLButtonElement) {
     const dock = dockRef.current;
     if (!dock) return;
+    cancelChapterSwipe();
     closeVerseActions(false);
     setReaderStatus("");
     const origin = createOverlayOrigin(trigger.getBoundingClientRect(), dock.getBoundingClientRect());
@@ -210,6 +227,7 @@ export function AwmpcBibleApp() {
   }
 
   function openNavigationAt(section: NavigationSection, origin: OverlayOrigin, trigger: HTMLButtonElement) {
+    cancelChapterSwipe();
     overlayTriggerRef.current = trigger;
     overlayRef.current?.keepOpen();
     cancelVerseSelection();
@@ -243,6 +261,7 @@ export function AwmpcBibleApp() {
           id="reading-pane"
           className="reading-pane"
           tabIndex={-1}
+          aria-busy={chapterSwipe.loading || undefined}
           onClick={(event) => {
             const interactive = event.target instanceof Element && Boolean(event.target.closest("a, button, input, select, textarea, [contenteditable='true']"));
             if (isTrustedReadingTap(event.nativeEvent.isTrusted, event.detail, interactive)) toggleChromeVisibility();

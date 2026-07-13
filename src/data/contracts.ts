@@ -5,7 +5,7 @@ export type Footnote = { number: string; text: string };
 export type FootnoteMarker = { footnote: string };
 export type VerseSegment = string | FootnoteMarker;
 export type Verse = { number: string; text: string; segments?: VerseSegment[]; footnotes?: Footnote[] };
-export type ChapterTarget = "reader" | "navigation" | "selection";
+export type ChapterTarget = "reader" | "navigation" | "selection" | "gesture";
 
 export type WorkerRequest =
   | { type: "load"; language: BibleLanguage; datasetUrl: string; baseUrl: string }

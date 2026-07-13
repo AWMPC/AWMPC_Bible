@@ -72,3 +72,24 @@ export async function transitionVerseView(
     pane.style.removeProperty("opacity");
   }
 }
+
+export async function transitionChapterView(
+  pane: HTMLElement,
+  commit: () => void,
+  environment: VerseTransitionEnvironment = browserEnvironment(),
+  signal?: AbortSignal,
+): Promise<void> {
+  const reducedMotion = environment.prefersReducedMotion();
+  try {
+    signal?.throwIfAborted();
+    if (!reducedMotion) await fade(pane, 1, 0, signal);
+    signal?.throwIfAborted();
+    pane.style.opacity = "0";
+    commit();
+    await environment.afterPaint();
+    environment.scrollToTop();
+    if (!reducedMotion) await fade(pane, 0, 1);
+  } finally {
+    pane.style.removeProperty("opacity");
+  }
+}
