@@ -1,6 +1,9 @@
 :root {
   color-scheme: light;
-  --day-bg: #eef3f6; --night-bg: #0b1216;
+  --chapter-progress: 0;
+  --day-bg-start: #eef3f6; --day-bg-end: #77a9c2;
+  --night-bg-start: #171326; --night-bg-end: #073b42;
+  --day-bg: var(--day-bg-start); --night-bg: var(--night-bg-start);
   --day-surface: rgba(255, 255, 255, .58); --night-surface: rgba(27, 39, 45, .68);
   --day-surface-strong: rgba(255, 255, 255, .76); --night-surface-strong: rgba(49, 65, 72, .78);
   --day-surface-solid: #f7fafc; --night-surface-solid: #162127;
@@ -42,6 +45,14 @@
   --blur: blur(24px) saturate(130%);
   --dock-clearance: calc(5rem + max(1rem, env(safe-area-inset-bottom)));
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@supports (color: color-mix(in oklab, black, white)) {
+  :root, .awmpc-bible-shell {
+    --day-bg-current: color-mix(in oklab, var(--day-bg-start), var(--day-bg-end) calc(var(--chapter-progress) * 100%));
+    --night-bg-current: color-mix(in oklab, var(--night-bg-start), var(--night-bg-end) calc(var(--chapter-progress) * 100%));
+    --bg: light-dark(var(--day-bg-current), var(--night-bg-current));
+  }
 }
 
 :root[data-appearance="auto"] { color-scheme: light dark; }
@@ -218,6 +229,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 
 @media (forced-colors: active) {
+  html, body, .awmpc-bible-shell { background: Canvas; }
   .reading-pane, .reading-location-button, .floating-dock, .feature-overlay, .overlay-close { border: 1px solid CanvasText; box-shadow: none; }
   .footnotes-toggle { border: 0; color: ButtonText; }
   .footnotes-toggle[aria-expanded="true"] { color: Highlight; background: transparent; }

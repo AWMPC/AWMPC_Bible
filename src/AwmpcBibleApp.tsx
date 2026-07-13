@@ -15,6 +15,7 @@ import { Skeleton } from "./ui/Skeleton";
 import { createOverlayOrigin, featureTitle, type FeatureId, type OverlayOrigin } from "./ui/features";
 import { verseElementId } from "./ui/transitionVerseView";
 import { isTrustedReadingTap, useUserScrollChromeVisibility } from "./ui/useUserScrollChromeVisibility";
+import { useChapterScrollProgress } from "./ui/useChapterScrollProgress";
 import { VerseWithFootnotes } from "./ui/VerseWithFootnotes";
 import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
 
@@ -24,6 +25,8 @@ export function AwmpcBibleApp() {
   const overlayTriggerRef = useRef<HTMLButtonElement | null>(null);
   const navigationRequestIdRef = useRef(0);
   const readingPaneRef = useRef<HTMLElement>(null);
+  const chapterRef = useRef<HTMLElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLElement>(null);
   const overlayContentRef = useRef<HTMLDivElement>(null);
   const { settings, update: updateSettings } = useBibleSettings();
@@ -32,6 +35,7 @@ export function AwmpcBibleApp() {
   const [passage, setPassage] = useState<Passage>({ book: "", chapter: "", verses: [] });
   const visiblePassage = library.status === "loading" ? { book: "", chapter: "", verses: [] } : passage;
   const { book, chapter, verses } = visiblePassage;
+  useChapterScrollProgress(chapterRef, shellRef, `${bibleLanguage}:${book}:${chapter}`);
   const navigation = useStagedNavigation(library.books, library.requestChapter, library.invalidate);
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
   const [overlayOrigin, setOverlayOrigin] = useState<OverlayOrigin | null>(null);
@@ -112,7 +116,7 @@ export function AwmpcBibleApp() {
   }
 
   return (
-    <div className="awmpc-bible-shell" data-text-scale={textScale} data-verse-font={verseFont}>
+    <div ref={shellRef} className="awmpc-bible-shell" data-text-scale={textScale} data-verse-font={verseFont}>
       <div className="reader-layer" inert={activeFeature !== null}>
         <a className="skip-link" href="#reading-pane">Skip to text</a>
         <div className="workspace">
@@ -127,7 +131,7 @@ export function AwmpcBibleApp() {
           }}
         >
           {library.status === "error" ? <section className="error-card" role="alert"><h1>Unable to open the text</h1><p>{library.error}</p></section> : (
-            library.status === "loading" || verses.length === 0 ? <Skeleton rows={8} text /> : <article lang={bibleLanguage} aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}><VerseWithFootnotes verse={verse} /></li>)}</ol></article>
+            library.status === "loading" || verses.length === 0 ? <Skeleton rows={8} text /> : <article ref={chapterRef} lang={bibleLanguage} aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}><VerseWithFootnotes verse={verse} /></li>)}</ol></article>
           )}
           </main>
         </div>

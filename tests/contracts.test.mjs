@@ -50,6 +50,19 @@ test("floating glass chrome keeps an adaptive gleam with forced-color restraint"
   assert.match(styles, /@media \(forced-colors: active\)[\s\S]*?\.overlay-close\s*\{[^}]*box-shadow:\s*none/);
 });
 
+test("chapter progress drives day and night water palettes", async () => {
+  const styles = await read("../src/styles.css");
+  assert.match(styles, /--chapter-progress:\s*0/);
+  assert.match(styles, /--day-bg-start:\s*#eef3f6/);
+  assert.match(styles, /--day-bg-end:\s*#77a9c2/);
+  assert.match(styles, /--night-bg-start:\s*#171326/);
+  assert.match(styles, /--night-bg-end:\s*#073b42/);
+  assert.match(styles, /\.awmpc-bible-shell\s*\{[^}]*--day-bg-current:\s*color-mix\(in oklab,[^;]*calc\(var\(--chapter-progress\) \* 100%\)\)/);
+  assert.match(styles, /\.awmpc-bible-shell\s*\{[^}]*--night-bg-current:\s*color-mix\(in oklab,[^;]*calc\(var\(--chapter-progress\) \* 100%\)\)/);
+  assert.match(styles, /--bg:\s*light-dark\(var\(--day-bg-current\), var\(--night-bg-current\)\)/);
+  assert.match(styles, /@media \(forced-colors: active\)[\s\S]*?\.awmpc-bible-shell\s*\{\s*background:\s*Canvas/);
+});
+
 test("panels retain semantic native controls", async () => {
   const [app, navigation, history, overlay, overlayLifecycle, profile, styles] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),
@@ -101,10 +114,12 @@ test("ordinary overlay close remains isolated from verse reveal scrolling", asyn
 });
 
 test("AWMPC Bible identity and plain Vite packaging are exact", async () => {
-  const [manifest, page, readme] = await Promise.all([read("../package.json"), read("../index.html"), read("../README.md")]);
+  const [manifest, page, readme, datasetStaging] = await Promise.all([read("../package.json"), read("../index.html"), read("../README.md"), read("../scripts/stageDatasets.mjs")]);
   assert.equal(JSON.parse(manifest).name, "awmpc-bible");
   assert.match(page, /<title>AWMPC Bible<\/title>/);
   assert.match(readme, /^# AWMPC Bible/m);
   assert.doesNotMatch(`${page}\n${readme}`, /Quiet Reader|awmpc-reader/i);
+  assert.equal(JSON.parse(manifest).scripts.prebuild, "npm run stage:data");
+  assert.match(datasetStaging, /\["bible-en\.json", "bible-ko\.json"\]/);
   await assert.rejects(read("../.openai/hosting.json"));
 });

@@ -11,6 +11,24 @@ import { APPEARANCES, isAppearance } from "../src/settings/appearance.ts";
 import { VERSE_FONTS, isVerseFont } from "../src/settings/verseFont.ts";
 import { scrollNavigationSection } from "../src/ui/navigationScroll.ts";
 import { BIBLE_LANGUAGE_OPTIONS, isBibleLanguage } from "../src/settings/bibleLanguage.ts";
+import { chapterScrollProgress } from "../src/ui/useChapterScrollProgress.ts";
+
+test("chapter scroll progress is exact through the chapter's scrollable range", () => {
+  const base = { viewportHeight: 800, chapterTop: 100, chapterHeight: 2800 };
+  assert.equal(chapterScrollProgress({ ...base, viewportTop: 100 }), 0);
+  assert.equal(chapterScrollProgress({ ...base, viewportTop: 1100 }), 0.5);
+  assert.equal(chapterScrollProgress({ ...base, viewportTop: 2100 }), 1);
+});
+
+test("chapter scroll progress clamps and safely rejects unusable geometry", () => {
+  const base = { viewportHeight: 800, chapterTop: 100, chapterHeight: 2800 };
+  assert.equal(chapterScrollProgress({ ...base, viewportTop: -500 }), 0);
+  assert.equal(chapterScrollProgress({ ...base, viewportTop: 5000 }), 1);
+  assert.equal(chapterScrollProgress({ ...base, chapterHeight: 800, viewportTop: 100 }), 0);
+  assert.equal(chapterScrollProgress({ ...base, chapterHeight: 400, viewportTop: 100 }), 0);
+  assert.equal(chapterScrollProgress({ ...base, viewportTop: Number.NaN }), 0);
+  assert.equal(chapterScrollProgress({ ...base, viewportHeight: 0 }), 0);
+});
 
 test("testament grouping preserves order and unknown books", () => {
   const books = ["Genesis", "Malachi", "Matthew", "Revelation", "Future Book"].map((name) => ({ name, chapters: ["1"] }));

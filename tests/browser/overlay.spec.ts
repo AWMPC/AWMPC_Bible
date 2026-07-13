@@ -66,6 +66,34 @@ test("first verse begins at the reading pane's normal inset", async ({ page }) =
   }
 });
 
+test("chapter depth changes day and night backgrounds without following overlay scroll", async ({ page }) => {
+  const shell = page.locator(".awmpc-bible-shell");
+  const progress = () => shell.evaluate((element) => Number.parseFloat(getComputedStyle(element).getPropertyValue("--chapter-progress")));
+  const background = () => shell.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+  await page.locator("html").evaluate((element) => { element.dataset.appearance = "day"; });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(progress).toBe(0);
+  const dayStart = await background();
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect.poll(progress).toBe(1);
+  const dayEnd = await background();
+  expect(dayEnd).not.toBe(dayStart);
+
+  await page.locator("html").evaluate((element) => { element.dataset.appearance = "night"; });
+  const nightEnd = await background();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(progress).toBe(0);
+  const nightStart = await background();
+  expect(nightEnd).not.toBe(nightStart);
+  expect(nightStart).not.toBe(dayStart);
+
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  const beforeOverlayScroll = await progress();
+  await page.locator(".overlay-content").evaluate((element) => element.scrollTo({ top: 800 }));
+  await expect.poll(progress).toBe(beforeOverlayScroll);
+});
+
 test("top reading controls target navigation sections without a reader header", async ({ page }) => {
   const book = page.getByRole("button", { name: "Choose book, currently Genesis" });
   const chapter = page.getByRole("button", { name: "Choose chapter, currently chapter 1" });
