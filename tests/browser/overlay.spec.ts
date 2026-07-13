@@ -1,4 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+
+const packageMetadata = JSON.parse(
+  readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+) as { version: string };
 
 async function waitForScrollIdle(page: import("@playwright/test").Page) {
   await page.evaluate(() => new Promise<void>((resolve) => {
@@ -74,6 +79,31 @@ test("persists the selected Bible language", async ({ page }) => {
   expect(reloadRequests.some((url) => url.endsWith("/data/bible-en.json"))).toBe(false);
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   await expect(page.getByRole("combobox", { name: "Primary language" })).toHaveValue("ko");
+});
+
+test("shows package semver immediately right of the overlay brand", async ({ page }) => {
+  for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
+    await page.getByRole("button", { name: sheet }).click();
+    await expect(page.locator(".overlay-version")).toBeVisible();
+    await expect(page.locator(".overlay-version")).toHaveText(packageMetadata.version);
+    await page.locator(".overlay-close").click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+  }
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  const brand = page.locator(".overlay-brand > span").filter({ hasText: /^AWMPC Bible$/ });
+  const version = page.locator(".overlay-version");
+  await expect(version).toHaveText(packageMetadata.version);
+  await expect(version).toHaveAttribute("aria-label", `Version ${packageMetadata.version}`);
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const [brandBox, versionBox, closeBox] = await Promise.all([brand.boundingBox(), version.boundingBox(), page.locator(".overlay-close").boundingBox()]);
+    expect(brandBox).not.toBeNull();
+    expect(versionBox).not.toBeNull();
+    expect(closeBox).not.toBeNull();
+    expect(versionBox!.x).toBeGreaterThanOrEqual(brandBox!.x + brandBox!.width);
+    expect(Math.abs((versionBox!.y + versionBox!.height / 2) - (brandBox!.y + brandBox!.height / 2))).toBeLessThan(3);
+    expect(versionBox!.x + versionBox!.width).toBeLessThan(closeBox!.x);
+  }
 });
 
 test("offers only Sans, Serif, and Mono fonts in that order", async ({ page }) => {

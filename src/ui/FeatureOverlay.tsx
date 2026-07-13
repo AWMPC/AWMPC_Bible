@@ -69,7 +69,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
           <div ref={surfaceRef} className="overlay-surface">
             <header className="overlay-header">
               <div>
-                <p className="eyebrow">AWMPC Bible</p>
+                <p className="eyebrow overlay-brand"><span>AWMPC Bible</span><span className="overlay-version" aria-label={`Version ${__APP_VERSION__}`}>{__APP_VERSION__}</span></p>
                 <h2 id="feature-overlay-title">{activeFeature ? featureTitle(activeFeature) : "AWMPC Bible"}</h2>
               </div>
               <button ref={closeButtonRef} className="overlay-close" type="button" onClick={() => void close()} aria-label="Close overlay">Close</button>

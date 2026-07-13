@@ -138,8 +138,10 @@ test("ordinary overlay close remains isolated from verse reveal scrolling", asyn
 });
 
 test("AWMPC Bible identity and plain Vite packaging are exact", async () => {
-  const [manifest, page, readme, datasetStaging, viteConfig] = await Promise.all([read("../package.json"), read("../index.html"), read("../README.md"), read("../scripts/stageDatasets.mjs"), read("../vite.config.ts")]);
-  assert.equal(JSON.parse(manifest).name, "awmpc-bible");
+  const [manifest, page, readme, datasetStaging, viteConfig, overlay, viteTypes] = await Promise.all([read("../package.json"), read("../index.html"), read("../README.md"), read("../scripts/stageDatasets.mjs"), read("../vite.config.ts"), read("../src/ui/FeatureOverlay.tsx"), read("../src/vite-env.d.ts")]);
+  const packageMetadata = JSON.parse(manifest);
+  assert.equal(packageMetadata.name, "awmpc-bible");
+  assert.match(packageMetadata.version, /^\d+\.\d+\.\d+$/);
   assert.match(page, /<title>AWMPC Bible<\/title>/);
   assert.match(readme, /^# AWMPC Bible/m);
   assert.doesNotMatch(`${page}\n${readme}`, /Quiet Reader|awmpc-reader/i);
@@ -149,5 +151,9 @@ test("AWMPC Bible identity and plain Vite packaging are exact", async () => {
   assert.match(datasetStaging, /TextDecoder\("utf-8", \{ fatal: true \}\)/);
   assert.match(viteConfig, /\["\/data\/bible-ko\.json", "bible-ko\.json"\]/);
   assert.match(viteConfig, /Cache-Control", "no-store"/);
+  assert.match(viteConfig, /import packageMetadata from "\.\/package\.json" with \{ type: "json" \}/);
+  assert.match(viteConfig, /__APP_VERSION__:\s*JSON\.stringify\(packageMetadata\.version\)/);
+  assert.match(viteTypes, /declare const __APP_VERSION__: string/);
+  assert.match(overlay, /className="overlay-version"[^>]*>\{__APP_VERSION__\}<\/span>/);
   await assert.rejects(read("../.openai/hosting.json"));
 });

@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
+import packageMetadata from "./package.json" with { type: "json" };
 
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 const LOCAL_DATASETS = new Map([
@@ -37,6 +38,7 @@ function localDatasetPlugin(): Plugin {
 
 export default defineConfig({
   base: "./",
+  define: { __APP_VERSION__: JSON.stringify(packageMetadata.version) },
   plugins: [localDatasetPlugin(), react()],
   server: isCodexSeatbeltSandbox
     ? { watch: { useFsEvents: false, usePolling: true } }
