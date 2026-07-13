@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import DataWorker from "./data.worker?worker";
 import { dispatchChapterRequest, type PendingChapter } from "./chapterRequests";
-import type { Book, ChapterTarget, Verse, WorkerRequest, WorkerResponse } from "./contracts";
+import { dispatchSearchRequest, type PendingSearch } from "./searchRequests";
+import type { Book, ChapterTarget, SearchResult, Verse, WorkerRequest, WorkerResponse } from "./contracts";
 import { bibleDatasetUrl, DEFAULT_BIBLE_LANGUAGE, type BibleLanguage } from "./languages";
 
 export type Passage = Readonly<{ book: string; chapter: string; verses: Verse[] }>;
@@ -13,6 +14,7 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
   const workerLanguageRef = useRef<BibleLanguage | null>(null);
   const requestIdRef = useRef(0);
   const pendingRef = useRef(new Map<number, PendingChapter>());
+  const pendingSearchRef = useRef(new Map<number, PendingSearch>());
   const loadGenerationRef = useRef(0);
   const readyRef = useRef(false);
   const [books, setBooks] = useState<Book[]>([]);
@@ -37,10 +39,22 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
     }
   }, []);
 
+  const search = useCallback((query: string, limit = 30): Promise<SearchResult[] | null> => {
+    if (workerLanguageRef.current !== requestedLanguageRef.current) return Promise.resolve(null);
+    const requestId = ++requestIdRef.current;
+    return dispatchSearchRequest(workerRef.current, readyRef.current, pendingSearchRef.current, requestId, query, limit);
+  }, []);
+
+  const cancelSearch = useCallback(() => {
+    pendingSearchRef.current.forEach(({ resolve }) => resolve(null));
+    pendingSearchRef.current.clear();
+  }, []);
+
   const resolveAll = useCallback(() => {
     pendingRef.current.forEach(({ resolve }) => resolve(null));
     pendingRef.current.clear();
-  }, []);
+    cancelSearch();
+  }, [cancelSearch]);
 
   useEffect(() => {
     const loadGeneration = ++loadGenerationRef.current;
@@ -77,6 +91,10 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
       } else if (data.type === "chapter") {
         pendingRef.current.get(data.requestId)?.resolve(data.verses);
         pendingRef.current.delete(data.requestId);
+      } else if (data.type === "search") {
+        pendingSearchRef.current.get(data.requestId)?.resolve(data.results);
+      } else if (data.type === "search-error") {
+        pendingSearchRef.current.get(data.requestId)?.resolve(null);
       } else if ("requestId" in data) {
         pendingRef.current.get(data.requestId)?.resolve(null);
         pendingRef.current.delete(data.requestId);
@@ -114,5 +132,7 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
     initialPassage: languageIsChanging ? null : initialPassage,
     requestChapter,
     invalidate,
+    search,
+    cancelSearch,
   } as const;
 }

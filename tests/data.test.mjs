@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { fetchDatasetText, waitForDatasetRetry } from "../src/data/fetchDataset.ts";
 import { LIMITS, parseInlineFootnotes, parseLibrary, readChapter } from "../src/data/library.ts";
 import { dispatchChapterRequest } from "../src/data/chapterRequests.ts";
+import { dispatchSearchRequest } from "../src/data/searchRequests.ts";
 import { bibleDatasetUrl, isAllowedBibleDatasetUrl, isBibleLanguage } from "../src/data/languages.ts";
 
 const noWait = async () => {};
@@ -89,6 +90,20 @@ test("cancelling a chapter request settles it and clears its timeout", async () 
   const result = dispatchChapterRequest({ postMessage() {} }, true, pending, 6, "selection", "Genesis", "1", 60_000);
   pending.get(6).resolve(null);
   assert.equal(await result, null);
+  assert.equal(pending.size, 0);
+});
+
+test("search requests settle on readiness, posting failure, response, and timeout", async () => {
+  const pending = new Map();
+  assert.equal(await dispatchSearchRequest(null, true, pending, 20, "light", 10), null);
+  assert.equal(await dispatchSearchRequest({ postMessage() { throw new Error("stopped"); } }, true, pending, 21, "light", 10), null);
+  const messages = [];
+  const response = dispatchSearchRequest({ postMessage(message) { messages.push(message); } }, true, pending, 22, "light", 10);
+  assert.deepEqual(messages, [{ type: "search", requestId: 22, query: "light", limit: 10 }]);
+  pending.get(22).resolve([{ book: "Genesis", chapter: "1", verse: "3", text: "Light", score: 50 }]);
+  assert.equal((await response)?.[0].verse, "3");
+  assert.equal(pending.size, 0);
+  assert.equal(await dispatchSearchRequest({ postMessage() {} }, true, pending, 23, "light", 10, 1), null);
   assert.equal(pending.size, 0);
 });
 

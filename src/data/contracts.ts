@@ -5,14 +5,18 @@ export type Footnote = { number: string; text: string };
 export type FootnoteMarker = { footnote: string };
 export type VerseSegment = string | FootnoteMarker;
 export type Verse = { number: string; text: string; segments?: VerseSegment[]; footnotes?: Footnote[] };
+export type SearchResult = Readonly<{ book: string; chapter: string; verse: string; text: string; score: number }>;
 export type ChapterTarget = "reader" | "navigation" | "selection" | "gesture";
 
 export type WorkerRequest =
   | { type: "load"; language: BibleLanguage; datasetUrl: string; baseUrl: string }
-  | { type: "chapter"; requestId: number; target: ChapterTarget; book: string; chapter: string };
+  | { type: "chapter"; requestId: number; target: ChapterTarget; book: string; chapter: string }
+  | { type: "search"; requestId: number; query: string; limit: number };
 
 export type WorkerResponse =
   | { type: "ready"; language: BibleLanguage; books: Book[] }
   | { type: "chapter"; requestId: number; target: ChapterTarget; book: string; chapter: string; verses: Verse[] }
+  | { type: "search"; requestId: number; results: SearchResult[] }
+  | { type: "search-error"; requestId: number; message: string }
   | { type: "error"; requestId: number; target: ChapterTarget; message: string }
   | { type: "error"; message: string };
