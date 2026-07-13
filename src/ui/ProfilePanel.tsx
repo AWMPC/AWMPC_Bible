@@ -1,6 +1,7 @@
 import { TEXT_SCALES, textScaleAt, textScaleIndex, type TextScale } from "../settings/textScale";
 import { VERSE_FONTS, type VerseFont } from "../settings/verseFont";
 import { APPEARANCES, type Appearance } from "../settings/appearance";
+import { BIBLE_LANGUAGE_OPTIONS, type BibleLanguage } from "../settings/bibleLanguage";
 
 type ProfilePanelProps = {
   textScale: TextScale;
@@ -9,9 +10,11 @@ type ProfilePanelProps = {
   onVerseFontChange: (font: VerseFont) => void;
   appearance: Appearance;
   onAppearanceChange: (appearance: Appearance) => void;
+  bibleLanguage: BibleLanguage;
+  onBibleLanguageChange: (language: BibleLanguage) => void;
 };
 
-export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange }: ProfilePanelProps) {
+export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange, bibleLanguage, onBibleLanguageChange }: ProfilePanelProps) {
   const selected = TEXT_SCALES[textScaleIndex(textScale)];
   return (
     <div className="profile-panel">
@@ -45,6 +48,16 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
         </div>
         <select id="verse-font" className="setting-select" value={verseFont} onChange={(event) => onVerseFontChange(event.currentTarget.value as VerseFont)}>
           {VERSE_FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
+        </select>
+      </section>
+      <section className="setting-group font-setting" aria-labelledby="bible-language-label">
+        <div>
+          <p className="eyebrow">Bible text</p>
+          <label id="bible-language-label" htmlFor="bible-language">Language</label>
+          <p>Selects the locally available Bible translation.</p>
+        </div>
+        <select id="bible-language" className="setting-select" value={bibleLanguage} onChange={(event) => onBibleLanguageChange(event.currentTarget.value as BibleLanguage)}>
+          {BIBLE_LANGUAGE_OPTIONS.map((language) => <option key={language.id} value={language.id}>{language.label}</option>)}
         </select>
       </section>
       <section className="setting-group font-setting" aria-labelledby="appearance-label">

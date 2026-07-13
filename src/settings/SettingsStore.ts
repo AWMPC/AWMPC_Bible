@@ -1,8 +1,9 @@
 import { DEFAULT_TEXT_SCALE, isTextScale, type TextScale } from "./textScale.ts";
 import { DEFAULT_VERSE_FONT, isVerseFont, type VerseFont } from "./verseFont.ts";
 import { DEFAULT_APPEARANCE, isAppearance, type Appearance } from "./appearance.ts";
+import { DEFAULT_BIBLE_LANGUAGE, isBibleLanguage, type BibleLanguage } from "./bibleLanguage.ts";
 
-export type BibleSettings = Readonly<{ textScale: TextScale; verseFont: VerseFont; appearance: Appearance }>;
+export type BibleSettings = Readonly<{ textScale: TextScale; verseFont: VerseFont; appearance: Appearance; bibleLanguage: BibleLanguage }>;
 
 export interface SettingsStore {
   load(): BibleSettings;
@@ -30,6 +31,7 @@ export class LocalSettingsStore implements SettingsStore {
         textScale: isTextScale(settings.textScale) ? settings.textScale : DEFAULT_TEXT_SCALE,
         verseFont: isVerseFont(settings.verseFont) ? settings.verseFont : DEFAULT_VERSE_FONT,
         appearance: isAppearance(settings.appearance) ? settings.appearance : DEFAULT_APPEARANCE,
+        bibleLanguage: isBibleLanguage(settings.bibleLanguage) ? settings.bibleLanguage : DEFAULT_BIBLE_LANGUAGE,
       };
       if (current === null && legacy !== null) {
         try { this.storage.setItem(STORAGE_KEY, JSON.stringify(validated)); } catch { /* Legacy data remains usable. */ }
@@ -38,7 +40,7 @@ export class LocalSettingsStore implements SettingsStore {
     } catch {
       // Invalid or unavailable device storage falls back to a safe default.
     }
-    return { textScale: DEFAULT_TEXT_SCALE, verseFont: DEFAULT_VERSE_FONT, appearance: DEFAULT_APPEARANCE };
+    return { textScale: DEFAULT_TEXT_SCALE, verseFont: DEFAULT_VERSE_FONT, appearance: DEFAULT_APPEARANCE, bibleLanguage: DEFAULT_BIBLE_LANGUAGE };
   }
 
   save(settings: BibleSettings): void {

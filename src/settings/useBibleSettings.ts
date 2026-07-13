@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DEFAULT_APPEARANCE } from "./appearance";
+import { DEFAULT_BIBLE_LANGUAGE } from "./bibleLanguage";
 import { LocalSettingsStore, type BibleSettings, type SettingsStore } from "./SettingsStore";
 import { DEFAULT_TEXT_SCALE } from "./textScale";
 import { DEFAULT_VERSE_FONT } from "./verseFont";
@@ -8,27 +9,29 @@ const DEFAULT_SETTINGS: BibleSettings = {
   textScale: DEFAULT_TEXT_SCALE,
   verseFont: DEFAULT_VERSE_FONT,
   appearance: DEFAULT_APPEARANCE,
+  bibleLanguage: DEFAULT_BIBLE_LANGUAGE,
 };
 
 const createLocalSettingsStore = () => new LocalSettingsStore(window.localStorage);
 
 export function useBibleSettings(createStore: () => SettingsStore = createLocalSettingsStore) {
-  const storeRef = useRef<SettingsStore | null>(null);
-  const [settings, setSettings] = useState<BibleSettings>(DEFAULT_SETTINGS);
-  const settingsRef = useRef<BibleSettings>(DEFAULT_SETTINGS);
-
-  useEffect(() => {
+  const initialRef = useRef<{ store: SettingsStore | null; settings: BibleSettings } | null>(null);
+  if (!initialRef.current) {
     try {
       const store = createStore();
-      storeRef.current = store;
-      const loaded = store.load();
-      settingsRef.current = loaded;
-      setSettings(loaded);
+      initialRef.current = { store, settings: store.load() };
     } catch {
-      storeRef.current = null;
+      initialRef.current = { store: null, settings: DEFAULT_SETTINGS };
     }
+  }
+  const storeRef = useRef<SettingsStore | null>(initialRef.current.store);
+  const [settings, setSettings] = useState<BibleSettings>(initialRef.current.settings);
+  const settingsRef = useRef<BibleSettings>(initialRef.current.settings);
+
+  useEffect(() => {
+    storeRef.current = initialRef.current?.store ?? null;
     return () => { storeRef.current = null; };
-  }, [createStore]);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;

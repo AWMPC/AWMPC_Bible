@@ -26,16 +26,21 @@ export function AwmpcBibleApp() {
   const readingPaneRef = useRef<HTMLElement>(null);
   const dockRef = useRef<HTMLElement>(null);
   const overlayContentRef = useRef<HTMLDivElement>(null);
-  const library = useBibleLibrary();
+  const { settings, update: updateSettings } = useBibleSettings();
+  const { textScale, verseFont, appearance, bibleLanguage } = settings;
+  const library = useBibleLibrary(bibleLanguage);
   const [passage, setPassage] = useState<Passage>({ book: "", chapter: "", verses: [] });
-  const { book, chapter, verses } = passage;
+  const visiblePassage = library.status === "loading" ? { book: "", chapter: "", verses: [] } : passage;
+  const { book, chapter, verses } = visiblePassage;
   const navigation = useStagedNavigation(library.books, library.requestChapter, library.invalidate);
   const [activeFeature, setActiveFeature] = useState<FeatureId | null>(null);
   const [overlayOrigin, setOverlayOrigin] = useState<OverlayOrigin | null>(null);
   const [navigationSectionRequest, setNavigationSectionRequest] = useState<NavigationSectionRequest | null>(null);
   const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory } = useBibleHistory();
-  const { settings, update: updateSettings } = useBibleSettings();
-  const { textScale, verseFont, appearance } = settings;
+  const visibleHistory = history.filter((entry) => entry.bibleLanguage === bibleLanguage);
+  const recordHistoryForLanguage = useCallback((selection: { book: string; chapter: string; verse: string }) => {
+    recordHistory({ ...selection, bibleLanguage });
+  }, [bibleLanguage, recordHistory]);
   const closeOverlay = useCallback(async () => {
     selectionCloseRef.current = true;
     try { await overlayRef.current?.close(); } finally { selectionCloseRef.current = false; }
@@ -46,9 +51,15 @@ export function AwmpcBibleApp() {
     requestChapter: library.requestChapter,
     cancelRequest: () => library.invalidate("selection"),
     commit: setPassage,
-    recordHistory,
+    recordHistory: recordHistoryForLanguage,
     closeOverlay,
   });
+
+  useEffect(() => {
+    cancelVerseSelection();
+    navigation.abandon();
+    setPassage({ book: "", chapter: "", verses: [] });
+  }, [bibleLanguage]);
 
   useEffect(() => {
     if (library.initialPassage && !passage.book) setPassage(library.initialPassage);
@@ -116,7 +127,7 @@ export function AwmpcBibleApp() {
           }}
         >
           {library.status === "error" ? <section className="error-card" role="alert"><h1>Unable to open the text</h1><p>{library.error}</p></section> : (
-            verses.length === 0 ? <Skeleton rows={8} text /> : <article aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}><VerseWithFootnotes verse={verse} /></li>)}</ol></article>
+            library.status === "loading" || verses.length === 0 ? <Skeleton rows={8} text /> : <article lang={bibleLanguage} aria-label={`${book} chapter ${chapter}`}><ol className="verses">{verses.map((verse) => <li id={verseElementId(chapter, verse.number)} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}><VerseWithFootnotes verse={verse} /></li>)}</ol></article>
           )}
           </main>
         </div>
@@ -128,9 +139,9 @@ export function AwmpcBibleApp() {
         {activeFeature === "navigation" && (
           <NavigationPanel books={library.books} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={library.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} sectionRequest={navigationSectionRequest} scrollContainerRef={overlayContentRef} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => void chooseVerse({ book: navigation.state.book, chapter: navigation.state.chapter, verse }, { prefetchedVerses: navigation.state.verses })} />
         )}
-        {activeFeature === "history" && <HistoryPanel entries={history} onSelect={(entry) => void chooseVerse(entry, { recordHistory: false })} onRemove={removeHistory} onClear={clearHistory} />}
+        {activeFeature === "history" && <HistoryPanel entries={visibleHistory} onSelect={(entry) => void chooseVerse(entry, { recordHistory: false })} onRemove={removeHistory} onClear={clearHistory} />}
         {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail="Full-text results and your recent searches will share this focused space." />}
-        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={(value) => updateSettings({ textScale: value })} verseFont={verseFont} onVerseFontChange={(value) => updateSettings({ verseFont: value })} appearance={appearance} onAppearanceChange={(value) => updateSettings({ appearance: value })} />}
+        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={(value) => updateSettings({ textScale: value })} verseFont={verseFont} onVerseFontChange={(value) => updateSettings({ verseFont: value })} appearance={appearance} onAppearanceChange={(value) => updateSettings({ appearance: value })} bibleLanguage={bibleLanguage} onBibleLanguageChange={(value) => updateSettings({ bibleLanguage: value })} />}
       </FeatureOverlay>
     </div>
   );

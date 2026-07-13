@@ -10,6 +10,7 @@ import { textScaleAt, TEXT_SCALES } from "../src/settings/textScale.ts";
 import { APPEARANCES, isAppearance } from "../src/settings/appearance.ts";
 import { VERSE_FONTS, isVerseFont } from "../src/settings/verseFont.ts";
 import { scrollNavigationSection } from "../src/ui/navigationScroll.ts";
+import { BIBLE_LANGUAGE_OPTIONS, isBibleLanguage } from "../src/settings/bibleLanguage.ts";
 
 test("testament grouping preserves order and unknown books", () => {
   const books = ["Genesis", "Malachi", "Matthew", "Revelation", "Future Book"].map((name) => ({ name, chapters: ["1"] }));
@@ -17,6 +18,14 @@ test("testament grouping preserves order and unknown books", () => {
   assert.deepEqual(grouped.old.map((item) => item.name), ["Genesis", "Malachi"]);
   assert.deepEqual(grouped.new.map((item) => item.name), ["Matthew", "Revelation"]);
   assert.deepEqual(grouped.other.map((item) => item.name), ["Future Book"]);
+});
+
+test("testament grouping recognizes Korean book names", () => {
+  const books = ["창세기", "말라기", "마태복음", "요한계시록"].map((name) => ({ name, chapters: ["1"] }));
+  const grouped = groupBooksByTestament(books);
+  assert.deepEqual(grouped.old.map((item) => item.name), ["창세기", "말라기"]);
+  assert.deepEqual(grouped.new.map((item) => item.name), ["마태복음", "요한계시록"]);
+  assert.deepEqual(grouped.other, []);
 });
 
 test("settings allowlists and scale snapping remain exact", () => {
@@ -27,6 +36,9 @@ test("settings allowlists and scale snapping remain exact", () => {
   assert.equal(isAppearance("custom"), false);
   assert.equal(VERSE_FONTS.length, 4);
   assert.equal(isVerseFont("remote-font"), false);
+  assert.deepEqual(BIBLE_LANGUAGE_OPTIONS.map(({ id }) => id), ["en", "ko"]);
+  assert.equal(isBibleLanguage("ko"), true);
+  assert.equal(isBibleLanguage("jp"), false);
 });
 
 test("overlay origin stops above the dock", () => {

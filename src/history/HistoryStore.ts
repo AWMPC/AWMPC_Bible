@@ -1,12 +1,15 @@
+import { DEFAULT_BIBLE_LANGUAGE, isBibleLanguage, type BibleLanguage } from "../data/languages.ts";
+
 export type HistoryEntry = Readonly<{
   id: string;
+  bibleLanguage: BibleLanguage;
   book: string;
   chapter: string;
   verse: string;
   visitedAt: string;
 }>;
 
-export type HistorySelection = Pick<HistoryEntry, "book" | "chapter" | "verse">;
+export type HistorySelection = Pick<HistoryEntry, "book" | "chapter" | "verse"> & Readonly<{ bibleLanguage?: BibleLanguage }>;
 
 export interface HistoryStore {
   list(): Promise<HistoryEntry[]>;
@@ -45,16 +48,24 @@ function isCanonicalTimestamp(value: unknown): value is string {
   return !Number.isNaN(timestamp.valueOf()) && timestamp.toISOString() === value;
 }
 
-function isEntry(value: unknown): value is HistoryEntry {
-  if (!value || typeof value !== "object") return false;
+function normalizeEntry(value: unknown): HistoryEntry | null {
+  if (!value || typeof value !== "object") return null;
   const entry = value as Partial<HistoryEntry>;
-  return isBoundedText(entry.id)
+  if (!(isBoundedText(entry.id)
     && isBoundedText(entry.book)
     && typeof entry.chapter === "string"
     && POSITIVE_INTEGER.test(entry.chapter)
     && typeof entry.verse === "string"
     && POSITIVE_INTEGER.test(entry.verse)
-    && isCanonicalTimestamp(entry.visitedAt);
+    && isCanonicalTimestamp(entry.visitedAt))) return null;
+  return {
+    id: entry.id,
+    bibleLanguage: isBibleLanguage(entry.bibleLanguage) ? entry.bibleLanguage : DEFAULT_BIBLE_LANGUAGE,
+    book: entry.book,
+    chapter: entry.chapter,
+    verse: entry.verse,
+    visitedAt: entry.visitedAt,
+  };
 }
 
 export class LocalHistoryStore implements HistoryStore {
@@ -81,9 +92,11 @@ export class LocalHistoryStore implements HistoryStore {
       const current = this.storage.getItem(STORAGE_KEY);
       const legacy = current === null ? this.storage.getItem(LEGACY_STORAGE_KEY) : null;
       const parsed: unknown = JSON.parse(current ?? legacy ?? "[]");
-      const entries = Array.isArray(parsed) ? parsed.filter(isEntry).slice(0, this.limit) : [];
-      if (current === null && legacy !== null) {
-        try { this.storage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch { /* Legacy data remains usable. */ }
+      const entries = Array.isArray(parsed)
+        ? parsed.map(normalizeEntry).filter((entry): entry is HistoryEntry => entry !== null).slice(0, this.limit)
+        : [];
+      if ((current === null && legacy !== null) || JSON.stringify(parsed) !== JSON.stringify(entries)) {
+        try { this.storage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch { /* Existing data remains usable. */ }
       }
       return entries;
     } catch {
@@ -95,6 +108,7 @@ export class LocalHistoryStore implements HistoryStore {
     const entry: HistoryEntry = {
       id: this.createId(),
       ...selection,
+      bibleLanguage: selection.bibleLanguage ?? DEFAULT_BIBLE_LANGUAGE,
       visitedAt: this.now().toISOString(),
     };
     return this.enqueueMutation(async () => {

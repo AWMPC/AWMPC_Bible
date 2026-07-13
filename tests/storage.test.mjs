@@ -19,7 +19,7 @@ test("history timestamps, bounds, validates, and migrates references", async () 
   const legacy = { id: "legacy", book: "Example", chapter: "1", verse: "2", visitedAt: "2026-07-10T20:30:00.000Z" };
   const migrated = new Map([["quiet-reader.history.v1", JSON.stringify([legacy])]]);
   const migratedStorage = { getItem: (key) => migrated.get(key) ?? null, setItem: (key, value) => migrated.set(key, value), removeItem: (key) => migrated.delete(key) };
-  assert.deepEqual(await new LocalHistoryStore(migratedStorage).list(), [legacy]);
+  assert.deepEqual(await new LocalHistoryStore(migratedStorage).list(), [{ ...legacy, bibleLanguage: "en" }]);
   assert.equal(migrated.has("awmpc-bible.history.v1"), true);
 });
 
@@ -54,7 +54,7 @@ test("history clear removes migrated legacy entries", async () => {
   const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
   const store = new LocalHistoryStore(storage);
 
-  assert.deepEqual(await store.list(), [legacy]);
+  assert.deepEqual(await store.list(), [{ ...legacy, bibleLanguage: "en" }]);
   await store.clear();
 
   assert.deepEqual(await store.list(), []);
@@ -94,8 +94,8 @@ test("history and settings tolerate malformed or unavailable storage", async () 
   assert.equal((await unavailableHistory.add({ book: "Example", chapter: "1", verse: "1" })).id, "id");
 
   const unavailableSettings = new LocalSettingsStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
-  assert.deepEqual(unavailableSettings.load(), { textScale: "standard", verseFont: "system-serif", appearance: "auto" });
-  assert.doesNotThrow(() => unavailableSettings.save({ textScale: "large", verseFont: "rounded", appearance: "night" }));
+  assert.deepEqual(unavailableSettings.load(), { textScale: "standard", verseFont: "system-serif", appearance: "auto", bibleLanguage: "en" });
+  assert.doesNotThrow(() => unavailableSettings.save({ textScale: "large", verseFont: "rounded", appearance: "night", bibleLanguage: "ko" }));
 });
 
 test("history rejects malformed references and timestamps", async () => {
@@ -110,7 +110,20 @@ test("history rejects malformed references and timestamps", async () => {
     { ...valid, visitedAt: "2026-07-10T20:30:00Z" },
   ];
   const storage = { getItem: () => JSON.stringify([valid, ...malformed]), setItem: () => {} };
-  assert.deepEqual(await new LocalHistoryStore(storage).list(), [valid]);
+  assert.deepEqual(await new LocalHistoryStore(storage).list(), [{ ...valid, bibleLanguage: "en" }]);
+});
+
+test("history keeps English and Korean references language-scoped", async () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  let id = 0;
+  const store = new LocalHistoryStore(storage, 10, () => new Date(0), () => `id-${++id}`);
+  await store.add({ bibleLanguage: "en", book: "Genesis", chapter: "1", verse: "1" });
+  await store.add({ bibleLanguage: "ko", book: "창세기", chapter: "1", verse: "1" });
+  assert.deepEqual((await store.list()).map(({ bibleLanguage, book }) => [bibleLanguage, book]), [
+    ["ko", "창세기"],
+    ["en", "Genesis"],
+  ]);
 });
 
 test("history hydration preserves entries recorded while loading", () => {
@@ -130,7 +143,12 @@ test("settings validate, round-trip, and migrate independently", () => {
   const values = new Map([["quiet-reader.settings.v1", '{"textScale":"large"}']]);
   const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
   const store = new LocalSettingsStore(storage);
-  assert.deepEqual(store.load(), { textScale: "large", verseFont: "system-serif", appearance: "auto" });
-  store.save({ textScale: "compact", verseFont: "monospace", appearance: "day" });
-  assert.deepEqual(store.load(), { textScale: "compact", verseFont: "monospace", appearance: "day" });
+  assert.deepEqual(store.load(), { textScale: "large", verseFont: "system-serif", appearance: "auto", bibleLanguage: "en" });
+  store.save({ textScale: "compact", verseFont: "monospace", appearance: "day", bibleLanguage: "ko" });
+  assert.deepEqual(store.load(), { textScale: "compact", verseFont: "monospace", appearance: "day", bibleLanguage: "ko" });
+});
+
+test("settings reject unsupported Bible languages", () => {
+  const storage = { getItem: () => '{"bibleLanguage":"remote"}', setItem: () => {} };
+  assert.equal(new LocalSettingsStore(storage).load().bibleLanguage, "en");
 });

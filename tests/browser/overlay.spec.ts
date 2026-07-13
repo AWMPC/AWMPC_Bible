@@ -8,10 +8,39 @@ const dataset = {
   ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
 };
 
+const koreanDataset = { "창세기": { "1": { "1": "태초에 하나님이 천지를 창조하시니라." } } };
+
 test.beforeEach(async ({ page }) => {
   await page.route("**/data/bible-en.json", (route) => route.fulfill({ json: dataset }));
+  await page.route("**/data/bible-ko.json", (route) => route.fulfill({ json: koreanDataset }));
   await page.goto("/");
   await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
+test("switches between the local English and Korean datasets", async ({ page }) => {
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  const language = page.getByRole("combobox", { name: "Language" });
+  await language.selectOption("ko");
+  await expect(page.locator('article[aria-label="창세기 chapter 1"]')).toContainText("태초에");
+
+  await language.selectOption("en");
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
+test("persists the selected Bible language", async ({ page }) => {
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  const language = page.getByRole("combobox", { name: "Language" });
+  await expect(language).toHaveValue("en");
+  await language.selectOption("ko");
+  await expect(language).toHaveValue("ko");
+
+  const reloadRequests: string[] = [];
+  page.on("request", (request) => reloadRequests.push(request.url()));
+  await page.reload();
+  await expect(page.locator('article[aria-label="창세기 chapter 1"]')).toBeVisible();
+  expect(reloadRequests.some((url) => url.endsWith("/data/bible-en.json"))).toBe(false);
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await expect(page.getByRole("combobox", { name: "Language" })).toHaveValue("ko");
 });
 
 test("first verse begins at the reading pane's normal inset", async ({ page }) => {
