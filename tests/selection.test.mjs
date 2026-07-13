@@ -15,7 +15,7 @@ test("navigation prefetched selection records and reveals without loading", asyn
     recordHistory: (value) => events.push(["history", value]),
     reveal: async (passage, verse) => events.push(["reveal", passage, verse]),
   });
-  assert.equal(selected, true);
+  assert.deepEqual(selected, { status: "selected" });
   assert.deepEqual(events, [["history", location], ["reveal", { book: "John", chapter: "3", verses: prefetchedVerses }, "16"]]);
 });
 
@@ -29,7 +29,7 @@ test("history selection loads and reveals without duplicating history", async ()
     recordHistory: () => events.push("unexpected-history"),
     reveal: async (passage, verse) => events.push(["reveal", passage, verse]),
   });
-  assert.equal(selected, true);
+  assert.deepEqual(selected, { status: "selected" });
   assert.deepEqual(events, [["load", "Romans", "8"], ["reveal", { book: "Romans", chapter: "8", verses }, "5"]]);
 });
 
@@ -42,8 +42,30 @@ test("stale, missing, and failed selection results never commit", async () => {
     recordHistory: () => {},
     reveal: async () => { revealed = true; },
   };
-  assert.equal(await runVerseSelection({ book: "Missing", chapter: "1", verse: "1" }, {}, dependencies), false);
-  assert.equal(await runVerseSelection({ book: "Genesis", chapter: "1", verse: "2" }, {}, { ...dependencies, loadChapter: async () => currentPassage.verses }), false);
-  assert.equal(await runVerseSelection({ book: "Genesis", chapter: "1", verse: "1" }, {}, { ...dependencies, isCurrent: () => false }), false);
+  assert.deepEqual(await runVerseSelection({ book: "Missing", chapter: "1", verse: "1" }, {}, dependencies), { status: "ignored" });
+  assert.deepEqual(await runVerseSelection({ book: "Genesis", chapter: "1", verse: "2" }, {}, { ...dependencies, loadChapter: async () => currentPassage.verses }), { status: "ignored" });
+  assert.deepEqual(await runVerseSelection({ book: "Genesis", chapter: "1", verse: "1" }, {}, { ...dependencies, isCurrent: () => false }), { status: "ignored" });
   assert.equal(revealed, false);
+});
+
+test("selection failures are returned as typed results instead of rejecting", async () => {
+  const loadError = new Error("load failed");
+  const failedLoad = await runVerseSelection({ book: "John", chapter: "1", verse: "1" }, {}, {
+    currentPassage,
+    loadChapter: async () => { throw loadError; },
+    isCurrent: () => true,
+    recordHistory: () => {},
+    reveal: async () => {},
+  });
+  assert.deepEqual(failedLoad, { status: "failed", error: loadError });
+
+  const abort = new DOMException("cancelled", "AbortError");
+  const cancelled = await runVerseSelection({ book: "Genesis", chapter: "1", verse: "1" }, {}, {
+    currentPassage,
+    loadChapter: async () => currentPassage.verses,
+    isCurrent: () => true,
+    recordHistory: () => {},
+    reveal: async () => { throw abort; },
+  });
+  assert.deepEqual(cancelled, { status: "ignored" });
 });

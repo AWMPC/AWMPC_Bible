@@ -1,6 +1,6 @@
 import type { Verse } from "../data/contracts";
 import type { Passage } from "../data/useBibleLibrary";
-import type { ChooseVerseOptions, VerseLocation } from "./types";
+import type { ChooseVerseOptions, VerseLocation, VerseSelectionResult } from "./types";
 
 export type VerseSelectionDependencies = {
   currentPassage: Passage;
@@ -14,13 +14,18 @@ export async function runVerseSelection(
   location: VerseLocation,
   options: ChooseVerseOptions,
   dependencies: VerseSelectionDependencies,
-): Promise<boolean> {
-  const verses = options.prefetchedVerses
-    ?? (dependencies.currentPassage.book === location.book && dependencies.currentPassage.chapter === location.chapter
-      ? dependencies.currentPassage.verses
-      : await dependencies.loadChapter(location.book, location.chapter));
-  if (!dependencies.isCurrent() || !verses?.some((item) => item.number === location.verse)) return false;
-  if (options.recordHistory !== false) dependencies.recordHistory(location);
-  await dependencies.reveal({ book: location.book, chapter: location.chapter, verses }, location.verse);
-  return true;
+): Promise<VerseSelectionResult> {
+  try {
+    const verses = options.prefetchedVerses
+      ?? (dependencies.currentPassage.book === location.book && dependencies.currentPassage.chapter === location.chapter
+        ? dependencies.currentPassage.verses
+        : await dependencies.loadChapter(location.book, location.chapter));
+    if (!dependencies.isCurrent() || !verses?.some((item) => item.number === location.verse)) return { status: "ignored" };
+    if (options.recordHistory !== false) dependencies.recordHistory(location);
+    await dependencies.reveal({ book: location.book, chapter: location.chapter, verses }, location.verse);
+    return { status: "selected" };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return { status: "ignored" };
+    return { status: "failed", error };
+  }
 }

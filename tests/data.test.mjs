@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchDatasetText } from "../src/data/fetchDataset.ts";
+import { fetchDatasetText, waitForDatasetRetry } from "../src/data/fetchDataset.ts";
 import { LIMITS, parseInlineFootnotes, parseLibrary, readChapter } from "../src/data/library.ts";
 import { dispatchChapterRequest } from "../src/data/chapterRequests.ts";
 
@@ -28,6 +28,37 @@ test("chapter requests remain pending only after a successful dispatch", async (
   assert.equal(pending.size, 1);
   pending.get(4).resolve([{ number: "1", text: "In the beginning" }]);
   assert.deepEqual(await result, [{ number: "1", text: "In the beginning" }]);
+  assert.equal(pending.size, 0);
+});
+
+test("chapter requests time out, clean up, and ignore late responses", async () => {
+  const pending = new Map();
+  const result = dispatchChapterRequest({ postMessage() {} }, true, pending, 5, "reader", "Genesis", "1", 1);
+  const lateResolve = pending.get(5).resolve;
+  assert.equal(await result, null);
+  assert.equal(pending.size, 0);
+  lateResolve([{ number: "1", text: "Too late" }]);
+  assert.equal(pending.size, 0);
+});
+
+test("cancelling a chapter request settles it and clears its timeout", async () => {
+  const pending = new Map();
+  const result = dispatchChapterRequest({ postMessage() {} }, true, pending, 6, "selection", "Genesis", "1", 60_000);
+  pending.get(6).resolve(null);
+  assert.equal(await result, null);
+  assert.equal(pending.size, 0);
+});
+
+test("dataset retry wait removes its abort listener after resolving", async () => {
+  const listeners = new Set();
+  const signal = {
+    aborted: false,
+    reason: undefined,
+    addEventListener(_type, listener) { listeners.add(listener); },
+    removeEventListener(_type, listener) { listeners.delete(listener); },
+  };
+  await waitForDatasetRetry(0, signal, 0);
+  assert.equal(listeners.size, 0);
 });
 
 test("rejects empty books and chapters and noncanonical numeric keys", () => {

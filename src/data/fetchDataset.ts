@@ -18,14 +18,23 @@ class DatasetLoadError extends Error {
   }
 }
 
-function defaultWait(attempt: number, signal: AbortSignal): Promise<void> {
-  const duration = Math.min(4000, 250 * 2 ** attempt) * (0.75 + Math.random() * 0.5);
+export function waitForDatasetRetry(attempt: number, signal: AbortSignal, delayMs?: number): Promise<void> {
+  const duration = delayMs ?? Math.min(4000, 250 * 2 ** attempt) * (0.75 + Math.random() * 0.5);
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, duration);
-    signal.addEventListener("abort", () => {
-      clearTimeout(timer);
+    if (signal.aborted) {
       reject(signal.reason);
-    }, { once: true });
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, duration);
+    signal.addEventListener("abort", onAbort, { once: true });
   });
 }
 
@@ -65,7 +74,7 @@ async function readBoundedBody(response: Response, signal: AbortSignal): Promise
 
 export async function fetchDatasetText(url: string, options: FetchDatasetOptions = {}): Promise<string> {
   const fetcher = options.fetcher ?? fetch;
-  const wait = options.wait ?? defaultWait;
+  const wait = options.wait ?? waitForDatasetRetry;
   let lastError: unknown = new DatasetLoadError("The library could not be loaded.");
 
   for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {

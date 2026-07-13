@@ -6,7 +6,7 @@ import { transitionVerseView, verseElementId } from "../ui/transitionVerseView";
 import { runVerseSelection } from "./runVerseSelection";
 import type { ChooseVerseOptions, VerseLocation } from "./types";
 
-export type { ChooseVerseOptions, VerseLocation } from "./types";
+export type { ChooseVerseOptions, VerseLocation, VerseSelectionResult } from "./types";
 
 type ChooseVerseDependencies = {
   passage: Passage;
@@ -24,13 +24,13 @@ export function useChooseVerse({ passage, readingPaneRef, requestChapter, cancel
   const transitionAbortRef = useRef<AbortController | null>(null);
 
   const chooseVerse = useCallback(async (location: VerseLocation, options: ChooseVerseOptions = {}) => {
-    if (selectingRef.current) return;
+    if (selectingRef.current) return { status: "ignored" } as const;
     selectingRef.current = true;
     const generation = ++generationRef.current;
     const transitionAbort = new AbortController();
     transitionAbortRef.current = transitionAbort;
     try {
-      await runVerseSelection(location, options, {
+      return await runVerseSelection(location, options, {
         currentPassage: passage,
         loadChapter: (book, chapter) => requestChapter("selection", book, chapter),
         isCurrent: () => generation === generationRef.current,
@@ -44,8 +44,6 @@ export function useChooseVerse({ passage, readingPaneRef, requestChapter, cancel
           }
         },
       });
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === "AbortError")) throw error;
     } finally {
       if (generation === generationRef.current) {
         selectingRef.current = false;
