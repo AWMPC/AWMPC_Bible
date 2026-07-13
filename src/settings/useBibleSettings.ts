@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DEFAULT_APPEARANCE } from "./appearance";
 import { DEFAULT_BIBLE_LANGUAGE } from "./bibleLanguage";
+import type { BibleLanguage } from "./bibleLanguage";
 import { LocalSettingsStore, type BibleSettings, type SettingsStore } from "./SettingsStore";
 import { DEFAULT_TEXT_SCALE } from "./textScale";
 import { DEFAULT_VERSE_FONT } from "./verseFont";
@@ -14,14 +15,15 @@ const DEFAULT_SETTINGS: BibleSettings = {
 
 const createLocalSettingsStore = () => new LocalSettingsStore(window.localStorage);
 
-export function useBibleSettings(createStore: () => SettingsStore = createLocalSettingsStore) {
+export function useBibleSettings(initialBibleLanguage?: BibleLanguage, createStore: () => SettingsStore = createLocalSettingsStore) {
   const initialRef = useRef<{ store: SettingsStore | null; settings: BibleSettings } | null>(null);
   if (!initialRef.current) {
     try {
       const store = createStore();
-      initialRef.current = { store, settings: store.load() };
+      const stored = store.load();
+      initialRef.current = { store, settings: initialBibleLanguage ? { ...stored, bibleLanguage: initialBibleLanguage } : stored };
     } catch {
-      initialRef.current = { store: null, settings: DEFAULT_SETTINGS };
+      initialRef.current = { store: null, settings: initialBibleLanguage ? { ...DEFAULT_SETTINGS, bibleLanguage: initialBibleLanguage } : DEFAULT_SETTINGS };
     }
   }
   const storeRef = useRef<SettingsStore | null>(initialRef.current.store);

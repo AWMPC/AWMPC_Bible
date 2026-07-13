@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import type { Verse } from "../data/contracts";
 
-export function VerseWithFootnotes({ verse }: { verse: Verse }) {
+export function VerseWithFootnotes({ verse, actionsOpen, onActions }: { verse: Verse; actionsOpen: boolean; onActions: (verse: Verse, trigger: HTMLButtonElement) => void }) {
   const [expanded, setExpanded] = useState(false);
   const cardId = useId();
   const footnotes = verse.footnotes ?? [];
@@ -10,7 +10,7 @@ export function VerseWithFootnotes({ verse }: { verse: Verse }) {
   return (
     <>
       <div className="verse-rail">
-        <span className="verse-number" aria-label={`Verse ${verse.number}`}>{verse.number}</span>
+        <button className="verse-number" type="button" aria-label={`Actions for verse ${verse.number}`} aria-haspopup="menu" aria-expanded={actionsOpen} aria-controls={actionsOpen ? "verse-actions-menu" : undefined} onClick={(event) => onActions(verse, event.currentTarget)}>{verse.number}</button>
       </div>
       <div className="verse-content" data-footnotes-expanded={expanded || undefined}>
         <p>{segments.map((segment, index) => typeof segment === "string"
