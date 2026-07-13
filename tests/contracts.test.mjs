@@ -39,6 +39,17 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(styles, /data-text-scale="standard"[^}]*--verse-line-height:\s*1\.5/);
 });
 
+test("floating glass chrome keeps an adaptive gleam with forced-color restraint", async () => {
+  const styles = await read("../src/styles.css");
+  assert.match(styles, /--day-glass-gleam:/);
+  assert.match(styles, /--night-glass-gleam:/);
+  assert.match(styles, /--glass-gleam:\s*light-dark\(var\(--day-glass-gleam\), var\(--night-glass-gleam\)\)/);
+  assert.match(styles, /\.reading-location-button\s*\{[^}]*box-shadow:[^;}]*var\(--glass-gleam\)/);
+  assert.match(styles, /\.floating-dock\s*\{[^}]*box-shadow:[^;}]*var\(--glass-gleam\)/);
+  assert.match(styles, /\.overlay-close\s*\{[^}]*box-shadow:[^;}]*var\(--glass-gleam\)/);
+  assert.match(styles, /@media \(forced-colors: active\)[\s\S]*?\.overlay-close\s*\{[^}]*box-shadow:\s*none/);
+});
+
 test("panels retain semantic native controls", async () => {
   const [app, navigation, history, overlay, overlayLifecycle, profile, styles] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),

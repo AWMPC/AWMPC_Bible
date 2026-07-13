@@ -10,6 +10,7 @@
   --day-accent-soft: #dcecf1; --night-accent-soft: #233a43;
   --day-border: rgba(255, 255, 255, .82); --night-border: rgba(188, 221, 230, .14);
   --day-highlight: inset 0 1px 0 rgba(255, 255, 255, .86); --night-highlight: inset 0 1px 0 rgba(255, 255, 255, .1);
+  --day-glass-gleam: 0 0 0 1px rgba(255, 255, 255, .64), 0 0 0 2px rgba(56, 103, 120, .08), 0 0 18px rgba(255, 255, 255, .24); --night-glass-gleam: 0 0 0 1px rgba(178, 221, 232, .18), 0 0 18px rgba(139, 199, 216, .1);
   --day-shadow: 0 22px 70px rgba(40, 67, 78, .13), 0 2px 8px rgba(40, 67, 78, .06); --night-shadow: 0 22px 70px rgba(0, 0, 0, .35), 0 2px 8px rgba(0, 0, 0, .22);
   --day-glass: rgba(246, 250, 252, .68); --night-glass: rgba(18, 29, 34, .76);
   --day-overlay: rgba(246, 250, 252, .86); --night-overlay: rgba(16, 26, 31, .9);
@@ -27,6 +28,7 @@
   --accent-soft: light-dark(var(--day-accent-soft), var(--night-accent-soft));
   --border: light-dark(var(--day-border), var(--night-border));
   --inner-highlight: light-dark(var(--day-highlight), var(--night-highlight));
+  --glass-gleam: light-dark(var(--day-glass-gleam), var(--night-glass-gleam));
   --shadow: light-dark(var(--day-shadow), var(--night-shadow));
   --glass: light-dark(var(--day-glass), var(--night-glass));
   --overlay: light-dark(var(--day-overlay), var(--night-overlay));
@@ -107,7 +109,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 @keyframes shimmer { to { background-position-x: -220%; } }
 
 .reading-location-controls { position: fixed; z-index: 8; inset: 0; pointer-events: none; }
-.reading-location-button { position: absolute; top: max(1rem, env(safe-area-inset-top)); width: max-content; max-width: calc(50vw - 1.5rem); min-height: 44px; padding: .65rem .9rem; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; opacity: 1; color: var(--ink); background: var(--glass); box-shadow: var(--inner-highlight), 0 12px 34px rgba(0, 0, 0, .14); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); cursor: pointer; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; translate: 0 0; transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), background-color 140ms ease, transform 140ms ease; }
+.reading-location-button { position: absolute; top: max(1rem, env(safe-area-inset-top)); width: max-content; max-width: calc(50vw - 1.5rem); min-height: 44px; padding: .65rem .9rem; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; opacity: 1; color: var(--ink); background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 12px 34px rgba(0, 0, 0, .14); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); cursor: pointer; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; translate: 0 0; transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), background-color 140ms ease, transform 140ms ease; }
 .book-location-button { left: max(1rem, env(safe-area-inset-left)); font-family: ui-serif, Georgia, serif; }
 .chapter-location-button { right: max(1rem, env(safe-area-inset-right)); }
 .reading-location-button:hover, .reading-location-button[aria-expanded="true"] { background: var(--surface-strong); }
@@ -116,7 +118,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .reading-location-controls.is-hidden:not(.is-obscured):focus-within .reading-location-button { opacity: 1; translate: 0 0; pointer-events: auto; }
 .reading-location-controls.is-obscured .reading-location-button { pointer-events: none; }
 
-.floating-dock { position: fixed; z-index: 12; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), 0 16px 44px rgba(0, 0, 0, .18); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
+.floating-dock { position: fixed; z-index: 12; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 16px 44px rgba(0, 0, 0, .18); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
 .floating-dock.is-hidden { opacity: 0; translate: 0 calc(100% + max(1rem, env(safe-area-inset-bottom)) + 1rem); pointer-events: none; }
 .floating-dock.is-hidden:focus-within { opacity: 1; translate: 0 0; pointer-events: auto; }
 .overlay-shade { position: fixed; z-index: 9; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; opacity: 0; background: var(--overlay-backdrop); pointer-events: none; cursor: default; transition: opacity var(--motion-duration) var(--motion-easing); }
@@ -141,7 +143,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .overlay-surface { display: grid; grid-template-rows: auto 1fr; height: 100%; }
 .overlay-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--border); }
 .overlay-header h2 { margin: .25rem 0 0; font: 700 clamp(1.8rem, 4vw, 2.6rem)/1 ui-serif, Georgia, serif; letter-spacing: -.035em; }
-.overlay-close { min-height: 44px; padding: .65rem 1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-strong); box-shadow: var(--inner-highlight); cursor: pointer; font-weight: 700; }
+.overlay-close { min-height: 44px; padding: .65rem 1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-strong); box-shadow: var(--inner-highlight), var(--glass-gleam); cursor: pointer; font-weight: 700; }
 .overlay-content { position: relative; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: clamp(1rem, 3vw, 2rem); }
 .navigation-panel { display: grid; grid-template-columns: 1fr; gap: 2rem; min-height: 100%; }
 .navigation-panel section { min-height: 0; overflow: visible; }
@@ -216,7 +218,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 
 @media (forced-colors: active) {
-  .reading-pane, .reading-location-button, .floating-dock, .feature-overlay { border: 1px solid CanvasText; }
+  .reading-pane, .reading-location-button, .floating-dock, .feature-overlay, .overlay-close { border: 1px solid CanvasText; box-shadow: none; }
   .footnotes-toggle { border: 0; color: ButtonText; }
   .footnotes-toggle[aria-expanded="true"] { color: Highlight; background: transparent; }
   .dock-button[aria-expanded="true"], .choice-grid button[aria-current="page"] { color: HighlightText; background: Highlight; }
