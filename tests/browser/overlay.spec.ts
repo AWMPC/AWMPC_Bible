@@ -14,6 +14,29 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
 });
 
+test("first verse begins at the reading pane's normal inset", async ({ page }) => {
+  const pane = page.locator(".reading-pane");
+  const article = page.locator('article[aria-label="Genesis chapter 1"]');
+  const measure = () => page.evaluate(() => {
+    const pane = document.querySelector<HTMLElement>(".reading-pane")!;
+    const article = document.querySelector<HTMLElement>('.reading-pane > article[aria-label="Genesis chapter 1"]')!;
+    const style = getComputedStyle(pane);
+    return {
+      actual: article.getBoundingClientRect().top - pane.getBoundingClientRect().top,
+      expected: Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.paddingTop),
+      paddingDifference: Math.abs(Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingLeft)),
+    };
+  });
+  await expect(pane).toBeVisible();
+  await expect(article).toBeVisible();
+  for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const geometry = await measure();
+    expect(Math.abs(geometry.actual - geometry.expected)).toBeLessThan(1);
+    expect(geometry.paddingDifference).toBeLessThan(1);
+  }
+});
+
 test("top reading controls target navigation sections without a reader header", async ({ page }) => {
   const book = page.getByRole("button", { name: "Choose book, currently Genesis" });
   const chapter = page.getByRole("button", { name: "Choose chapter, currently chapter 1" });

@@ -28,6 +28,8 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(motion, /MOTION_DURATION_MS = 210/);
   assert.match(styles, /--motion-duration:\s*210ms/);
   assert.doesNotMatch(styles, /\.reading-header|\.chapter-indicator/);
+  assert.match(styles, /\.reading-pane\s*\{[^}]*padding:\s*var\(--reader-inline-padding\)/);
+  assert.doesNotMatch(styles, /\.reading-pane article\s*\{[^}]*margin-top/);
   assert.match(styles, /\.reading-pane article\s*\{[^}]*max-width:\s*calc\(70ch \+ var\(--verse-number-gutter\) \+ var\(--verse-column-gap\)\)/);
   assert.match(styles, /\.verses\s*\{[^}]*gap:\s*\.75rem/);
   assert.match(styles, /\.workspace\s*\{[^}]*width:\s*min\(100%, calc\(70ch \+ var\(--verse-number-gutter\)/);

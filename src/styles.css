@@ -72,7 +72,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .skip-link:focus { transform: none; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .workspace { width: min(100%, calc(70ch + var(--verse-number-gutter) + var(--verse-column-gap) + var(--reader-inline-padding) + var(--reader-inline-padding) + var(--workspace-inline-padding) + var(--workspace-inline-padding))); min-height: 100vh; margin: auto; padding: var(--workspace-inline-padding) var(--workspace-inline-padding) calc(7.5rem + env(safe-area-inset-bottom)); font-family: var(--verse-font-family); font-size: var(--verse-text-size); }
-.reading-pane { min-height: calc(100vh - 2rem); padding: max(var(--reader-inline-padding), calc(4rem + env(safe-area-inset-top))) var(--reader-inline-padding) var(--reader-inline-padding); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--inner-highlight), var(--shadow); backdrop-filter: var(--blur); }
+.reading-pane { min-height: calc(100vh - 2rem); padding: var(--reader-inline-padding); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--inner-highlight), var(--shadow); backdrop-filter: var(--blur); }
 .eyebrow { margin: 0; color: var(--accent); font-size: .7rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .reading-pane:focus { outline: none; }
 .reading-pane article { width: 100%; max-width: calc(70ch + var(--verse-number-gutter) + var(--verse-column-gap)); margin: 0 auto; font-family: var(--verse-font-family); font-size: var(--verse-text-size); }
@@ -186,7 +186,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 @media (max-width: 720px) {
   .awmpc-bible-shell { --reader-inline-padding: 1rem; --workspace-inline-padding: .5rem; }
   .workspace { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
-  .reading-pane article { margin-top: 2rem; }
   .floating-dock { right: 50%; transform: translateX(50%); }
   .feature-overlay { border-radius: 0 0 24px 24px; }
   .overlay-content { padding: 1rem; }

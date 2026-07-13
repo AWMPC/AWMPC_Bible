@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.23.3 - 2026-07-12
+
+- Remove the obsolete four-rem top clearance formerly reserved for the reader header.
+- Remove the remaining mobile-only article top margin.
+- Start the first verse at the reading pane's normal global inset on desktop and mobile.
+
 ## 0.23.2 - 2026-07-12
 
 - Hide both top reading-location controls upward immediately after either control opens Navigation.
