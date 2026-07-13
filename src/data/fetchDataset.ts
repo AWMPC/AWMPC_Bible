@@ -89,13 +89,18 @@ export async function fetchDatasetText(url: string, options: FetchDatasetOptions
     );
     try {
       const response = await fetcher(url, {
-        cache: "force-cache",
+        cache: "no-cache",
         credentials: "same-origin",
         signal: controller.signal,
       });
       if (!response.ok) {
         await response.body?.cancel().catch(() => undefined);
         throw new DatasetLoadError(`Data request failed (${response.status}).`, isRetryableStatus(response.status));
+      }
+      const mediaType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+      if (mediaType !== "application/json" && !mediaType?.endsWith("+json")) {
+        await response.body?.cancel().catch(() => undefined);
+        throw new DatasetLoadError("The Bible data file is missing or is not served as JSON.");
       }
       return await readBoundedBody(response, controller.signal);
     } catch (error) {

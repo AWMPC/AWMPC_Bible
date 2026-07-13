@@ -39,6 +39,16 @@ test("external cancellation stops a dataset request without retrying", async () 
   assert.equal(calls, 1);
 });
 
+test("dataset fetch bypasses stale cache entries and rejects an HTML fallback", async () => {
+  let requestInit;
+  const fetcher = async (_url, init) => {
+    requestInit = init;
+    return new Response("<!doctype html>", { headers: { "content-type": "text/html; charset=utf-8" } });
+  };
+  await assert.rejects(fetchDatasetText("/data/bible-ko.json", { fetcher, wait: noWait }), /missing or is not served as JSON/);
+  assert.equal(requestInit.cache, "no-cache");
+});
+
 test("chapter requests settle when the worker is unavailable or not ready", async () => {
   const pending = new Map();
   assert.equal(await dispatchChapterRequest(null, true, pending, 1, "selection", "Genesis", "1"), null);
@@ -95,6 +105,7 @@ test("dataset retry wait removes its abort listener after resolving", async () =
 });
 
 test("rejects empty books and chapters and noncanonical numeric keys", () => {
+  assert.throws(() => parseLibrary("<!doctype html>"), { message: "The data file contains invalid JSON." });
   assert.throws(() => parseLibrary('{"Empty":{}}'), /at least one chapter/);
   assert.throws(() => parseLibrary('{"Empty":{"1":{}}}'), /at least one verse/);
   for (const key of ["0", "01", "-1", "1.5", "one"]) {
@@ -141,7 +152,7 @@ test("streams data and enforces the byte limit when length is absent or understa
     },
     cancel() { cancelled = true; },
   });
-  const fetcher = async () => new Response(body, { headers: { "content-length": "1" } });
+  const fetcher = async () => new Response(body, { headers: { "content-length": "1", "content-type": "application/json" } });
   await assert.rejects(fetchDatasetText("/data.json", { fetcher, wait: noWait }), /too large/);
   assert.equal(cancelled, true);
 });
@@ -149,7 +160,7 @@ test("streams data and enforces the byte limit when length is absent or understa
 test("cancels immediately when declared content length exceeds the limit", async () => {
   let cancelled = false;
   const body = new ReadableStream({ cancel() { cancelled = true; } });
-  const fetcher = async () => new Response(body, { headers: { "content-length": String(LIMITS.bytes + 1) } });
+  const fetcher = async () => new Response(body, { headers: { "content-length": String(LIMITS.bytes + 1), "content-type": "application/json" } });
   await assert.rejects(fetchDatasetText("/data.json", { fetcher, wait: noWait }), /too large/);
   assert.equal(cancelled, true);
 });
@@ -162,7 +173,7 @@ test("retries transient failures but does not retry permanent HTTP failures", as
   let transientCalls = 0;
   const transient = async () => {
     transientCalls += 1;
-    return transientCalls === 1 ? failedResponse(503) : new Response("ok");
+    return transientCalls === 1 ? failedResponse(503) : new Response("ok", { headers: { "content-type": "application/json" } });
   };
   assert.equal(await fetchDatasetText("/data.json", { fetcher: transient, wait: noWait }), "ok");
   assert.equal(transientCalls, 2);

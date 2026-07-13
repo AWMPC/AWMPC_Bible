@@ -110,7 +110,12 @@ export function parseLibrary(text: string): Library {
     throw new Error("The data file is too large.");
   }
 
-  const value: unknown = JSON.parse(text);
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new Error("The data file contains invalid JSON.");
+  }
   if (!ownObject(value)) throw new Error("The data root must be an object.");
 
   const books = Object.keys(value);

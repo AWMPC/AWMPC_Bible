@@ -7,7 +7,6 @@
   },
   "scripts": {
     "stage:data": "node scripts/stageDatasets.mjs",
-    "predev": "npm run stage:data",
     "dev": "vite",
     "dev:test": "vite",
     "prebuild": "npm run stage:data",
