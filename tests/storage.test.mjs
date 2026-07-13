@@ -36,6 +36,58 @@ test("history supports removing one entry and clearing all entries", async () =>
   assert.deepEqual(await store.list(), []);
 });
 
+test("history serializes add then clear", async () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  const store = new LocalHistoryStore(storage, 10, () => new Date(0), () => "new-entry");
+
+  const addition = store.add({ book: "John", chapter: "3", verse: "16" });
+  const clearing = store.clear();
+  await Promise.all([addition, clearing]);
+
+  assert.deepEqual(await store.list(), []);
+});
+
+test("history clear removes migrated legacy entries", async () => {
+  const legacy = { id: "legacy", book: "John", chapter: "3", verse: "16", visitedAt: "2026-07-10T20:30:00.000Z" };
+  const values = new Map([["quiet-reader.history.v1", JSON.stringify([legacy])]]);
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  const store = new LocalHistoryStore(storage);
+
+  assert.deepEqual(await store.list(), [legacy]);
+  await store.clear();
+
+  assert.deepEqual(await store.list(), []);
+});
+
+test("history preserves concurrent additions", async () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  let id = 0;
+  const store = new LocalHistoryStore(storage, 10, () => new Date(0), () => `id-${++id}`);
+
+  await Promise.all([
+    store.add({ book: "John", chapter: "3", verse: "16" }),
+    store.add({ book: "Romans", chapter: "8", verse: "1" }),
+  ]);
+
+  assert.deepEqual((await store.list()).map(({ book }) => book), ["Romans", "John"]);
+});
+
+test("history serializes add then remove", async () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  let id = 0;
+  const store = new LocalHistoryStore(storage, 10, () => new Date(0), () => `id-${++id}`);
+  const existing = await store.add({ book: "John", chapter: "3", verse: "15" });
+
+  const addition = store.add({ book: "John", chapter: "3", verse: "16" });
+  const removal = store.remove(existing.id);
+  await Promise.all([addition, removal]);
+
+  assert.deepEqual((await store.list()).map(({ verse }) => verse), ["16"]);
+});
+
 test("history and settings tolerate malformed or unavailable storage", async () => {
   assert.deepEqual(await new LocalHistoryStore({ getItem: () => "bad", setItem: () => {} }).list(), []);
   const unavailableHistory = new LocalHistoryStore({ getItem: () => null, setItem: () => { throw new Error("quota"); } }, 2, () => new Date(0), () => "id");

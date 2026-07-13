@@ -6,15 +6,17 @@ const createLocalHistoryStore = () => new LocalHistoryStore(window.localStorage)
 export function useBibleHistory(createStore: () => HistoryStore = createLocalHistoryStore) {
   const storeRef = useRef<HistoryStore | null>(null);
   const generationRef = useRef(0);
+  const contentGenerationRef = useRef(0);
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
 
   useEffect(() => {
     const generation = ++generationRef.current;
+    const contentGeneration = contentGenerationRef.current;
     try {
       const store = createStore();
       storeRef.current = store;
       void store.list().then((history) => {
-        if (generation === generationRef.current) {
+        if (generation === generationRef.current && contentGeneration === contentGenerationRef.current) {
           setEntries((current) => mergeHistoryEntries(current, history));
         }
       }).catch(() => undefined);
@@ -30,8 +32,9 @@ export function useBibleHistory(createStore: () => HistoryStore = createLocalHis
   const record = useCallback((selection: HistorySelection) => {
     const store = storeRef.current;
     if (!store) return;
+    const contentGeneration = contentGenerationRef.current;
     void store.add(selection).then((entry) => {
-      if (store === storeRef.current) {
+      if (store === storeRef.current && contentGeneration === contentGenerationRef.current) {
         setEntries((current) => mergeHistoryEntries([entry], current));
       }
     }).catch(() => undefined);
@@ -45,6 +48,7 @@ export function useBibleHistory(createStore: () => HistoryStore = createLocalHis
 
   const clear = useCallback(() => {
     const store = storeRef.current;
+    contentGenerationRef.current += 1;
     setEntries([]);
     void store?.clear().catch(() => undefined);
   }, []);

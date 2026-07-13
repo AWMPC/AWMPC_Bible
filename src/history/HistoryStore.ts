@@ -62,6 +62,7 @@ export class LocalHistoryStore implements HistoryStore {
   private readonly limit: number;
   private readonly now: () => Date;
   private readonly createId: () => string;
+  private mutationQueue: Promise<void> = Promise.resolve();
 
   constructor(
     storage: MinimalStorage,
@@ -96,25 +97,42 @@ export class LocalHistoryStore implements HistoryStore {
       ...selection,
       visitedAt: this.now().toISOString(),
     };
-    try {
-      const current = await this.list();
-      this.storage.setItem(STORAGE_KEY, JSON.stringify([entry, ...current].slice(0, this.limit)));
-    } catch {
-      // Storage can be unavailable or full; the caller still retains this session entry.
-    }
-    return entry;
+    return this.enqueueMutation(async () => {
+      try {
+        const current = await this.list();
+        this.storage.setItem(STORAGE_KEY, JSON.stringify([entry, ...current].slice(0, this.limit)));
+      } catch {
+        // Storage can be unavailable or full; the caller still retains this session entry.
+      }
+      return entry;
+    });
   }
 
   async remove(id: string): Promise<void> {
-    try {
-      const entries = (await this.list()).filter((entry) => entry.id !== id);
-      this.storage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    } catch {
-      // The in-memory view remains authoritative when storage is unavailable.
-    }
+    return this.enqueueMutation(async () => {
+      try {
+        const entries = (await this.list()).filter((entry) => entry.id !== id);
+        this.storage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      } catch {
+        // The in-memory view remains authoritative when storage is unavailable.
+      }
+    });
   }
 
   async clear(): Promise<void> {
-    try { this.storage.removeItem(STORAGE_KEY); } catch { /* The in-memory view still clears. */ }
+    return this.enqueueMutation(() => {
+      try {
+        this.storage.removeItem(STORAGE_KEY);
+        this.storage.removeItem(LEGACY_STORAGE_KEY);
+      } catch {
+        // The in-memory view still clears.
+      }
+    });
+  }
+
+  private enqueueMutation<T>(mutation: () => T | Promise<T>): Promise<T> {
+    const queued = this.mutationQueue.then(mutation, mutation);
+    this.mutationQueue = queued.then(() => undefined, () => undefined);
+    return queued;
   }
 }
