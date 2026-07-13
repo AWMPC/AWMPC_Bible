@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useBibleLibrary, type Passage } from "./data/useBibleLibrary";
+import type { Verse } from "./data/contracts";
 import { pairedBookName, versesByNumber } from "./data/dualLanguage";
 import { useSecondaryPassage } from "./data/useSecondaryPassage";
 import { useBibleHistory } from "./history/useBibleHistory";
-import type { HistoryEntry } from "./history/HistoryStore";
+import type { HistoryEntry, HistorySelection } from "./history/HistoryStore";
 import { useStagedNavigation } from "./navigation/useStagedNavigation";
 import { useAdjacentChapterNavigation } from "./navigation/useAdjacentChapterNavigation";
 import { parseVerseLink, type LinkedVerse } from "./links/verseLinks";
 import { useChooseVerse } from "./selection/useChooseVerse";
 import { useLanguageVerseAnchor } from "./selection/useLanguageVerseAnchor";
-import { activeBibleLanguages } from "./settings/SettingsStore";
 import { useBibleSettings } from "./settings/useBibleSettings";
 import { BIBLE_LANGUAGE_OPTIONS, type BibleLanguage } from "./settings/bibleLanguage";
-import { EmptyFeature } from "./ui/EmptyFeature";
 import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FloatingDock } from "./ui/FloatingDock";
 import { HistoryPanel } from "./ui/HistoryPanel";
+import { SearchPanel } from "./ui/SearchPanel";
 import { NavigationPanel } from "./ui/NavigationPanel";
 import { ReadingLocationControls } from "./ui/ReadingLocationControls";
 import { ProfilePanel } from "./ui/ProfilePanel";
@@ -29,6 +29,10 @@ import { middleVerseNumber } from "./ui/middleVerse";
 import { VerseWithFootnotes } from "./ui/VerseWithFootnotes";
 import { VerseActionsMenu, type VerseActionTarget } from "./ui/VerseActionsMenu";
 import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
+import { useBibleSearch, type LocalizedSearchResult } from "./search/useBibleSearch";
+
+type LocalizedVerseReference = Readonly<{ bibleLanguage: BibleLanguage; book: string; chapter: string; verse: string }>;
+type ReferenceSelectionOptions = Readonly<{ recordHistory: boolean; allowLanguageSwitch?: boolean; prefetchedVerses?: Verse[] }>;
 
 export function AwmpcBibleApp() {
   const overlayRef = useRef<FeatureOverlayHandle>(null);
@@ -70,6 +74,17 @@ export function AwmpcBibleApp() {
   const [verseActionTarget, setVerseActionTarget] = useState<VerseActionTarget | null>(null);
   const [readerStatus, setReaderStatus] = useState("");
   const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory } = useBibleHistory();
+  const bibleSearch = useBibleSearch({
+    enabled: activeFeature === "search",
+    primaryLanguage: primaryBibleLanguage,
+    secondaryLanguage: secondaryBibleLanguage,
+    primaryStatus: primaryLibrary.status,
+    secondaryStatus: secondaryLibrary.status,
+    searchPrimary: primaryLibrary.search,
+    searchSecondary: secondaryLibrary.search,
+    cancelPrimary: primaryLibrary.cancelSearch,
+    cancelSecondary: secondaryLibrary.cancelSearch,
+  });
   const swipeNavigationEnabled = activeFeature === null && verseActionTarget === null && primaryLibrary.status === "ready" && Boolean(book && chapter);
   const chapterSwipe = useAdjacentChapterNavigation({
     enabled: swipeNavigationEnabled,
@@ -83,8 +98,8 @@ export function AwmpcBibleApp() {
   });
   useChapterSwipe(readingPaneRef, swipeNavigationEnabled, chapterSwipe.canNavigate, chapterSwipe.navigate);
   const cancelChapterSwipe = chapterSwipe.cancel;
-  const recordHistoryForLanguage = useCallback((selection: { book: string; chapter: string; verse: string }) => {
-    recordHistory({ ...selection, bibleLanguage: primaryBibleLanguage });
+  const recordHistoryForLanguage = useCallback((selection: HistorySelection) => {
+    recordHistory({ ...selection, bibleLanguage: selection.bibleLanguage ?? primaryBibleLanguage });
   }, [primaryBibleLanguage, recordHistory]);
   const closeOverlay = useCallback(async () => {
     selectionCloseRef.current = true;
@@ -179,29 +194,45 @@ export function AwmpcBibleApp() {
     if (primaryLibrary.initialPassage && !passage.book && !pendingVerseLink && !restoringLanguageAnchor) setPassage(primaryLibrary.initialPassage);
   }, [primaryLibrary.initialPassage, passage.book, pendingVerseLink, restoringLanguageAnchor]);
 
-  const selectHistoryEntry = useCallback((entry: HistoryEntry) => {
+  const selectVerseReference = useCallback((entry: LocalizedVerseReference, options: ReferenceSelectionOptions) => {
+    const chooseOptions = {
+      recordHistory: options.recordHistory,
+      prefetchedVerses: options.prefetchedVerses,
+      historySelection: options.recordHistory ? entry : undefined,
+    };
     if (entry.bibleLanguage === primaryBibleLanguage) {
-      void chooseVerse(entry, { recordHistory: false });
+      void chooseVerse(entry, chooseOptions);
       return;
     }
     if (entry.bibleLanguage === secondaryBibleLanguage) {
       const index = secondaryLibrary.books.findIndex(({ name }) => name === entry.book);
       const primaryBook = primaryLibrary.books[index]?.name;
       if (primaryBook) {
-        void chooseVerse({ book: primaryBook, chapter: entry.chapter, verse: entry.verse }, { recordHistory: false });
+        void chooseVerse({ book: primaryBook, chapter: entry.chapter, verse: entry.verse }, chooseOptions);
       } else {
-        setReaderStatus("This history entry is unavailable in the primary Bible.");
+        setReaderStatus("This verse is unavailable in the primary Bible.");
       }
       return;
     }
-    setPendingVerseLink({ bibleLanguage: entry.bibleLanguage, book: entry.book, chapter: entry.chapter, verse: entry.verse });
-    setPrimaryBibleLanguage(entry.bibleLanguage);
+    if (options.allowLanguageSwitch) {
+      setPendingVerseLink({ bibleLanguage: entry.bibleLanguage, book: entry.book, chapter: entry.chapter, verse: entry.verse });
+      setPrimaryBibleLanguage(entry.bibleLanguage);
+    } else {
+      setReaderStatus("That search result is no longer in an active Bible.");
+    }
   }, [chooseVerse, primaryBibleLanguage, primaryLibrary.books, secondaryBibleLanguage, secondaryLibrary.books, setPrimaryBibleLanguage]);
+
+  const selectHistoryEntry = useCallback((entry: HistoryEntry) => {
+    selectVerseReference(entry, { recordHistory: false, allowLanguageSwitch: true });
+  }, [selectVerseReference]);
+
+  const selectSearchResult = useCallback((result: LocalizedSearchResult) => {
+    selectVerseReference(result, { recordHistory: true });
+  }, [selectVerseReference]);
 
   const { visible: chromeVisible, toggle: toggleChromeVisibility } = useUserScrollChromeVisibility(activeFeature === null);
   const dualLanguage = secondaryBibleLanguage !== null;
   const languageLabels = new Map(BIBLE_LANGUAGE_OPTIONS.map(({ id, label }) => [id, label]));
-  const activeLanguageLabels = activeBibleLanguages(settings).map((language) => languageLabels.get(language) ?? language);
 
   function openFeature(feature: FeatureId, trigger: HTMLButtonElement) {
     const dock = dockRef.current;
@@ -286,10 +317,10 @@ export function AwmpcBibleApp() {
       <VerseActionsMenu target={verseActionTarget} onClose={closeVerseActions} onStatus={setReaderStatus} />
       <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} dockRef={dockRef} contentRef={overlayContentRef} onClose={finishOverlayClose}>
         {activeFeature === "navigation" && (
-          <NavigationPanel books={primaryLibrary.books} secondaryBooks={secondaryLibrary.books} secondaryLanguage={secondaryBibleLanguage} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={primaryLibrary.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} sectionRequest={navigationSectionRequest} scrollContainerRef={overlayContentRef} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => void chooseVerse({ book: navigation.state.book, chapter: navigation.state.chapter, verse }, { prefetchedVerses: navigation.state.verses })} />
+          <NavigationPanel books={primaryLibrary.books} secondaryBooks={secondaryLibrary.books} secondaryLanguage={secondaryBibleLanguage} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={primaryLibrary.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} sectionRequest={navigationSectionRequest} scrollContainerRef={overlayContentRef} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => selectVerseReference({ bibleLanguage: primaryBibleLanguage, book: navigation.state.book, chapter: navigation.state.chapter, verse }, { recordHistory: true, prefetchedVerses: navigation.state.verses })} />
         )}
         {activeFeature === "history" && <HistoryPanel entries={history} onSelect={selectHistoryEntry} onRemove={removeHistory} onClear={clearHistory} />}
-        {activeFeature === "search" && <EmptyFeature title="Search is ready for its index" detail={`Search will use only the active ${activeLanguageLabels.join(" and ")} Bible text${activeLanguageLabels.length > 1 ? "s" : ""}.`} />}
+        {activeFeature === "search" && <SearchPanel query={bibleSearch.query} status={bibleSearch.status} results={bibleSearch.results} onQueryChange={bibleSearch.setQuery} onSelect={selectSearchResult} />}
         {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={(value) => updateSettings({ textScale: value })} verseFont={verseFont} onVerseFontChange={(value) => updateSettings({ verseFont: value })} appearance={appearance} onAppearanceChange={(value) => updateSettings({ appearance: value })} primaryBibleLanguage={primaryBibleLanguage} secondaryBibleLanguage={secondaryBibleLanguage} onPrimaryBibleLanguageChange={changeLanguage} onSecondaryBibleLanguageChange={changeSecondaryLanguage} />}
       </FeatureOverlay>
     </div>

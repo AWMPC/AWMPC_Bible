@@ -28,9 +28,11 @@ server and can be served from a VM, CDN, or any static web host.
 - Reader swipes move through adjacent chapters: left advances, right returns, and trackpad momentum is limited to one chapter per gesture.
 - Horizontal chapter gestures preserve native vertical scrolling, pinch zoom, interactive controls, overlays, and global book boundaries.
 - History remains global across languages; Search is intentionally scoped to only the currently active language texts.
+- Search lazily builds a bounded fuzzy index inside each active language worker, keeping indexing and typo-tolerant scoring off the reading thread.
+- Search results use the same centered verse-selection transition as Navigation and History and record the result's exact language.
 - Verse actions stay attached to their exact translation, so copied text and links retain the selected verse language.
 - Verse-number menus copy plain verse text or a bounded, deployable deep link to that verse.
-- The acceleration boundary leaves room for WASM search/indexing and optional
+- The acceleration boundary leaves room for WASM search acceleration and optional
   WebGPU effects without making either necessary for correct reading.
 
 All content is rendered as text. AWMPC Bible does not use analytics, remote fonts,

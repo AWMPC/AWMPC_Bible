@@ -70,10 +70,11 @@ test("chapter progress drives day and night water palettes", async () => {
 });
 
 test("panels retain semantic native controls", async () => {
-  const [app, navigation, history, overlay, overlayLifecycle, profile, verseActions, styles] = await Promise.all([
+  const [app, navigation, history, search, overlay, overlayLifecycle, profile, verseActions, styles] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),
     read("../src/ui/NavigationPanel.tsx"),
     read("../src/ui/HistoryPanel.tsx"),
+    read("../src/ui/SearchPanel.tsx"),
     read("../src/ui/FeatureOverlay.tsx"),
     read("../src/ui/useOverlayLifecycle.ts"),
     read("../src/ui/ProfilePanel.tsx"),
@@ -104,6 +105,10 @@ test("panels retain semantic native controls", async () => {
   assert.match(profile, />Secondary language</);
   assert.match(navigation, /book-choice-secondary/);
   assert.match(history, /history-language/);
+  assert.match(search, /type="search"/);
+  assert.match(search, /aria-busy/);
+  assert.match(search, /<Skeleton/);
+  assert.doesNotMatch(search, /dangerouslySetInnerHTML|innerHTML/);
   assert.doesNotMatch(app, /history\.filter\(/);
   assert.match(verseActions, /role="menu"/);
   assert.match(verseActions, />Copy Verse</);

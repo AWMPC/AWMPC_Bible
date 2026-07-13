@@ -48,6 +48,7 @@ test("switches between the local English and Korean datasets", async ({ page }) 
     const box = await koreanTarget.boundingBox();
     return box ? Math.abs(box.y + box.height / 2 - (await page.evaluate(() => innerHeight / 2))) : 999;
   }).toBeLessThan(6);
+  await waitForScrollIdle(page);
   const anchoredScroll = await page.evaluate(() => scrollY);
   await page.locator(".overlay-close").click();
   await expect(page.getByRole("dialog")).toBeHidden();
@@ -99,7 +100,45 @@ test("stacks primary and secondary verses with localized book labels and actions
   await page.getByRole("menuitem", { name: "Copy Verse" }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("— 창세기 1:40");
   await page.getByRole("button", { name: "Search" }).click();
-  await expect(page.getByText("Search will use only the active English and Korean Bible texts.")).toBeVisible();
+  await page.getByRole("searchbox", { name: "Search active Bible text" }).fill("한국어 시험 구졀 40");
+  const koreanResult = page.locator(".search-results button").filter({ hasText: /창세기 1:40/ });
+  await expect(koreanResult).toContainText("Korean");
+  await koreanResult.click();
+  await expect(page.locator("#verse-1-40")).toBeInViewport();
+  await page.getByRole("button", { name: "Reading history" }).click();
+  await expect(page.getByRole("button", { name: /^창세기 1:40/ })).toBeVisible();
+});
+
+test("fuzzy search selects through chooseVerse and records one history entry", async ({ page }) => {
+  await page.getByRole("button", { name: "Search" }).click();
+  const input = page.getByRole("searchbox", { name: "Search active Bible text" });
+  await input.fill("Mathew chapter 2 verse 5");
+  await expect(page.locator(".search-panel")).toHaveAttribute("aria-busy", "true");
+  const result = page.locator(".search-results button").filter({ hasText: /Matthew 2:5/ });
+  await expect(result).toContainText("English");
+  await result.click();
+  await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
+  await expect(page.locator("#verse-2-5")).toBeInViewport();
+
+  await page.getByRole("button", { name: "Reading history" }).click();
+  await expect(page.getByRole("button", { name: /^Matthew 2:5/ })).toBeVisible();
+  await expect(page.locator(".history-list > li")).toHaveCount(1);
+});
+
+test("search queries only languages active in Profile", async ({ page }) => {
+  await page.getByRole("button", { name: "Search" }).click();
+  const input = page.getByRole("searchbox", { name: "Search active Bible text" });
+  await input.fill("한국어 시험");
+  await expect(page.getByText("No matching verses")).toBeVisible();
+  await page.locator(".overlay-close").click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await page.getByRole("combobox", { name: "Secondary language" }).selectOption("ko");
+  await page.locator(".overlay-close").click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("button", { name: /^창세기 1:1 Korean / })).toBeVisible();
 });
 
 test("history remains global and routes an inactive language without duplication", async ({ page }) => {
