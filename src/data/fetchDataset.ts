@@ -5,6 +5,7 @@ const TIMEOUT_MS = 15_000;
 
 type FetchDatasetOptions = {
   fetcher?: typeof fetch;
+  signal?: AbortSignal;
   timeoutMs?: number;
   wait?: (attempt: number, signal: AbortSignal) => Promise<void>;
 };
@@ -78,7 +79,10 @@ export async function fetchDatasetText(url: string, options: FetchDatasetOptions
   let lastError: unknown = new DatasetLoadError("The library could not be loaded.");
 
   for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
+    if (options.signal?.aborted) throw options.signal.reason;
     const controller = new AbortController();
+    const abortAttempt = () => controller.abort(options.signal?.reason);
+    options.signal?.addEventListener("abort", abortAttempt, { once: true });
     const timeout = setTimeout(
       () => controller.abort(new DatasetLoadError("The data request timed out.", true)),
       options.timeoutMs ?? TIMEOUT_MS,
@@ -101,12 +105,16 @@ export async function fetchDatasetText(url: string, options: FetchDatasetOptions
       if (!retryable || attempt === ATTEMPTS - 1) throw cause;
     } finally {
       clearTimeout(timeout);
+      options.signal?.removeEventListener("abort", abortAttempt);
     }
 
     const backoff = new AbortController();
+    const abortBackoff = () => backoff.abort(options.signal?.reason);
+    options.signal?.addEventListener("abort", abortBackoff, { once: true });
     try {
       await wait(attempt, backoff.signal);
     } finally {
+      options.signal?.removeEventListener("abort", abortBackoff);
       backoff.abort();
     }
   }

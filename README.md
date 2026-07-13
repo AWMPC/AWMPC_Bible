@@ -22,6 +22,7 @@ server and can be served from a VM, CDN, or any static web host.
 - The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
 - Profile selects among privacy-safe local Serif, Sans, Rounded, and Monospace verse fonts.
 - Appearance supports explicit Day or Night modes and an Auto mode that follows the system.
+- Profile switches between separately provisioned English and Korean Bible datasets.
 - The acceleration boundary leaves room for WASM search/indexing and optional
   WebGPU effects without making either necessary for correct reading.
 
@@ -49,7 +50,9 @@ The browser suite uses Playwright Chromium and starts its own local Vite server.
 
 The deployable static output is written to `dist/`. In production, serve that
 directory with a static server such as Caddy or nginx. `npm start` is intended
-only for local previewing of a completed build.
+only for local previewing of a completed build. All generated asset and dataset
+references are relative, so the unchanged `dist/` directory may be hosted at
+the domain root or beneath any VM directory path.
 
 The production host should send a restrictive Content Security Policy allowing
 only same-origin scripts, styles, workers, data, and connections. It should also
@@ -57,8 +60,11 @@ set `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, a minimal
 `Permissions-Policy`, and deny framing with `frame-ancestors 'none'`. Keep the
 dataset response same-origin and serve it with the correct JSON content type.
 
-The local dataset belongs at `public/data/bible-*.json`. Those files are ignored
-at every directory depth and must be provisioned separately during deployment.
+The English and Korean datasets belong at `public/data/bible-en.json` and
+`public/data/bible-ko.json`. Those files are ignored at every directory depth
+and must be provisioned separately before building. Vite copies them to
+`dist/data/bible-en.json` and `dist/data/bible-ko.json`; deploy the complete
+`dist/` directory without moving either dataset relative to `index.html`.
 
 ### Footnotes
 

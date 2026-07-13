@@ -3,8 +3,41 @@ import assert from "node:assert/strict";
 import { fetchDatasetText, waitForDatasetRetry } from "../src/data/fetchDataset.ts";
 import { LIMITS, parseInlineFootnotes, parseLibrary, readChapter } from "../src/data/library.ts";
 import { dispatchChapterRequest } from "../src/data/chapterRequests.ts";
+import { bibleDatasetUrl, isAllowedBibleDatasetUrl, isBibleLanguage } from "../src/data/languages.ts";
 
 const noWait = async () => {};
+
+test("maps only supported languages to local dataset files", () => {
+  const base = "https://reader.example/apps/awmpc/";
+  assert.equal(bibleDatasetUrl("en", base), `${base}data/bible-en.json`);
+  assert.equal(bibleDatasetUrl("ko", base), `${base}data/bible-ko.json`);
+  assert.equal(isBibleLanguage("en"), true);
+  assert.equal(isBibleLanguage("ko"), true);
+  assert.equal(isBibleLanguage("../private"), false);
+});
+
+test("allows only the exact same-origin language dataset below the deployed base", () => {
+  const origin = "https://reader.example";
+  const base = `${origin}/apps/awmpc/`;
+  assert.equal(isAllowedBibleDatasetUrl("ko", `${base}data/bible-ko.json`, base, origin), true);
+  assert.equal(isAllowedBibleDatasetUrl("ko", `${base}data/bible-en.json`, base, origin), false);
+  assert.equal(isAllowedBibleDatasetUrl("ko", `${origin}/data/bible-ko.json`, base, origin), false);
+  assert.equal(isAllowedBibleDatasetUrl("ko", "https://other.example/data/bible-ko.json", base, origin), false);
+  assert.equal(isAllowedBibleDatasetUrl("ko", `https://user@reader.example/apps/awmpc/data/bible-ko.json`, base, origin), false);
+});
+
+test("external cancellation stops a dataset request without retrying", async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  const fetcher = (_url, init) => {
+    calls += 1;
+    return new Promise((_resolve, reject) => init.signal.addEventListener("abort", () => reject(init.signal.reason), { once: true }));
+  };
+  const request = fetchDatasetText("/data/bible-en.json", { fetcher, signal: controller.signal, wait: noWait });
+  controller.abort(new DOMException("Language changed", "AbortError"));
+  await assert.rejects(request, /Language changed/);
+  assert.equal(calls, 1);
+});
 
 test("chapter requests settle when the worker is unavailable or not ready", async () => {
   const pending = new Map();
