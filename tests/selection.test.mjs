@@ -33,6 +33,20 @@ test("history selection loads and reveals without duplicating history", async ()
   assert.deepEqual(events, [["load", "Romans", "8"], ["reveal", { book: "Romans", chapter: "8", verses }, "5"]]);
 });
 
+test("search selection records its localized result through the shared selection layer", async () => {
+  const recorded = [];
+  const localized = { bibleLanguage: "ko", book: "창세기", chapter: "1", verse: "1" };
+  const selected = await runVerseSelection({ book: "Genesis", chapter: "1", verse: "1" }, { historySelection: localized }, {
+    currentPassage,
+    loadChapter: async () => { throw new Error("must not load"); },
+    isCurrent: () => true,
+    recordHistory: (value) => recorded.push(value),
+    reveal: async () => {},
+  });
+  assert.deepEqual(selected, { status: "selected" });
+  assert.deepEqual(recorded, [localized]);
+});
+
 test("stale, missing, and failed selection results never commit", async () => {
   let revealed = false;
   const dependencies = {
