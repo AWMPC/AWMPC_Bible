@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { Book, Verse } from "../data/contracts";
+import type { BibleLanguage } from "../settings/bibleLanguage";
 import { scrollNavigationSection, type NavigationScrollAlignment } from "./navigationScroll";
 import type { NavigationSectionRequest } from "./navigationTarget";
 import { groupBooksByTestament } from "./testaments";
@@ -7,6 +8,8 @@ import { Skeleton } from "./Skeleton";
 
 export type NavigationPanelProps = {
   books: Book[];
+  secondaryBooks?: Book[];
+  secondaryLanguage?: BibleLanguage | null;
   book: string;
   chapters: string[];
   chapter: string;
@@ -21,7 +24,7 @@ export type NavigationPanelProps = {
   scrollContainerRef: RefObject<HTMLElement | null>;
 };
 
-export function NavigationPanel({ books, book, chapters, chapter, verses, initialLoading, versesLoading, error, onBook, onChapter, onVerse, sectionRequest, scrollContainerRef }: NavigationPanelProps) {
+export function NavigationPanel({ books, secondaryBooks = [], secondaryLanguage = null, book, chapters, chapter, verses, initialLoading, versesLoading, error, onBook, onChapter, onVerse, sectionRequest, scrollContainerRef }: NavigationPanelProps) {
   const booksRef = useRef<HTMLElement>(null);
   const chaptersRef = useRef<HTMLElement>(null);
   const versesRef = useRef<HTMLElement>(null);
@@ -58,13 +61,14 @@ export function NavigationPanel({ books, book, chapters, chapter, verses, initia
 
   if (initialLoading) return <Skeleton rows={8} />;
   const testamentBooks = groupBooksByTestament(books);
+  const secondaryNames = new Map(books.map((item, index) => [item.name, secondaryBooks[index]?.name]));
   return (
     <div className="navigation-panel">
       <section ref={booksRef} aria-labelledby="books-title">
         <h3 id="books-title">Books</h3>
-        <TestamentBookGroup id="old-testament-title" title="Old Testament" books={testamentBooks.old} currentBook={book} onBook={chooseBook} />
-        <TestamentBookGroup id="new-testament-title" title="New Testament" books={testamentBooks.new} currentBook={book} onBook={chooseBook} />
-        {testamentBooks.other.length > 0 && <TestamentBookGroup id="other-books-title" title="Other Books" books={testamentBooks.other} currentBook={book} onBook={chooseBook} />}
+        <TestamentBookGroup id="old-testament-title" title="Old Testament" books={testamentBooks.old} secondaryNames={secondaryNames} secondaryLanguage={secondaryLanguage} currentBook={book} onBook={chooseBook} />
+        <TestamentBookGroup id="new-testament-title" title="New Testament" books={testamentBooks.new} secondaryNames={secondaryNames} secondaryLanguage={secondaryLanguage} currentBook={book} onBook={chooseBook} />
+        {testamentBooks.other.length > 0 && <TestamentBookGroup id="other-books-title" title="Other Books" books={testamentBooks.other} secondaryNames={secondaryNames} secondaryLanguage={secondaryLanguage} currentBook={book} onBook={chooseBook} />}
       </section>
       <section ref={chaptersRef} aria-labelledby="chapters-title">
         <h3 id="chapters-title">Chapters</h3>
@@ -84,12 +88,12 @@ export function NavigationPanel({ books, book, chapters, chapter, verses, initia
   );
 }
 
-function TestamentBookGroup({ id, title, books, currentBook, onBook }: { id: string; title: string; books: Book[]; currentBook: string; onBook: (book: string) => void }) {
+function TestamentBookGroup({ id, title, books, secondaryNames, secondaryLanguage, currentBook, onBook }: { id: string; title: string; books: Book[]; secondaryNames: ReadonlyMap<string, string | undefined>; secondaryLanguage: BibleLanguage | null; currentBook: string; onBook: (book: string) => void }) {
   return (
     <section className="testament-group" aria-labelledby={id}>
       <h4 id={id}>{title}</h4>
       <div className="choice-grid books-grid">{books.map((item) => (
-        <button key={item.name} type="button" aria-current={currentBook === item.name ? "page" : undefined} onClick={() => onBook(item.name)}>{item.name}</button>
+        <button key={item.name} type="button" aria-current={currentBook === item.name ? "page" : undefined} onClick={() => onBook(item.name)}><span>{item.name}</span>{secondaryLanguage && secondaryNames.get(item.name) && <small className="book-choice-secondary" lang={secondaryLanguage}>{secondaryNames.get(item.name)}</small>}</button>
       ))}</div>
     </section>
   );

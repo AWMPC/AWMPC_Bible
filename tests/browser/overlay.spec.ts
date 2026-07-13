@@ -21,7 +21,7 @@ test("switches between the local English and Korean datasets", async ({ page }) 
   await page.locator("#verse-1-40").scrollIntoViewIfNeeded();
   await page.evaluate(() => document.getElementById("verse-1-40")?.scrollIntoView({ block: "center" }));
   await page.getByRole("button", { name: "Profile and preferences" }).click();
-  const language = page.getByRole("combobox", { name: "Language" });
+  const language = page.getByRole("combobox", { name: "Primary language" });
   await language.selectOption("ko");
   const koreanTarget = page.locator("#verse-1-40");
   await expect(page.locator('article[aria-label="창세기 chapter 1"]')).toBeVisible();
@@ -40,7 +40,7 @@ test("switches between the local English and Korean datasets", async ({ page }) 
 
 test("persists the selected Bible language", async ({ page }) => {
   await page.getByRole("button", { name: "Profile and preferences" }).click();
-  const language = page.getByRole("combobox", { name: "Language" });
+  const language = page.getByRole("combobox", { name: "Primary language" });
   await expect(language).toHaveValue("en");
   await language.selectOption("ko");
   await expect(language).toHaveValue("ko");
@@ -51,7 +51,52 @@ test("persists the selected Bible language", async ({ page }) => {
   await expect(page.locator('article[aria-label="창세기 chapter 1"]')).toBeVisible();
   expect(reloadRequests.some((url) => url.endsWith("/data/bible-en.json"))).toBe(false);
   await page.getByRole("button", { name: "Profile and preferences" }).click();
-  await expect(page.getByRole("combobox", { name: "Language" })).toHaveValue("ko");
+  await expect(page.getByRole("combobox", { name: "Primary language" })).toHaveValue("ko");
+});
+
+test("stacks primary and secondary verses with localized book labels and actions", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await page.getByRole("combobox", { name: "Secondary language" }).selectOption("ko");
+  const firstVerse = page.locator("#verse-1-1");
+  await expect(firstVerse.locator(".verse-language-row")).toHaveCount(2);
+  await expect(firstVerse.locator(".verse-language-row").nth(0)).toHaveAttribute("lang", "en");
+  await expect(firstVerse.locator(".verse-language-row").nth(1)).toHaveAttribute("lang", "ko");
+  await page.locator(".overlay-close").click();
+
+  const bookControl = page.getByRole("button", { name: "Choose book, currently Genesis, 창세기" });
+  await expect(bookControl).toContainText("Genesis");
+  await expect(bookControl).toContainText("창세기");
+  await bookControl.click();
+  const currentBook = page.locator('section[aria-labelledby="books-title"] button[aria-current="page"]');
+  await expect(currentBook).toContainText("Genesis");
+  await expect(currentBook).toContainText("창세기");
+  await page.locator(".overlay-close").click();
+
+  await page.locator("#verse-1-40").scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: "Actions for Korean verse 40", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Copy Verse" }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("— 창세기 1:40");
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByText("Search will use only the active English and Korean Bible texts.")).toBeVisible();
+});
+
+test("history remains global and routes an inactive language without duplication", async ({ page }) => {
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await page.locator('section[aria-labelledby="verses-title"] button').filter({ hasText: /^50$/ }).click();
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await page.getByRole("combobox", { name: "Primary language" }).selectOption("ko");
+  await page.locator(".overlay-close").click();
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await page.locator('section[aria-labelledby="verses-title"] button').filter({ hasText: /^40$/ }).click();
+
+  await page.getByRole("button", { name: "Reading history" }).click();
+  await expect(page.getByRole("button", { name: /^Genesis 1:50/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^창세기 1:40/ })).toBeVisible();
+  await page.getByRole("button", { name: /^Genesis 1:50/ }).click();
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+  await page.getByRole("button", { name: "Reading history" }).click();
+  await expect(page.locator(".history-list > li")).toHaveCount(2);
 });
 
 test("first verse begins at the reading pane's normal inset", async ({ page }) => {
@@ -192,7 +237,7 @@ test("selecting a verse centers it and records one removable history entry", asy
 
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^Genesis 1:50/ })).toBeVisible();
-  await page.getByRole("button", { name: "Remove Genesis 1:50 from history" }).click();
+  await page.getByRole("button", { name: "Remove Genesis 1:50 (en) from history" }).click();
   await expect(page.getByText("No reading history yet")).toBeVisible();
 });
 

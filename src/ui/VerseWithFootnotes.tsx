@@ -1,16 +1,17 @@
 import { useId, useState } from "react";
 import type { Verse } from "../data/contracts";
+import type { BibleLanguage } from "../settings/bibleLanguage";
 
-export function VerseWithFootnotes({ verse, actionsOpen, onActions }: { verse: Verse; actionsOpen: boolean; onActions: (verse: Verse, trigger: HTMLButtonElement) => void }) {
+export function VerseWithFootnotes({ verse, language, actionLanguageLabel, actionsOpen, onActions }: { verse: Verse; language: BibleLanguage; actionLanguageLabel?: string; actionsOpen: boolean; onActions: (verse: Verse, trigger: HTMLButtonElement) => void }) {
   const [expanded, setExpanded] = useState(false);
   const cardId = useId();
   const footnotes = verse.footnotes ?? [];
   const segments = verse.segments ?? [verse.text];
 
   return (
-    <>
+    <div className="verse-language-row" lang={language}>
       <div className="verse-rail">
-        <button className="verse-number" type="button" aria-label={`Actions for verse ${verse.number}`} aria-haspopup="menu" aria-expanded={actionsOpen} aria-controls={actionsOpen ? "verse-actions-menu" : undefined} onClick={(event) => onActions(verse, event.currentTarget)}>{verse.number}</button>
+        <button className="verse-number" type="button" aria-label={`Actions for ${actionLanguageLabel ? `${actionLanguageLabel} ` : ""}verse ${verse.number}`} aria-haspopup="menu" aria-expanded={actionsOpen} aria-controls={actionsOpen ? "verse-actions-menu" : undefined} onClick={(event) => onActions(verse, event.currentTarget)}>{verse.number}</button>
       </div>
       <div className="verse-content" data-footnotes-expanded={expanded || undefined}>
         <p>{segments.map((segment, index) => typeof segment === "string"
@@ -26,6 +27,6 @@ export function VerseWithFootnotes({ verse, actionsOpen, onActions }: { verse: V
           </div>
         </div>
       }
-    </>
+    </div>
   );
 }

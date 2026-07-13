@@ -10,11 +10,13 @@ type ProfilePanelProps = {
   onVerseFontChange: (font: VerseFont) => void;
   appearance: Appearance;
   onAppearanceChange: (appearance: Appearance) => void;
-  bibleLanguage: BibleLanguage;
-  onBibleLanguageChange: (language: BibleLanguage) => void;
+  primaryBibleLanguage: BibleLanguage;
+  secondaryBibleLanguage: BibleLanguage | null;
+  onPrimaryBibleLanguageChange: (language: BibleLanguage) => void;
+  onSecondaryBibleLanguageChange: (language: BibleLanguage | null) => void;
 };
 
-export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange, bibleLanguage, onBibleLanguageChange }: ProfilePanelProps) {
+export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange, primaryBibleLanguage, secondaryBibleLanguage, onPrimaryBibleLanguageChange, onSecondaryBibleLanguageChange }: ProfilePanelProps) {
   const selected = TEXT_SCALES[textScaleIndex(textScale)];
   return (
     <div className="profile-panel">
@@ -50,14 +52,25 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
           {VERSE_FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
         </select>
       </section>
-      <section className="setting-group font-setting" aria-labelledby="bible-language-label">
+      <section className="setting-group font-setting" aria-labelledby="primary-bible-language-label">
         <div>
           <p className="eyebrow">Bible text</p>
-          <label id="bible-language-label" htmlFor="bible-language">Language</label>
-          <p>Selects the locally available Bible translation.</p>
+          <label id="primary-bible-language-label" htmlFor="primary-bible-language">Primary language</label>
+          <p>The main language used for navigation and verse selection.</p>
         </div>
-        <select id="bible-language" className="setting-select" value={bibleLanguage} onChange={(event) => onBibleLanguageChange(event.currentTarget.value as BibleLanguage)}>
+        <select id="primary-bible-language" className="setting-select" value={primaryBibleLanguage} onChange={(event) => onPrimaryBibleLanguageChange(event.currentTarget.value as BibleLanguage)}>
           {BIBLE_LANGUAGE_OPTIONS.map((language) => <option key={language.id} value={language.id}>{language.label}</option>)}
+        </select>
+      </section>
+      <section className="setting-group font-setting" aria-labelledby="secondary-bible-language-label">
+        <div>
+          <p className="eyebrow">Parallel text</p>
+          <label id="secondary-bible-language-label" htmlFor="secondary-bible-language">Secondary language</label>
+          <p>Optionally stacks another translation beneath each primary verse.</p>
+        </div>
+        <select id="secondary-bible-language" className="setting-select" value={secondaryBibleLanguage ?? ""} onChange={(event) => onSecondaryBibleLanguageChange(event.currentTarget.value as BibleLanguage || null)}>
+          <option value="">None</option>
+          {BIBLE_LANGUAGE_OPTIONS.filter(({ id }) => id !== primaryBibleLanguage).map((language) => <option key={language.id} value={language.id}>{language.label}</option>)}
         </select>
       </section>
       <section className="setting-group font-setting" aria-labelledby="appearance-label">

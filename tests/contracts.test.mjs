@@ -40,6 +40,8 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(styles, /\.awmpc-bible-shell\s*\{[^}]*background:\s*var\(--bg\)/);
   assert.doesNotMatch(styles, /radial-gradient|--(?:day-|night-)?glow-(?:one|two)|\.awmpc-bible-shell::before|\.awmpc-bible-shell::after/);
   assert.match(styles, /grid-template-columns:\s*var\(--verse-number-gutter\) minmax\(0, 1fr\)/);
+  assert.match(styles, /\.verse-language-row\s*\{[^}]*display:\s*grid/);
+  assert.match(styles, /data-dual-language="true"/);
   assert.match(styles, /data-text-scale="standard"[^}]*--verse-line-height:\s*1\.5/);
 });
 
@@ -98,6 +100,11 @@ test("panels retain semantic native controls", async () => {
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
   assert.match(profile, /<select/);
+  assert.match(profile, />Primary language</);
+  assert.match(profile, />Secondary language</);
+  assert.match(navigation, /book-choice-secondary/);
+  assert.match(history, /history-language/);
+  assert.doesNotMatch(app, /history\.filter\(/);
   assert.match(verseActions, /role="menu"/);
   assert.match(verseActions, />Copy Verse</);
   assert.match(verseActions, />Copy Link</);

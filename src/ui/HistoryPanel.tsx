@@ -1,4 +1,5 @@
 import type { HistoryEntry } from "../history/HistoryStore";
+import { BIBLE_LANGUAGE_OPTIONS } from "../settings/bibleLanguage";
 import { EmptyFeature } from "./EmptyFeature";
 
 type HistoryPanelProps = {
@@ -16,10 +17,10 @@ export function HistoryPanel({ entries, onSelect, onRemove, onClear }: HistoryPa
       <ol className="history-list">{entries.map((entry) => (
       <li key={entry.id}>
         <button className="history-entry" type="button" onClick={() => onSelect(entry)}>
-          <span><strong>{entry.book}</strong> {entry.chapter}:{entry.verse}</span>
+          <span><strong>{entry.book}</strong> {entry.chapter}:{entry.verse} <small className="history-language">{BIBLE_LANGUAGE_OPTIONS.find(({ id }) => id === entry.bibleLanguage)?.label ?? entry.bibleLanguage}</small></span>
           <time dateTime={entry.visitedAt}>{new Date(entry.visitedAt).toLocaleString()}</time>
         </button>
-        <button className="history-remove" type="button" aria-label={`Remove ${entry.book} ${entry.chapter}:${entry.verse} from history`} onClick={() => onRemove(entry.id)}>Remove</button>
+        <button className="history-remove" type="button" aria-label={`Remove ${entry.book} ${entry.chapter}:${entry.verse} (${entry.bibleLanguage}) from history`} onClick={() => onRemove(entry.id)}>Remove</button>
       </li>
       ))}</ol>
     </section>

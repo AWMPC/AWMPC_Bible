@@ -22,8 +22,11 @@ server and can be served from a VM, CDN, or any static web host.
 - The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
 - Profile selects among privacy-safe local Serif, Sans, Rounded, and Monospace verse fonts.
 - Appearance supports explicit Day or Night modes and an Auto mode that follows the system.
-- Profile switches between separately provisioned English and Korean Bible datasets.
+- Profile keeps one primary language and optionally stacks a distinct secondary language beneath each verse.
+- Book controls and Navigation show secondary-language book names as subordinate text when parallel text is active.
 - Language changes preserve the verse crossing the viewport midpoint and recenter its translated counterpart.
+- History remains global across languages; Search is intentionally scoped to only the currently active language texts.
+- Verse actions stay attached to their exact translation, so copied text and links retain the selected verse language.
 - Verse-number menus copy plain verse text or a bounded, deployable deep link to that verse.
 - The acceleration boundary leaves room for WASM search/indexing and optional
   WebGPU effects without making either necessary for correct reading.
