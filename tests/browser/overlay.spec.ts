@@ -75,6 +75,14 @@ test("persists the selected Bible language", async ({ page }) => {
   await expect(page.getByRole("combobox", { name: "Primary language" })).toHaveValue("ko");
 });
 
+test("offers only Sans, Serif, and Mono fonts in that order", async ({ page }) => {
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  const font = page.getByRole("combobox", { name: "Verse font" });
+  await expect(font.locator("option")).toHaveText(["Sans", "Serif", "Mono"]);
+  await font.selectOption("monospace");
+  await expect(page.locator(".awmpc-bible-shell")).toHaveAttribute("data-verse-font", "monospace");
+});
+
 test("stacks primary and secondary verses with localized book labels and actions", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.getByRole("button", { name: "Profile and preferences" }).click();
@@ -94,11 +102,10 @@ test("stacks primary and secondary verses with localized book labels and actions
   await expect(currentBook).toContainText("창세기");
   await page.locator(".overlay-close").click();
 
-  await page.locator("#verse-1-40").scrollIntoViewIfNeeded();
-  await waitForScrollIdle(page);
-  await page.getByRole("button", { name: "Actions for Korean verse 40", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Copy Verse" }).click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("— 창세기 1:40");
+  await page.getByRole("button", { name: "Actions for Korean verse 1", exact: true }).click();
+  await expect(page.getByRole("menuitem", { name: "Copy Verse" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("— 창세기 1:1");
   await page.getByRole("button", { name: "Search" }).click();
   await page.getByRole("searchbox", { name: "Search active Bible text" }).fill("한국어 시험 구졀 40");
   const koreanResult = page.locator(".search-results button").filter({ hasText: /창세기 1:40/ });

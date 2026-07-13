@@ -97,7 +97,7 @@ test("history and settings tolerate malformed or unavailable storage", async () 
 
   const unavailableSettings = new LocalSettingsStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
   assert.deepEqual(unavailableSettings.load(), defaultSettings);
-  assert.doesNotThrow(() => unavailableSettings.save({ textScale: "large", verseFont: "rounded", appearance: "night", primaryBibleLanguage: "ko", secondaryBibleLanguage: "en" }));
+  assert.doesNotThrow(() => unavailableSettings.save({ textScale: "large", verseFont: "system-sans", appearance: "night", primaryBibleLanguage: "ko", secondaryBibleLanguage: "en" }));
 });
 
 test("history rejects malformed references and timestamps", async () => {
@@ -149,6 +149,9 @@ test("settings validate, round-trip, and migrate independently", () => {
   assert.ok(values.has("awmpc-bible.settings.v2"));
   store.save({ textScale: "compact", verseFont: "monospace", appearance: "day", primaryBibleLanguage: "ko", secondaryBibleLanguage: "en" });
   assert.deepEqual(store.load(), { textScale: "compact", verseFont: "monospace", appearance: "day", primaryBibleLanguage: "ko", secondaryBibleLanguage: "en" });
+  assert.equal(normalizeBibleSettings({ verseFont: "rounded" }).verseFont, "system-sans");
+  const roundedStore = new LocalSettingsStore({ getItem: () => '{"verseFont":"rounded"}', setItem: () => {} });
+  assert.equal(roundedStore.load().verseFont, "system-sans");
 });
 
 test("settings reject unsupported Bible languages", () => {

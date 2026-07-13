@@ -20,7 +20,7 @@ server and can be served from a VM, CDN, or any static web host.
 - Profile offers five meaningful, snapping text scales for every verse and verse number.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
 - The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
-- Profile selects among privacy-safe local Serif, Sans, Rounded, and Monospace verse fonts.
+- Profile selects among privacy-safe local Sans, Serif, and Mono verse fonts.
 - Appearance supports explicit Day or Night modes and an Auto mode that follows the system.
 - Profile keeps one primary language and optionally stacks a distinct secondary language beneath each verse.
 - Book controls and Navigation show secondary-language book names as subordinate text when parallel text is active.

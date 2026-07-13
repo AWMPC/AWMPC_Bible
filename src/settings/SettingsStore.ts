@@ -1,5 +1,5 @@
 import { DEFAULT_TEXT_SCALE, isTextScale, type TextScale } from "./textScale.ts";
-import { DEFAULT_VERSE_FONT, isVerseFont, type VerseFont } from "./verseFont.ts";
+import { normalizeVerseFont, type VerseFont } from "./verseFont.ts";
 import { DEFAULT_APPEARANCE, isAppearance, type Appearance } from "./appearance.ts";
 import { DEFAULT_BIBLE_LANGUAGE, isBibleLanguage, type BibleLanguage } from "./bibleLanguage.ts";
 
@@ -37,7 +37,7 @@ export function normalizeBibleSettings(value: unknown): BibleSettings {
     : null;
   return {
     textScale: isTextScale(settings.textScale) ? settings.textScale : DEFAULT_TEXT_SCALE,
-    verseFont: isVerseFont(settings.verseFont) ? settings.verseFont : DEFAULT_VERSE_FONT,
+    verseFont: normalizeVerseFont(settings.verseFont),
     appearance: isAppearance(settings.appearance) ? settings.appearance : DEFAULT_APPEARANCE,
     primaryBibleLanguage,
     secondaryBibleLanguage,

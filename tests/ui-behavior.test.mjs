@@ -8,7 +8,7 @@ import { completeStagedNavigation, stagedNavigationFrom } from "../src/navigatio
 import { transitionChapterView, transitionVerseView, verseElementId } from "../src/ui/transitionVerseView.ts";
 import { textScaleAt, TEXT_SCALES } from "../src/settings/textScale.ts";
 import { APPEARANCES, isAppearance } from "../src/settings/appearance.ts";
-import { VERSE_FONTS, isVerseFont } from "../src/settings/verseFont.ts";
+import { VERSE_FONTS, isVerseFont, normalizeVerseFont } from "../src/settings/verseFont.ts";
 import { scrollNavigationSection } from "../src/ui/navigationScroll.ts";
 import { BIBLE_LANGUAGE_OPTIONS, isBibleLanguage } from "../src/settings/bibleLanguage.ts";
 import { chapterScrollProgress } from "../src/ui/useChapterScrollProgress.ts";
@@ -103,7 +103,13 @@ test("settings allowlists and scale snapping remain exact", () => {
   assert.equal(textScaleAt(99), "extra-large");
   assert.deepEqual(APPEARANCES.map(({ id }) => id), ["auto", "day", "night"]);
   assert.equal(isAppearance("custom"), false);
-  assert.equal(VERSE_FONTS.length, 4);
+  assert.deepEqual(VERSE_FONTS.map(({ id, label }) => [id, label]), [
+    ["system-sans", "Sans"],
+    ["system-serif", "Serif"],
+    ["monospace", "Mono"],
+  ]);
+  assert.equal(isVerseFont("rounded"), false);
+  assert.equal(normalizeVerseFont("rounded"), "system-sans");
   assert.equal(isVerseFont("remote-font"), false);
   assert.deepEqual(BIBLE_LANGUAGE_OPTIONS.map(({ id }) => id), ["en", "ko"]);
   assert.equal(isBibleLanguage("ko"), true);
