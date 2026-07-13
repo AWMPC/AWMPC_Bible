@@ -5,7 +5,7 @@ import { groupBooksByTestament } from "../src/ui/testaments.ts";
 import { lockDocumentScroll } from "../src/ui/scrollLock.ts";
 import { isTrustedReadingTap, nextDockVisibility } from "../src/ui/useUserScrollChromeVisibility.ts";
 import { completeStagedNavigation, stagedNavigationFrom } from "../src/navigation/useStagedNavigation.ts";
-import { transitionVerseView, verseElementId } from "../src/ui/transitionVerseView.ts";
+import { transitionChapterView, transitionVerseView, verseElementId } from "../src/ui/transitionVerseView.ts";
 import { textScaleAt, TEXT_SCALES } from "../src/settings/textScale.ts";
 import { APPEARANCES, isAppearance } from "../src/settings/appearance.ts";
 import { VERSE_FONTS, isVerseFont } from "../src/settings/verseFont.ts";
@@ -15,6 +15,8 @@ import { chapterScrollProgress } from "../src/ui/useChapterScrollProgress.ts";
 import { middleVerseFromRects, nearestNumericValue } from "../src/ui/middleVerse.ts";
 import { createVerseLink, formatVerseForCopy, parseVerseLink } from "../src/links/verseLinks.ts";
 import { pairedBookName, versesByNumber } from "../src/data/dualLanguage.ts";
+import { adjacentChapter } from "../src/navigation/adjacentChapter.ts";
+import { horizontalSwipeDirection, horizontalWheelDirection } from "../src/ui/useChapterSwipe.ts";
 
 test("chapter scroll progress is exact through the chapter's scrollable range", () => {
   const base = { viewportHeight: 800, chapterTop: 100, chapterHeight: 2800 };
@@ -31,6 +33,33 @@ test("chapter scroll progress clamps and safely rejects unusable geometry", () =
   assert.equal(chapterScrollProgress({ ...base, chapterHeight: 400, viewportTop: 100 }), 0);
   assert.equal(chapterScrollProgress({ ...base, viewportTop: Number.NaN }), 0);
   assert.equal(chapterScrollProgress({ ...base, viewportHeight: 0 }), 0);
+});
+
+test("adjacent chapter navigation crosses book boundaries without escaping the library", () => {
+  const books = [
+    { name: "Genesis", chapters: ["1", "2"] },
+    { name: "Empty", chapters: [] },
+    { name: "Matthew", chapters: ["1", "2", "3"] },
+  ];
+  assert.deepEqual(adjacentChapter(books, { book: "Genesis", chapter: "1" }, 1), { book: "Genesis", chapter: "2" });
+  assert.deepEqual(adjacentChapter(books, { book: "Genesis", chapter: "2" }, 1), { book: "Matthew", chapter: "1" });
+  assert.deepEqual(adjacentChapter(books, { book: "Matthew", chapter: "1" }, -1), { book: "Genesis", chapter: "2" });
+  assert.equal(adjacentChapter(books, { book: "Genesis", chapter: "1" }, -1), null);
+  assert.equal(adjacentChapter(books, { book: "Matthew", chapter: "3" }, 1), null);
+  assert.equal(adjacentChapter(books, { book: "Missing", chapter: "1" }, 1), null);
+  assert.equal(adjacentChapter(books, { book: "Genesis", chapter: "9" }, 1), null);
+});
+
+test("chapter gestures require a deliberate, horizontally dominant user motion", () => {
+  assert.equal(horizontalSwipeDirection({ x: 180, y: 100 }, { x: 100, y: 104 }, 300), 1);
+  assert.equal(horizontalSwipeDirection({ x: 100, y: 100 }, { x: 180, y: 96 }, 300), -1);
+  assert.equal(horizontalSwipeDirection({ x: 180, y: 100 }, { x: 150, y: 100 }, 100), null);
+  assert.equal(horizontalSwipeDirection({ x: 180, y: 100 }, { x: 100, y: 180 }, 100), null);
+  assert.equal(horizontalSwipeDirection({ x: 180, y: 100 }, { x: 100, y: 100 }, 901), null);
+  assert.equal(horizontalWheelDirection(80, 4), 1);
+  assert.equal(horizontalWheelDirection(-80, 4), -1);
+  assert.equal(horizontalWheelDirection(80, 70), null);
+  assert.equal(horizontalWheelDirection(Number.NaN, 0), null);
 });
 
 test("testament grouping preserves order and unknown books", () => {
@@ -191,4 +220,32 @@ test("verse reveal cancellation after overlay close prevents late paint and scro
   releaseClose();
   await assert.rejects(transition, { name: "AbortError" });
   assert.deepEqual(events, ["commit", "close", "restore"]);
+});
+
+test("chapter reveal fades, commits, and returns the reader to the top", async () => {
+  const events = [];
+  const animations = [];
+  const pane = { style: { opacity: "", removeProperty: () => events.push("restore") }, animate: (frames) => { animations.push(frames); return { finished: Promise.resolve(), cancel: () => {} }; } };
+  await transitionChapterView(pane, () => events.push("commit"), {
+    prefersReducedMotion: () => false,
+    afterPaint: async () => events.push("paint"),
+    scrollToTop: () => events.push("top"),
+    findTarget: () => null,
+  });
+  assert.deepEqual(events, ["commit", "paint", "top", "restore"]);
+  assert.deepEqual(animations, [[{ opacity: 1 }, { opacity: 0 }], [{ opacity: 0 }, { opacity: 1 }]]);
+});
+
+test("chapter reveal cancellation before commit leaves the current chapter untouched", async () => {
+  const events = [];
+  const controller = new AbortController();
+  controller.abort();
+  const pane = { style: { opacity: "", removeProperty: () => events.push("restore") } };
+  await assert.rejects(transitionChapterView(pane, () => events.push("commit"), {
+    prefersReducedMotion: () => true,
+    afterPaint: async () => events.push("paint"),
+    scrollToTop: () => events.push("top"),
+    findTarget: () => null,
+  }, controller.signal), { name: "AbortError" });
+  assert.deepEqual(events, ["restore"]);
 });

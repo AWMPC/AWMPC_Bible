@@ -1,5 +1,21 @@
 import { expect, test } from "@playwright/test";
 
+async function waitForScrollIdle(page: import("@playwright/test").Page) {
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    let timer = 0;
+    const finish = () => {
+      window.removeEventListener("scroll", onScroll);
+      resolve();
+    };
+    const onScroll = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(finish, 80);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    timer = window.setTimeout(finish, 80);
+  }));
+}
+
 const dataset = {
   Genesis: {
     "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), index === 0 ? "Verse 1 {First note} text with {Second note} details." : `Verse ${index + 1} text for browser testing.`])),
@@ -8,7 +24,10 @@ const dataset = {
   ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
 };
 
-const koreanDataset = { "창세기": { "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), `한국어 시험 구절 ${index + 1} 본문은 언어별 줄 길이가 달라도 같은 구절을 유지합니다. `.repeat(3).trim()])) } };
+const koreanDataset = {
+  "창세기": { "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), `한국어 시험 구절 ${index + 1} 본문은 언어별 줄 길이가 달라도 같은 구절을 유지합니다. `.repeat(3).trim()])) },
+  "마태복음": Object.fromEntries(Array.from({ length: 20 }, (_, chapterIndex) => [String(chapterIndex + 1), { "1": `마태복음 ${chapterIndex + 1}장 1절.` }])),
+};
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/data/bible-en.json", (route) => route.fulfill({ json: dataset }));
@@ -31,6 +50,7 @@ test("switches between the local English and Korean datasets", async ({ page }) 
   }).toBeLessThan(6);
   const anchoredScroll = await page.evaluate(() => scrollY);
   await page.locator(".overlay-close").click();
+  await expect(page.getByRole("dialog")).toBeHidden();
   expect(await page.evaluate(() => scrollY)).toBe(anchoredScroll);
 
   await page.getByRole("button", { name: "Profile and preferences" }).click();
@@ -74,6 +94,7 @@ test("stacks primary and secondary verses with localized book labels and actions
   await page.locator(".overlay-close").click();
 
   await page.locator("#verse-1-40").scrollIntoViewIfNeeded();
+  await waitForScrollIdle(page);
   await page.getByRole("button", { name: "Actions for Korean verse 40", exact: true }).click();
   await page.getByRole("menuitem", { name: "Copy Verse" }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("— 창세기 1:40");
@@ -97,6 +118,64 @@ test("history remains global and routes an inactive language without duplication
   await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.locator(".history-list > li")).toHaveCount(2);
+});
+
+test("horizontal trackpad gestures switch one adjacent chapter and preserve vertical scrolling", async ({ page }) => {
+  const pane = page.locator(".reading-pane");
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await page.getByRole("combobox", { name: "Secondary language" }).selectOption("ko");
+  await page.locator(".overlay-close").click();
+  await pane.hover({ position: { x: 320, y: 220 } });
+
+  await page.mouse.wheel(40, 2);
+  await page.mouse.wheel(45, 2);
+  await page.mouse.wheel(90, 1);
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+  await expect(page.locator("#verse-1-1 .verse-language-row")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Choose book, currently Matthew, 마태복음" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+
+  await page.waitForTimeout(220);
+  await pane.hover({ position: { x: 320, y: 220 } });
+  await page.mouse.wheel(-80, 2);
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+
+  await page.waitForTimeout(220);
+  const beforeVertical = await page.evaluate(() => scrollY);
+  await pane.hover({ position: { x: 320, y: 220 } });
+  await page.mouse.wheel(2, 500);
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+  await expect.poll(() => page.evaluate((before) => scrollY > before, beforeVertical)).toBe(true);
+
+  await page.waitForTimeout(220);
+  await pane.hover({ position: { x: 320, y: 220 } });
+  await page.mouse.wheel(-90, 1);
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
+test("trusted mobile swipes switch chapters while vertical touch movement remains native", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const client = await context.newCDPSession(page);
+  await client.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+  const box = await page.locator(".reading-pane").boundingBox();
+  if (!box) throw new Error("Reading pane geometry is unavailable.");
+  const y = box.y + Math.min(240, box.height / 2);
+  const startX = box.x + box.width * .8;
+  const endX = box.x + box.width * .2;
+  const point = (x: number, currentY = y) => ({ x, y: currentY, id: 1, radiusX: 1, radiusY: 1, force: 1 });
+
+  await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point(startX)] });
+  await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [point((startX + endX) / 2)] });
+  await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [point(endX)] });
+  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+
+  const beforeVertical = await page.evaluate(() => scrollY);
+  await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point(endX, y + 180)] });
+  await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [point(endX + 4, y)] });
+  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+  await expect.poll(() => page.evaluate((before) => scrollY > before, beforeVertical)).toBe(true);
 });
 
 test("first verse begins at the reading pane's normal inset", async ({ page }) => {
