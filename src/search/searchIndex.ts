@@ -3,10 +3,15 @@ import { listBooks, readChapter, type Library } from "../data/library.ts";
 
 export const SEARCH_LIMITS = Object.freeze({ queryCodePoints: 120, results: 30, excerptCodePoints: 240, queryTokens: 8 });
 
-export type SearchDocument = Readonly<Omit<SearchResult, "score"> & { normalized: string; ordinal: number }>;
+export type SearchDocument = Readonly<Omit<SearchResult, "score"> & { normalized: string; aliases?: readonly string[]; ordinal: number }>;
 
 export function normalizeSearchText(value: string): string {
   return value.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim().replace(/\s+/g, " ");
+}
+
+export function hyphenSearchAliases(value: string): string[] {
+  const compounds = value.normalize("NFKC").toLowerCase().match(/[\p{L}\p{N}]+(?:\p{Pd}[\p{L}\p{N}]+)+/gu) ?? [];
+  return [...new Set(compounds.map((compound) => compound.replace(/\p{Pd}/gu, "")))];
 }
 
 function boundedCodePoints(value: string, limit: number): string {
@@ -18,12 +23,15 @@ export function buildSearchIndex(library: Library): SearchDocument[] {
   for (const book of listBooks(library)) {
     for (const chapter of book.chapters) {
       for (const verse of readChapter(library, book.name, chapter)) {
+        const normalized = normalizeSearchText(verse.text);
+        const aliases = hyphenSearchAliases(verse.text);
         documents.push({
           book: book.name,
           chapter,
           verse: verse.number,
           text: verse.text,
-          normalized: normalizeSearchText(verse.text),
+          normalized,
+          ...(aliases.length ? { aliases } : {}),
           ordinal: documents.length,
         });
       }
@@ -71,6 +79,7 @@ function tokenMatchScore(queryToken: string, documentToken: string): number {
 
 function documentScore(document: SearchDocument, normalizedQuery: string, queryTokens: string[], tokenCaches: Array<Map<string, number>>): number {
   if (document.normalized.includes(normalizedQuery)) return 240 + queryTokens.length * 50;
+  if (queryTokens.length === 1 && document.aliases?.includes(normalizedQuery)) return 220 + queryTokens.length * 50;
   const documentTokens = document.normalized.split(" ");
   let score = 0;
   for (let index = 0; index < queryTokens.length; index += 1) {

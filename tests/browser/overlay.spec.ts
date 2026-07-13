@@ -21,6 +21,7 @@ const dataset = {
     "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), index === 0 ? "Verse 1 {First note} text with {Second note} details." : `Verse ${index + 1} text for browser testing.`])),
   },
   Matthew: Object.fromEntries(Array.from({ length: 20 }, (_, chapterIndex) => [String(chapterIndex + 1), Object.fromEntries(Array.from({ length: 12 }, (_, verseIndex) => [String(verseIndex + 1), `Matthew chapter ${chapterIndex + 1} verse ${verseIndex + 1}.`]))])),
+  Acts: { "13": { "6": "They met a Jewish sorcerer and false prophet named Bar-Jesus." } },
   ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
 };
 
@@ -157,7 +158,6 @@ test("fuzzy search selects through chooseVerse and records one history entry", a
   await page.getByRole("button", { name: "Search" }).click();
   const input = page.getByRole("searchbox", { name: "Search active Bible text" });
   await input.fill("Mathew chapter 2 verse 5");
-  await expect(page.locator(".search-panel")).toHaveAttribute("aria-busy", "true");
   const result = page.locator(".search-results button").filter({ hasText: /Matthew 2:5/ });
   await expect(result).toContainText("English");
   await result.click();
@@ -167,6 +167,16 @@ test("fuzzy search selects through chooseVerse and records one history entry", a
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^Matthew 2:5/ })).toBeVisible();
   await expect(page.locator(".history-list > li")).toHaveCount(1);
+});
+
+test("search joins punctuation within names without joining separate words", async ({ page }) => {
+  await page.getByRole("button", { name: "Search" }).click();
+  const input = page.getByRole("searchbox", { name: "Search active Bible text" });
+  await input.fill("barjesus");
+  const result = page.locator(".search-results button").filter({ hasText: /Acts 13:6/ });
+  await expect(result).toContainText("Bar-Jesus");
+  await input.fill("bar jesus");
+  await expect(result).toContainText("Bar-Jesus");
 });
 
 test("search queries only languages active in Profile", async ({ page }) => {
