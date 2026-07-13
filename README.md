@@ -60,11 +60,12 @@ set `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, a minimal
 `Permissions-Policy`, and deny framing with `frame-ancestors 'none'`. Keep the
 dataset response same-origin and serve it with the correct JSON content type.
 
-The English and Korean datasets belong at `public/data/bible-en.json` and
-`public/data/bible-ko.json`. Those files are ignored at every directory depth
-and must be provisioned separately before building. Vite copies them to
-`dist/data/bible-en.json` and `dist/data/bible-ko.json`; deploy the complete
-`dist/` directory without moving either dataset relative to `index.html`.
+Keep the ignored `bible-en.json` and `bible-ko.json` files at the repository
+root. `npm run dev` and `npm run build` stage local copies under `public/data/`;
+Vite then packages them as `dist/data/bible-en.json` and
+`dist/data/bible-ko.json`. Deploy the complete `dist/` directory without moving
+either dataset relative to `index.html`. The source and staged JSON files remain
+ignored and must never be committed.
 
 ### Footnotes
 

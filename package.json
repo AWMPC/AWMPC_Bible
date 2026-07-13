@@ -6,8 +6,13 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "stage:data": "node scripts/stageDatasets.mjs",
+    "predev": "npm run stage:data",
     "dev": "vite",
+    "dev:test": "vite",
+    "prebuild": "npm run stage:data",
     "build": "tsc --noEmit && vite build",
+    "build:code": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "start": "vite preview --host 0.0.0.0",
     "test": "node --test tests/*.test.mjs",
