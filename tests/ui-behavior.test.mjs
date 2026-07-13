@@ -16,7 +16,7 @@ import { middleVerseFromRects, nearestNumericValue } from "../src/ui/middleVerse
 import { createVerseLink, formatVerseForCopy, parseVerseLink } from "../src/links/verseLinks.ts";
 import { pairedBookName, versesByNumber } from "../src/data/dualLanguage.ts";
 import { adjacentChapter } from "../src/navigation/adjacentChapter.ts";
-import { horizontalSwipeDirection, horizontalWheelDirection } from "../src/ui/useChapterSwipe.ts";
+import { horizontalSwipeDirection, horizontalWheelDirection, wheelSequenceHasEnded } from "../src/ui/useChapterSwipe.ts";
 
 test("chapter scroll progress is exact through the chapter's scrollable range", () => {
   const base = { viewportHeight: 800, chapterTop: 100, chapterHeight: 2800 };
@@ -60,6 +60,14 @@ test("chapter gestures require a deliberate, horizontally dominant user motion",
   assert.equal(horizontalWheelDirection(-80, 4), -1);
   assert.equal(horizontalWheelDirection(80, 70), null);
   assert.equal(horizontalWheelDirection(Number.NaN, 0), null);
+});
+
+test("a new trackpad gesture synchronously releases an overdue wheel lock", () => {
+  assert.equal(wheelSequenceHasEnded(100, 279), false);
+  assert.equal(wheelSequenceHasEnded(100, 280), true);
+  assert.equal(wheelSequenceHasEnded(100, 500), true);
+  assert.equal(wheelSequenceHasEnded(0, 500), false);
+  assert.equal(wheelSequenceHasEnded(Number.NaN, 500), false);
 });
 
 test("testament grouping preserves order and unknown books", () => {

@@ -159,7 +159,7 @@ test("history remains global and routes an inactive language without duplication
   await expect(page.locator(".history-list > li")).toHaveCount(2);
 });
 
-test("horizontal trackpad gestures switch one adjacent chapter and preserve vertical scrolling", async ({ page }) => {
+test("repeated trackpad gestures switch adjacent chapters without pointer movement and preserve vertical scrolling", async ({ page }) => {
   const pane = page.locator(".reading-pane");
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   await page.getByRole("combobox", { name: "Secondary language" }).selectOption("ko");
@@ -173,23 +173,31 @@ test("horizontal trackpad gestures switch one adjacent chapter and preserve vert
   await expect(page.locator("#verse-1-1 .verse-language-row")).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Choose book, currently Matthew, 마태복음" })).toBeVisible();
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
-
+  await expect(pane).not.toHaveAttribute("aria-busy", "true");
   await page.waitForTimeout(220);
-  await pane.hover({ position: { x: 320, y: 220 } });
+
+  await page.mouse.wheel(90, 1);
+  await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
+  await expect(pane).not.toHaveAttribute("aria-busy", "true");
+  await page.waitForTimeout(220);
+
+  await page.mouse.wheel(90, 1);
+  await expect(page.locator('article[aria-label="Matthew chapter 3"]')).toBeVisible();
+  await expect(pane).not.toHaveAttribute("aria-busy", "true");
+  await page.waitForTimeout(220);
+
   await page.mouse.wheel(-80, 2);
-  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+  await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
+  await expect(pane).not.toHaveAttribute("aria-busy", "true");
 
-  await page.waitForTimeout(220);
   const beforeVertical = await page.evaluate(() => scrollY);
-  await pane.hover({ position: { x: 320, y: 220 } });
   await page.mouse.wheel(2, 500);
-  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+  await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
   await expect.poll(() => page.evaluate((before) => scrollY > before, beforeVertical)).toBe(true);
 
   await page.waitForTimeout(220);
-  await pane.hover({ position: { x: 320, y: 220 } });
   await page.mouse.wheel(-90, 1);
-  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
 });
 
 test("trusted mobile swipes switch chapters while vertical touch movement remains native", async ({ page, context }) => {

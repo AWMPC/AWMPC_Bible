@@ -25,6 +25,13 @@ export function horizontalWheelDirection(deltaX: number, deltaY: number, thresho
   return deltaX > 0 ? 1 : -1;
 }
 
+export function wheelSequenceHasEnded(previousEventAt: number, currentEventAt: number, delayMs = WHEEL_END_DELAY_MS): boolean {
+  return Number.isFinite(previousEventAt)
+    && Number.isFinite(currentEventAt)
+    && previousEventAt > 0
+    && currentEventAt - previousEventAt >= delayMs;
+}
+
 function isInteractiveTarget(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest("a, button, input, select, textarea, [contenteditable='true'], [role='menu']"));
 }
@@ -45,12 +52,14 @@ export function useChapterSwipe(targetRef: RefObject<HTMLElement | null>, enable
     let wheelX = 0;
     let wheelY = 0;
     let wheelLocked = false;
+    let lastWheelAt = 0;
     let wheelEndTimer = 0;
 
     const clearWheel = () => {
       wheelX = 0;
       wheelY = 0;
       wheelLocked = false;
+      lastWheelAt = 0;
       wheelEndTimer = 0;
     };
     const scheduleWheelEnd = () => {
@@ -98,6 +107,8 @@ export function useChapterSwipe(targetRef: RefObject<HTMLElement | null>, enable
     };
     const onWheel = (event: WheelEvent) => {
       if (!event.isTrusted || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || isInteractiveTarget(event.target)) return;
+      if (wheelSequenceHasEnded(lastWheelAt, event.timeStamp)) clearWheel();
+      lastWheelAt = event.timeStamp;
       const delta = wheelPixels(event, window.innerWidth);
       wheelX += delta.x;
       wheelY += delta.y;
