@@ -19,8 +19,6 @@
   --day-overlay: rgba(246, 250, 252, .86); --night-overlay: rgba(16, 26, 31, .9);
   --day-card: rgba(255, 255, 255, .34); --night-card: rgba(255, 255, 255, .05);
   --day-backdrop: rgba(30, 45, 52, .1); --night-backdrop: rgba(0, 0, 0, .32);
-  --day-glow-one: rgba(197, 230, 240, .86); --night-glow-one: rgba(44, 91, 105, .34);
-  --day-glow-two: rgba(220, 232, 248, .78); --night-glow-two: rgba(45, 61, 88, .3);
   --bg: light-dark(var(--day-bg), var(--night-bg));
   --surface: light-dark(var(--day-surface), var(--night-surface));
   --surface-strong: light-dark(var(--day-surface-strong), var(--night-surface-strong));
@@ -37,8 +35,6 @@
   --overlay: light-dark(var(--day-overlay), var(--night-overlay));
   --card: light-dark(var(--day-card), var(--night-card));
   --overlay-backdrop: light-dark(var(--day-backdrop), var(--night-backdrop));
-  --glow-one: light-dark(var(--day-glow-one), var(--night-glow-one));
-  --glow-two: light-dark(var(--day-glow-two), var(--night-glow-two));
   --motion-easing: cubic-bezier(.42,0,.58,1);
   --motion-duration: 210ms;
   --radius: 24px;
@@ -68,7 +64,7 @@ button, input, select, a { -webkit-tap-highlight-color: transparent; }
 button:focus:not(:focus-visible), input:focus:not(:focus-visible), select:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
-.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --workspace-inline-padding: clamp(.5rem, 1.5vw, 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: radial-gradient(circle at 78% 8%, var(--glow-one), transparent 30%), radial-gradient(circle at 8% 82%, var(--glow-two), transparent 28%), var(--bg); }
+.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --workspace-inline-padding: clamp(.5rem, 1.5vw, 1rem); --location-controls-clearance: calc(max(1rem, env(safe-area-inset-top)) + 44px + 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: var(--bg); }
 .awmpc-bible-shell[data-text-scale="compact"] { --verse-text-size: 1rem; --verse-number-size: .64rem; --verse-line-height: 1.46; }
 .awmpc-bible-shell[data-text-scale="standard"] { --verse-text-size: 1.2rem; --verse-number-size: .72rem; --verse-line-height: 1.5; }
 .awmpc-bible-shell[data-text-scale="comfortable"] { --verse-text-size: 1.4rem; --verse-number-size: .8rem; --verse-line-height: 1.52; }
@@ -78,13 +74,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .awmpc-bible-shell[data-verse-font="system-sans"] { --verse-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .awmpc-bible-shell[data-verse-font="rounded"] { --verse-font-family: ui-rounded, "SF Pro Rounded", "Segoe UI Rounded", system-ui, sans-serif; }
 .awmpc-bible-shell[data-verse-font="monospace"] { --verse-font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
-.awmpc-bible-shell::before, .awmpc-bible-shell::after { position: fixed; z-index: -1; width: 28rem; height: 28rem; border-radius: 50%; content: ""; filter: blur(2px); pointer-events: none; }
-.awmpc-bible-shell::before { top: -12rem; right: -8rem; background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--surface-solid) 86%, transparent), color-mix(in srgb, var(--accent-soft) 38%, transparent) 62%, transparent 70%); }
-.awmpc-bible-shell::after { bottom: -16rem; left: -10rem; background: radial-gradient(circle at 60% 40%, color-mix(in srgb, var(--surface-solid) 68%, transparent), color-mix(in srgb, var(--accent-soft) 32%, transparent) 62%, transparent 70%); }
 .skip-link { position: fixed; z-index: 10; left: 1rem; top: 1rem; transform: translateY(-180%); padding: .7rem 1rem; border-radius: 99px; background: var(--ink); color: var(--bg); }
 .skip-link:focus { transform: none; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.workspace { width: min(100%, calc(70ch + var(--verse-number-gutter) + var(--verse-column-gap) + var(--reader-inline-padding) + var(--reader-inline-padding) + var(--workspace-inline-padding) + var(--workspace-inline-padding))); min-height: 100vh; margin: auto; padding: var(--workspace-inline-padding) var(--workspace-inline-padding) calc(7.5rem + env(safe-area-inset-bottom)); font-family: var(--verse-font-family); font-size: var(--verse-text-size); }
+.workspace { width: min(100%, calc(70ch + var(--verse-number-gutter) + var(--verse-column-gap) + var(--reader-inline-padding) + var(--reader-inline-padding) + var(--workspace-inline-padding) + var(--workspace-inline-padding))); min-height: 100vh; margin: auto; padding: var(--location-controls-clearance) var(--workspace-inline-padding) calc(7.5rem + env(safe-area-inset-bottom)); font-family: var(--verse-font-family); font-size: var(--verse-text-size); }
 .reading-pane { min-height: calc(100vh - 2rem); padding: var(--reader-inline-padding); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--inner-highlight), var(--shadow); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
 .eyebrow { margin: 0; color: var(--accent); font-size: .7rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .reading-pane:focus { outline: none; }
@@ -93,7 +86,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .verses > li { display: grid; grid-template-columns: var(--verse-number-gutter) minmax(0, 1fr); column-gap: var(--verse-column-gap); }
 .verses > li:focus-visible { border-radius: 12px; outline: 3px solid var(--accent); outline-offset: 8px; }
 .verse-rail { display: flex; min-width: 0; align-items: center; flex-direction: column; }
-.verse-number { padding-top: .28rem; color: var(--accent); font-family: var(--verse-font-family); font-size: var(--verse-number-size); font-weight: 800; }
+.verse-number { min-width: 24px; min-height: 24px; margin: .05rem 0 0; padding: .23rem .15rem; border: 0; border-radius: 8px; color: var(--accent); background: transparent; cursor: pointer; font-family: var(--verse-font-family); font-size: var(--verse-number-size); font-weight: 800; line-height: 1; transition: background-color 140ms ease, transform 140ms ease; }
+.verse-number:hover, .verse-number[aria-expanded="true"] { background: var(--accent-soft); }
+.verse-number:active { transform: scale(.92); }
+.verse-actions-menu { position: fixed; z-index: 30; display: grid; min-width: 150px; padding: .35rem; border: 1px solid var(--border); border-radius: 14px; background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 14px 38px rgba(0, 0, 0, .2); -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%); }
+.verse-actions-menu button { min-height: 42px; padding: .65rem .8rem; border: 0; border-radius: 10px; color: var(--ink); background: transparent; cursor: pointer; text-align: left; font: inherit; font-size: .86rem; font-weight: 700; }
+.verse-actions-menu button:hover, .verse-actions-menu button:focus-visible { background: var(--surface-strong); }
 .verse-content > p { margin: 0; font: 400 var(--verse-text-size)/var(--verse-line-height) var(--verse-font-family); text-wrap: pretty; overflow-wrap: anywhere; }
 .footnote-marker-reveal { display: inline-block; max-width: 0; overflow: clip; opacity: 0; transform: scale(.7); transform-origin: left bottom; vertical-align: baseline; transition: max-width var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), transform var(--motion-duration) var(--motion-easing); }
 .verse-content[data-footnotes-expanded] .footnote-marker-reveal { max-width: 2em; opacity: 1; transform: scale(1); }
