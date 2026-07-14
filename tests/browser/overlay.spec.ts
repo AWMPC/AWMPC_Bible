@@ -119,24 +119,32 @@ test("shows package semver immediately right of the overlay brand", async ({ pag
   }
 });
 
-test("centers shrink-wrapped sheets and caps overflowing navigation on mobile", async ({ page }) => {
+test("keeps Search full-size while centering other sheets and capping mobile navigation", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
     await page.getByRole("button", { name: sheet }).click();
     await expect.poll(async () => {
       const box = await page.getByRole("dialog").boundingBox();
-      return box ? Math.abs(box.x + box.width / 2 - 640) : Number.POSITIVE_INFINITY;
-    }).toBeLessThan(2);
+      if (!box) return Number.POSITIVE_INFINITY;
+      if (sheet === "Search") return Math.max(Math.abs(box.x - 16), Math.abs(box.y - 16), Math.abs(box.width - 1248));
+      return Math.abs(box.x + box.width / 2 - 640);
+    }).toBeLessThan(1);
     const [dialogBox, dockBox] = await Promise.all([page.getByRole("dialog").boundingBox(), page.locator(".floating-dock").boundingBox()]);
     expect(dialogBox).not.toBeNull();
     expect(dockBox).not.toBeNull();
     const availableHeight = dockBox!.y - 8;
     expect(Math.abs(dialogBox!.x + dialogBox!.width / 2 - 640)).toBeLessThan(2);
-    expect(Math.abs(dialogBox!.y + dialogBox!.height / 2 - availableHeight / 2)).toBeLessThan(2);
+    if (sheet !== "Search") expect(Math.abs(dialogBox!.y + dialogBox!.height / 2 - availableHeight / 2)).toBeLessThan(2);
     expect(dialogBox!.width).toBeLessThan(1280);
-    if (sheet === "Search" || sheet === "Profile and preferences") expect(dialogBox!.width).toBeLessThanOrEqual(742);
+    if (sheet === "Search") {
+      expect(Math.abs(dialogBox!.x - 16)).toBeLessThan(1);
+      expect(Math.abs(dialogBox!.width - 1248)).toBeLessThan(1);
+      expect(Math.abs(dialogBox!.y - 16)).toBeLessThan(1);
+      expect(Math.abs(dialogBox!.height - (availableHeight - 16))).toBeLessThan(1);
+    }
+    if (sheet === "Profile and preferences") expect(dialogBox!.width).toBeLessThanOrEqual(742);
     expect(dialogBox!.height).toBeLessThanOrEqual(availableHeight + 1);
-    if (sheet === "Reading history" || sheet === "Search") expect(dialogBox!.height).toBeLessThan(availableHeight * .75);
+    if (sheet === "Reading history") expect(dialogBox!.height).toBeLessThan(availableHeight * .75);
     await page.locator(".overlay-close").click();
     await expect(page.getByRole("dialog")).toBeHidden();
   }
@@ -223,6 +231,7 @@ test("stacks primary and secondary verses with localized book labels and actions
   await expect(firstVerse.locator(".verse-language-row").nth(0)).toHaveAttribute("lang", "en");
   await expect(firstVerse.locator(".verse-language-row").nth(1)).toHaveAttribute("lang", "ko");
   await page.locator(".overlay-close").click();
+  await expect(page.getByRole("dialog")).toBeHidden();
 
   const bookControl = page.getByRole("button", { name: "Choose book, currently Genesis, 창세기" });
   await expect(bookControl).toContainText("Genesis");
@@ -232,6 +241,7 @@ test("stacks primary and secondary verses with localized book labels and actions
   await expect(currentBook).toContainText("Genesis");
   await expect(currentBook).toContainText("창세기");
   await page.locator(".overlay-close").click();
+  await expect(page.getByRole("dialog")).toBeHidden();
 
   await page.getByRole("button", { name: "Actions for Korean verse 1", exact: true }).click();
   await expect(page.getByRole("menuitem", { name: "Copy Verse" })).toBeFocused();
@@ -293,6 +303,36 @@ test("focuses search when opening it directly or switching from another sheet", 
   await expect(page.locator(".overlay-close")).toBeFocused();
   await page.getByRole("button", { name: "Search" }).click();
   await expect(search).toBeFocused();
+});
+
+test("search keeps full available geometry while results change", async ({ page }) => {
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const searchButton = page.getByRole("button", { name: "Search" });
+    if (await searchButton.getAttribute("aria-expanded") !== "true") await searchButton.click();
+    const dialog = page.getByRole("dialog");
+    const input = page.getByRole("searchbox", { name: "Search active Bible text" });
+    const dock = await page.locator(".floating-dock").boundingBox();
+    await expect.poll(async () => {
+      const current = await dialog.boundingBox();
+      return current ? Math.max(Math.abs(current.x - 16), Math.abs(current.y - 16), Math.abs(current.width - (viewport.width - 32)), Math.abs(current.y + current.height - (dock!.y - 8))) : Number.POSITIVE_INFINITY;
+    }).toBeLessThan(1);
+    const initial = await dialog.boundingBox();
+    expect(initial).not.toBeNull();
+    expect(dock).not.toBeNull();
+    expect(Math.abs(initial!.x - 16)).toBeLessThan(1);
+    expect(Math.abs(initial!.y - 16)).toBeLessThan(1);
+    expect(Math.abs(initial!.width - (viewport.width - 32))).toBeLessThan(1);
+    expect(Math.abs(initial!.y + initial!.height - (dock!.y - 8))).toBeLessThan(1);
+
+    for (const query of ["Ma", "Matthew", "Matthew chapter 2 verse 5", "no possible matching verse words"]) {
+      await input.fill(query);
+      await expect.poll(async () => {
+        const current = await dialog.boundingBox();
+        return current ? [current.x, current.y, current.width, current.height] : null;
+      }).toEqual([initial!.x, initial!.y, initial!.width, initial!.height]);
+    }
+  }
 });
 
 test("search joins punctuation within names without joining separate words", async ({ page }) => {

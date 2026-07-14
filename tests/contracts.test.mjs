@@ -104,6 +104,8 @@ test("panels retain semantic native controls", async () => {
   assert.match(app, /overlayRef\.current\?\.keepOpen\(\)/);
   assert.match(styles, /\.overlay-shade\s*\{[^}]*opacity:\s*0[^}]*transition:\s*opacity var\(--motion-duration\) var\(--motion-easing\)/);
   assert.match(styles, /\.overlay-shade\.is-visible\s*\{[^}]*opacity:\s*1/);
+  assert.match(styles, /\.feature-overlay\[data-feature="search"\]\s*\{[^}]*top:\s*max\(var\(--screen-edge-inset\), env\(safe-area-inset-top\)\)[^}]*width:\s*calc\(100vw - var\(--edge-inset-left\) - var\(--edge-inset-right\)\)[^}]*height:\s*max\(0px, calc\(var\(--overlay-max-height/);
+  assert.match(styles, /\.feature-overlay\[data-feature="search"\] \.overlay-surface\s*\{[^}]*width:\s*100%[^}]*height:\s*100%/);
   assert.match(styles, /\.reading-location-controls\.is-hidden \.reading-location-button\s*\{[^}]*translate:\s*0 calc\(-100%/);
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
