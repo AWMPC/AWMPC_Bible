@@ -14,7 +14,7 @@ test("runtime remains a lean text-only Vite worker application", async () => {
   assert.match(libraryHook, /data\.worker\?worker/);
   assert.match(libraryHook, /worker\.terminate\(\)/);
   assert.deepEqual(Object.keys(JSON.parse(manifest).dependencies), ["firebase", "react", "react-dom"]);
-  assert.match(app, /useCloudAccount/);
+  assert.match(app, /useReaderPersistence/);
 });
 
 test("Liquid Glass accessibility and motion fallbacks remain present", async () => {
@@ -71,7 +71,7 @@ test("chapter progress drives day and night water palettes", async () => {
 });
 
 test("panels retain semantic native controls", async () => {
-  const [app, navigation, history, search, overlay, overlayLifecycle, profile, verseActions, marquee, styles] = await Promise.all([
+  const [app, navigation, history, search, overlay, overlayLifecycle, profile, account, verseActions, marquee, styles] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),
     read("../src/ui/NavigationPanel.tsx"),
     read("../src/ui/HistoryPanel.tsx"),
@@ -79,6 +79,7 @@ test("panels retain semantic native controls", async () => {
     read("../src/ui/FeatureOverlay.tsx"),
     read("../src/ui/useOverlayLifecycle.ts"),
     read("../src/ui/ProfilePanel.tsx"),
+    read("../src/ui/CloudAccountCard.tsx"),
     read("../src/ui/VerseActionsMenu.tsx"),
     read("../src/ui/OverflowMarquee.tsx"),
     read("../src/styles.css"),
@@ -107,10 +108,11 @@ test("panels retain semantic native controls", async () => {
   assert.match(styles, /--range-thumb-size:\s*30px/);
   assert.doesNotMatch(styles, /\.scale-labels\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*1fr\)/);
   assert.match(profile, /<select/);
-  assert.match(profile, /referrerPolicy="no-referrer"/);
-  assert.match(profile, /loading="lazy"/);
-  assert.match(profile, /decoding="async"/);
-  assert.match(profile, /<Skeleton rows=\{2\}/);
+  assert.match(account, /referrerPolicy="no-referrer"/);
+  assert.match(account, /loading="lazy"/);
+  assert.match(account, /decoding="async"/);
+  assert.match(account, /onError=\{\(\) => setFailed\(true\)\}/);
+  assert.match(account, /<Skeleton rows=\{2\}/);
   assert.match(profile, />Primary language</);
   assert.match(profile, />Secondary language</);
   assert.match(navigation, /book-choice-secondary/);

@@ -134,6 +134,7 @@ test("centers shrink-wrapped sheets and caps overflowing navigation on mobile", 
     expect(Math.abs(dialogBox!.x + dialogBox!.width / 2 - 640)).toBeLessThan(2);
     expect(Math.abs(dialogBox!.y + dialogBox!.height / 2 - availableHeight / 2)).toBeLessThan(2);
     expect(dialogBox!.width).toBeLessThan(1280);
+    if (sheet === "Search" || sheet === "Profile and preferences") expect(dialogBox!.width).toBeLessThanOrEqual(742);
     expect(dialogBox!.height).toBeLessThanOrEqual(availableHeight + 1);
     if (sheet === "Reading history" || sheet === "Search") expect(dialogBox!.height).toBeLessThan(availableHeight * .75);
     await page.locator(".overlay-close").click();
@@ -279,6 +280,7 @@ test("records, reuses, removes, and clears bounded search history", async ({ pag
   await input.fill("Matthew");
   await input.press("Enter");
   await input.fill("");
+  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   await expect(page.getByText("Search the active text")).toBeVisible();
 });
