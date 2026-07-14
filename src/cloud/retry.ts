@@ -25,6 +25,7 @@ export async function withBackoff<T>(operation: () => Promise<T>, signal: AbortS
         const timer = window.setTimeout(finish, delay);
         const abort = () => { window.clearTimeout(timer); reject(signal.reason); };
         signal.addEventListener("abort", abort, { once: true });
+        if (signal.aborted) abort();
       });
     }
   }

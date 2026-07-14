@@ -20,9 +20,9 @@ export type CloudAccountState = Readonly<{
 }>;
 
 export interface CloudGateway {
-  observeAuth(listener: (user: CloudUser | null) => void): () => void;
+  observeAuth(listener: (user: CloudUser | null) => void, onError: () => void): () => void;
   signIn(): Promise<void>;
   signOut(): Promise<void>;
-  hydrate(uid: string, local: CloudSnapshot, signal: AbortSignal): Promise<CloudSnapshot>;
-  save(uid: string, snapshot: CloudSnapshot, signal: AbortSignal): Promise<void>;
+  hydrate(uid: string, local: CloudSnapshot, baseline: CloudSnapshot | null, signal: AbortSignal): Promise<CloudSnapshot>;
+  save(uid: string, snapshot: CloudSnapshot, baseline: CloudSnapshot, signal: AbortSignal): Promise<CloudSnapshot>;
 }

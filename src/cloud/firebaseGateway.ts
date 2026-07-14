@@ -1,9 +1,9 @@
-import type { CloudGateway, CloudSnapshot, CloudUser } from "./contracts";
-import type { FirebaseClientConfig } from "./config";
-import { cloudDocumentPatch, migrateCloudDocument } from "./migration";
-import { errorCode, withBackoff } from "./retry";
+import type { CloudGateway, CloudSnapshot, CloudUser } from "./contracts.ts";
+import type { FirebaseClientConfig } from "./config.ts";
+import { cloudDocumentPatch, migrateCloudDocument } from "./migration.ts";
+import { errorCode, withBackoff } from "./retry.ts";
 
-function safePhotoUrl(value: string | null): string | null {
+export function safePhotoUrl(value: string | null): string | null {
   if (!value || value.length > 2048) return null;
   try {
     const url = new URL(value);
@@ -29,8 +29,8 @@ export async function createFirebaseGateway(config: FirebaseClientConfig): Promi
   } : null;
 
   return {
-    observeAuth(listener) {
-      return authModule.onAuthStateChanged(auth, (candidate) => listener(user(candidate)), () => listener(null));
+    observeAuth(listener, onError) {
+      return authModule.onAuthStateChanged(auth, (candidate) => listener(user(candidate)), onError);
     },
     async signIn() {
       try { await authModule.signInWithPopup(auth, provider); } catch (error) {
@@ -43,21 +43,23 @@ export async function createFirebaseGateway(config: FirebaseClientConfig): Promi
       }
     },
     async signOut() { await authModule.signOut(auth); },
-    hydrate(uid, local, signal) {
+    hydrate(uid, local, baseline, signal) {
       return withBackoff(() => firestoreModule.runTransaction(database, async (transaction) => {
         const reference = firestoreModule.doc(database, "users", uid);
         const current = await transaction.get(reference);
-        const merged = migrateCloudDocument(current.exists() ? current.data() : null, local);
+        const merged = migrateCloudDocument(current.exists() ? current.data() : null, local, baseline);
         transaction.set(reference, cloudDocumentPatch(merged, firestoreModule.serverTimestamp()), { merge: true });
         return merged;
       }), signal);
     },
-    save(uid, snapshot, signal) {
-      return withBackoff(() => firestoreModule.setDoc(
-        firestoreModule.doc(database, "users", uid),
-        cloudDocumentPatch(snapshot, firestoreModule.serverTimestamp()),
-        { merge: true },
-      ), signal);
+    save(uid, snapshot, baseline, signal) {
+      return withBackoff(() => firestoreModule.runTransaction(database, async (transaction) => {
+        const reference = firestoreModule.doc(database, "users", uid);
+        const current = await transaction.get(reference);
+        const merged = migrateCloudDocument(current.exists() ? current.data() : null, snapshot, baseline);
+        transaction.set(reference, cloudDocumentPatch(merged, firestoreModule.serverTimestamp()), { merge: true });
+        return merged;
+      }), signal);
     },
   };
 }

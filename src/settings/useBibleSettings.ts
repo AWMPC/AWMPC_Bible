@@ -1,18 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_APPEARANCE } from "./appearance";
-import { DEFAULT_BIBLE_LANGUAGE } from "./bibleLanguage";
 import type { BibleLanguage } from "./bibleLanguage";
-import { LocalSettingsStore, normalizeBibleSettings, withPrimaryBibleLanguage, withSecondaryBibleLanguage, type BibleSettings, type SettingsStore } from "./SettingsStore";
-import { DEFAULT_TEXT_SCALE } from "./textScale";
-import { DEFAULT_VERSE_FONT } from "./verseFont";
-
-const DEFAULT_SETTINGS: BibleSettings = {
-  textScale: DEFAULT_TEXT_SCALE,
-  verseFont: DEFAULT_VERSE_FONT,
-  appearance: DEFAULT_APPEARANCE,
-  primaryBibleLanguage: DEFAULT_BIBLE_LANGUAGE,
-  secondaryBibleLanguage: null,
-};
+import { DEFAULT_BIBLE_SETTINGS, LocalSettingsStore, normalizeBibleSettings, withPrimaryBibleLanguage, withSecondaryBibleLanguage, type BibleSettings, type SettingsStore } from "./SettingsStore";
 
 const createLocalSettingsStore = () => new LocalSettingsStore(window.localStorage);
 
@@ -24,7 +12,7 @@ export function useBibleSettings(initialBibleLanguage?: BibleLanguage, createSto
       const stored = store.load();
       initialRef.current = { store, settings: initialBibleLanguage ? withPrimaryBibleLanguage(stored, initialBibleLanguage) : stored };
     } catch {
-      initialRef.current = { store: null, settings: initialBibleLanguage ? withPrimaryBibleLanguage(DEFAULT_SETTINGS, initialBibleLanguage) : DEFAULT_SETTINGS };
+      initialRef.current = { store: null, settings: initialBibleLanguage ? withPrimaryBibleLanguage(DEFAULT_BIBLE_SETTINGS, initialBibleLanguage) : DEFAULT_BIBLE_SETTINGS };
     }
   }
   const storeRef = useRef<SettingsStore | null>(initialRef.current.store);

@@ -1,10 +1,10 @@
 import { mergeHistoryEntries, normalizeHistoryEntries, type HistoryEntry } from "../history/HistoryStore.ts";
-import { normalizeSearchHistory } from "../search/SearchHistoryStore.ts";
+import { normalizeSearchHistory, searchHistoryKey } from "../search/SearchHistoryStore.ts";
 import { normalizeBibleSettings, type BibleSettings } from "../settings/SettingsStore.ts";
 import { textScaleAt } from "../settings/textScale.ts";
 import type { CloudSnapshot } from "./contracts.ts";
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -40,36 +40,61 @@ function legacyHistory(value: unknown): HistoryEntry[] {
   }));
 }
 
-export function migrateCloudDocument(value: unknown, local: CloudSnapshot): CloudSnapshot {
+function mergeList<T>(baseline: readonly T[], local: readonly T[], cloud: readonly T[], key: (value: T) => string): T[] {
+  const baselineKeys = new Set(baseline.map(key));
+  const localKeys = new Set(local.map(key));
+  const cloudKeys = new Set(cloud.map(key));
+  const removed = new Set([...baselineKeys].filter((candidate) => !localKeys.has(candidate) || !cloudKeys.has(candidate)));
+  const seen = new Set<string>();
+  return [...local.filter((entry) => !baselineKeys.has(key(entry))), ...cloud, ...local].filter((entry) => {
+    const identity = key(entry);
+    if (removed.has(identity) || seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
+}
+
+export function reconcileCloudSnapshots(baseline: CloudSnapshot, local: CloudSnapshot, cloud: CloudSnapshot): CloudSnapshot {
+  const settings = { ...cloud.settings };
+  for (const key of Object.keys(settings) as Array<keyof BibleSettings>) {
+    const localChanged = local.settings[key] !== baseline.settings[key];
+    if (localChanged) Object.assign(settings, { [key]: local.settings[key] });
+  }
+  return {
+    settings: normalizeBibleSettings(settings),
+    history: normalizeHistoryEntries(mergeList(baseline.history, local.history, cloud.history, ({ id }) => id)),
+    searchHistory: normalizeSearchHistory(mergeList(baseline.searchHistory, local.searchHistory, cloud.searchHistory, searchHistoryKey)),
+  };
+}
+
+export function migrateCloudDocument(value: unknown, local: CloudSnapshot, baseline: CloudSnapshot | null = null): CloudSnapshot {
   const root = object(value);
   const canonical = object(root.awmpcBible);
+  const schemaVersion = canonical.schemaVersion;
+  if (typeof schemaVersion === "number" && Number.isInteger(schemaVersion) && schemaVersion > SCHEMA_VERSION) {
+    throw new Error("This cloud data uses a newer schema.");
+  }
+  const settingsFallback = legacySettings(root, local.settings);
   const settings = Object.keys(object(canonical.settings)).length
-    ? normalizeBibleSettings(canonical.settings)
-    : legacySettings(root, local.settings);
-  const cloudHistory = normalizeHistoryEntries(canonical.history);
-  const importedHistory = cloudHistory.length ? cloudHistory : legacyHistory(root.history);
+    ? normalizeBibleSettings(canonical.settings, settingsFallback)
+    : settingsFallback;
+  const hasCanonicalHistory = Object.prototype.hasOwnProperty.call(canonical, "history");
+  const importedHistory = hasCanonicalHistory ? normalizeHistoryEntries(canonical.history) : legacyHistory(root.history);
   const cloudSearch = normalizeSearchHistory(canonical.searchHistory ?? root.searchHistory);
-  return {
+  const cloud = {
     settings,
-    history: mergeHistoryEntries(importedHistory, local.history),
-    searchHistory: normalizeSearchHistory([...cloudSearch, ...local.searchHistory]),
+    history: importedHistory,
+    searchHistory: cloudSearch,
+  };
+  return baseline ? reconcileCloudSnapshots(baseline, local, cloud) : {
+    settings: cloud.settings,
+    history: mergeHistoryEntries(cloud.history, local.history),
+    searchHistory: normalizeSearchHistory([...cloud.searchHistory, ...local.searchHistory]),
   };
 }
 
 export function reconcileConcurrentHydration(initial: CloudSnapshot, current: CloudSnapshot, hydrated: CloudSnapshot): CloudSnapshot {
-  const settings = { ...hydrated.settings };
-  for (const key of Object.keys(settings) as Array<keyof BibleSettings>) {
-    if (current.settings[key] !== initial.settings[key]) Object.assign(settings, { [key]: current.settings[key] });
-  }
-  const initialIds = new Set(initial.history.map(({ id }) => id));
-  const newHistory = current.history.filter(({ id }) => !initialIds.has(id));
-  const initialSearch = new Set(initial.searchHistory.map((query) => query.toLocaleLowerCase()));
-  const newSearch = current.searchHistory.filter((query) => !initialSearch.has(query.toLocaleLowerCase()));
-  return {
-    settings: normalizeBibleSettings(settings),
-    history: mergeHistoryEntries(newHistory, hydrated.history),
-    searchHistory: normalizeSearchHistory([...newSearch, ...hydrated.searchHistory]),
-  };
+  return reconcileCloudSnapshots(initial, current, hydrated);
 }
 
 const LEGACY_FONT = [50, 75, 100, 125, 150] as const;

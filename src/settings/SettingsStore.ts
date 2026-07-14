@@ -1,5 +1,5 @@
 import { DEFAULT_TEXT_SCALE, isTextScale, type TextScale } from "./textScale.ts";
-import { normalizeVerseFont, type VerseFont } from "./verseFont.ts";
+import { isVerseFont, normalizeVerseFont, type VerseFont } from "./verseFont.ts";
 import { DEFAULT_APPEARANCE, isAppearance, type Appearance } from "./appearance.ts";
 import { DEFAULT_BIBLE_LANGUAGE, isBibleLanguage, type BibleLanguage } from "./bibleLanguage.ts";
 
@@ -10,6 +10,14 @@ export type BibleSettings = Readonly<{
   primaryBibleLanguage: BibleLanguage;
   secondaryBibleLanguage: BibleLanguage | null;
 }>;
+
+export const DEFAULT_BIBLE_SETTINGS: BibleSettings = Object.freeze({
+  textScale: DEFAULT_TEXT_SCALE,
+  verseFont: normalizeVerseFont(null),
+  appearance: DEFAULT_APPEARANCE,
+  primaryBibleLanguage: DEFAULT_BIBLE_LANGUAGE,
+  secondaryBibleLanguage: null,
+});
 
 export interface SettingsStore {
   load(): BibleSettings;
@@ -27,18 +35,21 @@ export function activeBibleLanguages(settings: Pick<BibleSettings, "primaryBible
     : [settings.primaryBibleLanguage];
 }
 
-export function normalizeBibleSettings(value: unknown): BibleSettings {
+export function normalizeBibleSettings(value: unknown, fallback: BibleSettings = DEFAULT_BIBLE_SETTINGS): BibleSettings {
   const settings = value && typeof value === "object" ? value as Partial<BibleSettings> & { bibleLanguage?: unknown } : {};
+  const verseFont: unknown = (settings as { verseFont?: unknown }).verseFont;
   const primaryBibleLanguage = isBibleLanguage(settings.primaryBibleLanguage)
     ? settings.primaryBibleLanguage
-    : isBibleLanguage(settings.bibleLanguage) ? settings.bibleLanguage : DEFAULT_BIBLE_LANGUAGE;
+    : isBibleLanguage(settings.bibleLanguage) ? settings.bibleLanguage : fallback.primaryBibleLanguage;
   const secondaryBibleLanguage = isBibleLanguage(settings.secondaryBibleLanguage) && settings.secondaryBibleLanguage !== primaryBibleLanguage
     ? settings.secondaryBibleLanguage
-    : null;
+    : settings.secondaryBibleLanguage === null ? null
+      : fallback.secondaryBibleLanguage !== primaryBibleLanguage ? fallback.secondaryBibleLanguage : null;
   return {
-    textScale: isTextScale(settings.textScale) ? settings.textScale : DEFAULT_TEXT_SCALE,
-    verseFont: normalizeVerseFont(settings.verseFont),
-    appearance: isAppearance(settings.appearance) ? settings.appearance : DEFAULT_APPEARANCE,
+    textScale: isTextScale(settings.textScale) ? settings.textScale : fallback.textScale,
+    verseFont: verseFont === "rounded" ? normalizeVerseFont(verseFont)
+      : isVerseFont(verseFont) ? verseFont : fallback.verseFont,
+    appearance: isAppearance(settings.appearance) ? settings.appearance : fallback.appearance,
     primaryBibleLanguage,
     secondaryBibleLanguage,
   };
@@ -77,7 +88,7 @@ export class LocalSettingsStore implements SettingsStore {
     } catch {
       // Invalid or unavailable device storage falls back to a safe default.
     }
-    return normalizeBibleSettings(null);
+    return DEFAULT_BIBLE_SETTINGS;
   }
 
   save(settings: BibleSettings): void {

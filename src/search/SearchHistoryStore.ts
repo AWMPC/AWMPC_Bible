@@ -7,6 +7,10 @@ type MinimalStorage = Pick<Storage, "getItem" | "setItem">;
 const STORAGE_KEY = "awmpc-bible.search-history.v1";
 export const SEARCH_HISTORY_LIMIT = 20;
 
+export function searchHistoryKey(query: string): string {
+  return query.normalize("NFKC").toLowerCase();
+}
+
 export function normalizeSearchHistory(value: unknown, limit = SEARCH_HISTORY_LIMIT): string[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
@@ -14,7 +18,7 @@ export function normalizeSearchHistory(value: unknown, limit = SEARCH_HISTORY_LI
   for (const candidate of value) {
     if (typeof candidate !== "string") continue;
     const query = candidate.trim().slice(0, 120);
-    const key = query.toLocaleLowerCase();
+    const key = searchHistoryKey(query);
     if (Array.from(query).length < 2 || seen.has(key)) continue;
     seen.add(key);
     result.push(query);

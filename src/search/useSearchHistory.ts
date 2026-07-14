@@ -9,13 +9,15 @@ export function useSearchHistory(factory: () => SearchHistoryStore = createStore
     try { storeRef.current = factory(); } catch { /* Storage is optional. */ }
   }
   const [entries, setEntries] = useState(() => storeRef.current?.list() ?? []);
+  const entriesRef = useRef(entries);
   const replace = useCallback((value: unknown) => {
     const next = normalizeSearchHistory(value);
+    entriesRef.current = next;
     setEntries(next);
     storeRef.current?.replace(next);
   }, []);
-  const record = useCallback((query: string) => replace([query, ...entries]), [entries, replace]);
-  const remove = useCallback((query: string) => replace(entries.filter((entry) => entry !== query)), [entries, replace]);
+  const record = useCallback((query: string) => replace([query, ...entriesRef.current]), [replace]);
+  const remove = useCallback((query: string) => replace(entriesRef.current.filter((entry) => entry !== query)), [replace]);
   const clear = useCallback(() => replace([]), [replace]);
   return { entries, record, remove, clear, replace } as const;
 }
