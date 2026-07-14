@@ -13,6 +13,7 @@ export type HistorySelection = Pick<HistoryEntry, "book" | "chapter" | "verse"> 
 
 export interface HistoryStore {
   list(): Promise<HistoryEntry[]>;
+  replace(entries: readonly HistoryEntry[]): Promise<void>;
   add(selection: HistorySelection): Promise<HistoryEntry>;
   remove(id: string): Promise<void>;
   clear(): Promise<void>;
@@ -36,6 +37,12 @@ export function mergeHistoryEntries(
     seen.add(id);
     return true;
   }).slice(0, limit);
+}
+
+export function normalizeHistoryEntries(value: unknown, limit = DEFAULT_LIMIT): HistoryEntry[] {
+  return Array.isArray(value)
+    ? value.map(normalizeEntry).filter((entry): entry is HistoryEntry => entry !== null).slice(0, limit)
+    : [];
 }
 
 function isBoundedText(value: unknown): value is string {
@@ -92,9 +99,7 @@ export class LocalHistoryStore implements HistoryStore {
       const current = this.storage.getItem(STORAGE_KEY);
       const legacy = current === null ? this.storage.getItem(LEGACY_STORAGE_KEY) : null;
       const parsed: unknown = JSON.parse(current ?? legacy ?? "[]");
-      const entries = Array.isArray(parsed)
-        ? parsed.map(normalizeEntry).filter((entry): entry is HistoryEntry => entry !== null).slice(0, this.limit)
-        : [];
+      const entries = normalizeHistoryEntries(parsed, this.limit);
       if ((current === null && legacy !== null) || JSON.stringify(parsed) !== JSON.stringify(entries)) {
         try { this.storage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch { /* Existing data remains usable. */ }
       }
@@ -102,6 +107,12 @@ export class LocalHistoryStore implements HistoryStore {
     } catch {
       return [];
     }
+  }
+
+  async replace(entries: readonly HistoryEntry[]): Promise<void> {
+    return this.enqueueMutation(() => {
+      try { this.storage.setItem(STORAGE_KEY, JSON.stringify(normalizeHistoryEntries(entries, this.limit))); } catch { /* Session state remains usable. */ }
+    });
   }
 
   async add(selection: HistorySelection): Promise<HistoryEntry> {

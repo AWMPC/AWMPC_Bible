@@ -53,6 +53,13 @@ export function useBibleSettings(initialBibleLanguage?: BibleLanguage, createSto
     storeRef.current?.save(next);
   }, []);
 
+  const replace = useCallback((value: unknown) => {
+    const next = normalizeBibleSettings(value);
+    settingsRef.current = next;
+    setSettings(next);
+    storeRef.current?.save(next);
+  }, []);
+
   const setPrimaryBibleLanguage = useCallback((language: BibleLanguage) => {
     const next = withPrimaryBibleLanguage(settingsRef.current, language);
     settingsRef.current = next;
@@ -67,5 +74,5 @@ export function useBibleSettings(initialBibleLanguage?: BibleLanguage, createSto
     storeRef.current?.save(next);
   }, []);
 
-  return { settings, update, setPrimaryBibleLanguage, setSecondaryBibleLanguage } as const;
+  return { settings, update, replace, setPrimaryBibleLanguage, setSecondaryBibleLanguage } as const;
 }

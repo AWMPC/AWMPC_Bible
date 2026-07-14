@@ -30,9 +30,14 @@ import { VerseWithFootnotes } from "./ui/VerseWithFootnotes";
 import { VerseActionsMenu, type VerseActionTarget } from "./ui/VerseActionsMenu";
 import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
 import { useBibleSearch, type LocalizedSearchResult } from "./search/useBibleSearch";
+import { useSearchHistory } from "./search/useSearchHistory";
+import { useCloudAccount } from "./cloud/useCloudAccount";
+import type { CloudSnapshot } from "./cloud/contracts";
+import { normalizeBibleSettings } from "./settings/SettingsStore";
 
 type LocalizedVerseReference = Readonly<{ bibleLanguage: BibleLanguage; book: string; chapter: string; verse: string }>;
 type ReferenceSelectionOptions = Readonly<{ recordHistory: boolean; allowLanguageSwitch?: boolean; prefetchedVerses?: Verse[] }>;
+const DEFAULT_CLOUD_SNAPSHOT: CloudSnapshot = { settings: normalizeBibleSettings(null), history: [], searchHistory: [] };
 
 export function AwmpcBibleApp() {
   const overlayRef = useRef<FeatureOverlayHandle>(null);
@@ -48,7 +53,7 @@ export function AwmpcBibleApp() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const initialVerseLinkRef = useRef<LinkedVerse | null>(parseVerseLink(window.location.href));
   const [pendingVerseLink, setPendingVerseLink] = useState<LinkedVerse | null>(initialVerseLinkRef.current);
-  const { settings, update: updateSettings, setPrimaryBibleLanguage, setSecondaryBibleLanguage } = useBibleSettings(initialVerseLinkRef.current?.bibleLanguage);
+  const { settings, update: updateSettings, replace: replaceSettings, setPrimaryBibleLanguage, setSecondaryBibleLanguage } = useBibleSettings(initialVerseLinkRef.current?.bibleLanguage);
   const { textScale, verseFont, appearance, primaryBibleLanguage, secondaryBibleLanguage } = settings;
   const primaryLibrary = useBibleLibrary(primaryBibleLanguage);
   const secondaryLibrary = useBibleLibrary(secondaryBibleLanguage);
@@ -74,7 +79,18 @@ export function AwmpcBibleApp() {
   const [navigationSectionRequest, setNavigationSectionRequest] = useState<NavigationSectionRequest | null>(null);
   const [verseActionTarget, setVerseActionTarget] = useState<VerseActionTarget | null>(null);
   const [readerStatus, setReaderStatus] = useState("");
-  const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory } = useBibleHistory();
+  const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory, replace: replaceHistory } = useBibleHistory();
+  const searchHistory = useSearchHistory();
+  const applyCloudSnapshot = useCallback((snapshot: CloudSnapshot) => {
+    replaceSettings(snapshot.settings);
+    replaceHistory(snapshot.history);
+    searchHistory.replace(snapshot.searchHistory);
+  }, [replaceHistory, replaceSettings, searchHistory.replace]);
+  const cloud = useCloudAccount({
+    snapshot: { settings, history, searchHistory: searchHistory.entries },
+    defaults: DEFAULT_CLOUD_SNAPSHOT,
+    apply: applyCloudSnapshot,
+  });
   const bibleSearch = useBibleSearch({
     enabled: activeFeature === "search",
     primaryLanguage: primaryBibleLanguage,
@@ -320,9 +336,9 @@ export function AwmpcBibleApp() {
         {activeFeature === "navigation" && (
           <NavigationPanel books={primaryLibrary.books} secondaryBooks={secondaryLibrary.books} secondaryLanguage={secondaryBibleLanguage} book={navigation.state.book} chapters={navigation.chapters} chapter={navigation.state.chapter} verses={navigation.state.verses} initialLoading={primaryLibrary.status === "loading"} versesLoading={navigation.state.status === "loading"} error={navigation.state.error || undefined} sectionRequest={navigationSectionRequest} scrollContainerRef={overlayContentRef} onBook={navigation.chooseBook} onChapter={navigation.chooseChapter} onVerse={(verse) => selectVerseReference({ bibleLanguage: primaryBibleLanguage, book: navigation.state.book, chapter: navigation.state.chapter, verse }, { recordHistory: true, prefetchedVerses: navigation.state.verses })} />
         )}
-        {activeFeature === "history" && <HistoryPanel entries={history} onSelect={selectHistoryEntry} onRemove={removeHistory} onClear={clearHistory} />}
-        {activeFeature === "search" && <SearchPanel query={bibleSearch.query} status={bibleSearch.status} results={bibleSearch.results} inputRef={searchInputRef} onQueryChange={bibleSearch.setQuery} onSelect={selectSearchResult} />}
-        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={(value) => updateSettings({ textScale: value })} verseFont={verseFont} onVerseFontChange={(value) => updateSettings({ verseFont: value })} appearance={appearance} onAppearanceChange={(value) => updateSettings({ appearance: value })} primaryBibleLanguage={primaryBibleLanguage} secondaryBibleLanguage={secondaryBibleLanguage} onPrimaryBibleLanguageChange={changeLanguage} onSecondaryBibleLanguageChange={changeSecondaryLanguage} />}
+        {activeFeature === "history" && (cloud.state.status === "loading" || cloud.state.status === "syncing" ? <Skeleton rows={5} text /> : <HistoryPanel entries={history} onSelect={selectHistoryEntry} onRemove={removeHistory} onClear={clearHistory} />)}
+        {activeFeature === "search" && <SearchPanel query={bibleSearch.query} status={bibleSearch.status} results={bibleSearch.results} inputRef={searchInputRef} onQueryChange={bibleSearch.setQuery} onSelect={selectSearchResult} history={cloud.state.status === "loading" || cloud.state.status === "syncing" ? [] : searchHistory.entries} onRecord={searchHistory.record} onRemoveHistory={searchHistory.remove} onClearHistory={searchHistory.clear} />}
+        {activeFeature === "profile" && <ProfilePanel textScale={textScale} onTextScaleChange={(value) => updateSettings({ textScale: value })} verseFont={verseFont} onVerseFontChange={(value) => updateSettings({ verseFont: value })} appearance={appearance} onAppearanceChange={(value) => updateSettings({ appearance: value })} primaryBibleLanguage={primaryBibleLanguage} secondaryBibleLanguage={secondaryBibleLanguage} onPrimaryBibleLanguageChange={changeLanguage} onSecondaryBibleLanguageChange={changeSecondaryLanguage} account={cloud.state} onSignIn={cloud.signIn} onSignOut={cloud.signOut} />}
       </FeatureOverlay>
     </div>
   );

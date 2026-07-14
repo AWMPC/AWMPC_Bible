@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LocalHistoryStore, mergeHistoryEntries, type HistoryEntry, type HistorySelection, type HistoryStore } from "./HistoryStore";
+import { LocalHistoryStore, mergeHistoryEntries, normalizeHistoryEntries, type HistoryEntry, type HistorySelection, type HistoryStore } from "./HistoryStore";
 
 const createLocalHistoryStore = () => new LocalHistoryStore(window.localStorage);
 
@@ -53,5 +53,13 @@ export function useBibleHistory(createStore: () => HistoryStore = createLocalHis
     void store?.clear().catch(() => undefined);
   }, []);
 
-  return { entries, record, remove, clear } as const;
+  const replace = useCallback((value: unknown) => {
+    const store = storeRef.current;
+    const next = normalizeHistoryEntries(value);
+    contentGenerationRef.current += 1;
+    setEntries(next);
+    void store?.replace(next).catch(() => undefined);
+  }, []);
+
+  return { entries, record, remove, clear, replace } as const;
 }

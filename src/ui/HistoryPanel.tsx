@@ -11,10 +11,10 @@ type HistoryPanelProps = {
 };
 
 export function HistoryPanel({ entries, onSelect, onRemove, onClear }: HistoryPanelProps) {
-  if (!entries.length) return <EmptyFeature title="No reading history yet" detail="Verses selected through Navigate will appear here on this device." />;
+  if (!entries.length) return <EmptyFeature title="No reading history yet" detail="Verses selected through Navigate will appear here and sync when you sign in." />;
   return (
     <section className="history-panel" aria-label="Reading history">
-      <div className="history-actions"><p>{entries.length} saved {entries.length === 1 ? "verse" : "verses"}</p><button type="button" onClick={() => { if (window.confirm("Clear all reading history on this device?")) onClear(); }}>Clear all</button></div>
+      <div className="history-actions"><p>{entries.length} saved {entries.length === 1 ? "verse" : "verses"}</p><button type="button" onClick={() => { if (window.confirm("Clear all reading history? This also clears synced history.")) onClear(); }}>Clear all</button></div>
       <ol className="history-list">{entries.map((entry) => (
       <li key={entry.id}>
         <button className="history-entry" type="button" onClick={() => onSelect(entry)}>

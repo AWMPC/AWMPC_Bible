@@ -2,6 +2,8 @@ import { TEXT_SCALES, textScaleAt, textScaleIndex, type TextScale } from "../set
 import { VERSE_FONTS, type VerseFont } from "../settings/verseFont";
 import { APPEARANCES, type Appearance } from "../settings/appearance";
 import { BIBLE_LANGUAGE_OPTIONS, type BibleLanguage } from "../settings/bibleLanguage";
+import type { CloudAccountState } from "../cloud/contracts";
+import { Skeleton } from "./Skeleton";
 
 type ProfilePanelProps = {
   textScale: TextScale;
@@ -14,12 +16,26 @@ type ProfilePanelProps = {
   secondaryBibleLanguage: BibleLanguage | null;
   onPrimaryBibleLanguageChange: (language: BibleLanguage) => void;
   onSecondaryBibleLanguageChange: (language: BibleLanguage | null) => void;
+  account: CloudAccountState;
+  onSignIn: () => void;
+  onSignOut: () => void;
 };
 
-export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange, primaryBibleLanguage, secondaryBibleLanguage, onPrimaryBibleLanguageChange, onSecondaryBibleLanguageChange }: ProfilePanelProps) {
+export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange, primaryBibleLanguage, secondaryBibleLanguage, onPrimaryBibleLanguageChange, onSecondaryBibleLanguageChange, account, onSignIn, onSignOut }: ProfilePanelProps) {
   const selected = TEXT_SCALES[textScaleIndex(textScale)];
   return (
     <div className="profile-panel">
+      <section className="account-card" aria-label="Cloud account" aria-busy={account.status === "loading" || account.status === "syncing" || undefined}>
+        {account.status === "loading" ? <Skeleton rows={2} /> : account.user ? <>
+          {account.user.photoUrl ? <img src={account.user.photoUrl} alt="" width="56" height="56" referrerPolicy="no-referrer" loading="lazy" decoding="async" /> : <span className="account-avatar" aria-hidden="true">{account.user.displayName.slice(0, 1).toLocaleUpperCase()}</span>}
+          <div><p className="eyebrow">Google account</p><h3>{account.user.displayName}</h3><p>{account.status === "ready" ? "Settings and activity are synced." : account.status === "syncing" ? "Bringing cloud data up to date…" : account.message}</p></div>
+          <button type="button" onClick={onSignOut}>Sign out</button>
+        </> : <>
+          <span className="account-avatar" aria-hidden="true">A</span>
+          <div><p className="eyebrow">Cloud sync</p><h3>Keep your reader in sync</h3><p>{account.message ?? "Sign in to sync settings, reading history, and search history."}</p></div>
+          {account.status !== "unavailable" && <button type="button" onClick={onSignIn}>Continue with Google</button>}
+        </>}
+      </section>
       <section className="setting-group" aria-labelledby="reading-size-title">
         <div className="setting-heading">
           <div><p className="eyebrow">Reading</p><h3 id="reading-size-title">Verse text size</h3></div>
