@@ -88,7 +88,7 @@ export async function transitionChapterView(
     commit();
     await environment.afterPaint();
     environment.scrollToTop();
-    if (!reducedMotion) await fade(pane, 0, 1);
+    if (!reducedMotion) await fade(pane, 0, 1, signal);
   } finally {
     pane.style.removeProperty("opacity");
   }

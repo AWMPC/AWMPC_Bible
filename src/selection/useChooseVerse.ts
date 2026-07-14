@@ -1,4 +1,4 @@
-import { useCallback, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { Verse } from "../data/contracts";
 import type { Passage } from "../data/useBibleLibrary";
 import type { HistorySelection } from "../history/HistoryStore";
@@ -22,6 +22,15 @@ export function useChooseVerse({ passage, readingPaneRef, requestChapter, cancel
   const generationRef = useRef(0);
   const selectingRef = useRef(false);
   const transitionAbortRef = useRef<AbortController | null>(null);
+  const cancelRequestRef = useRef(cancelRequest);
+  cancelRequestRef.current = cancelRequest;
+
+  useEffect(() => () => {
+    generationRef.current += 1;
+    selectingRef.current = false;
+    transitionAbortRef.current?.abort();
+    cancelRequestRef.current();
+  }, []);
 
   const chooseVerse = useCallback(async (location: VerseLocation, options: ChooseVerseOptions = {}) => {
     if (selectingRef.current) return { status: "ignored" } as const;

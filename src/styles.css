@@ -197,8 +197,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .history-entry { display: flex; width: 100%; min-width: 0; min-height: 58px; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 1rem; overflow: hidden; color: inherit; border: 0; border-radius: inherit; background: transparent; cursor: pointer; text-align: left; }
 .history-reference { flex: 1; }
 .history-language { display: inline-block; margin-left: .35rem; padding: .12rem .4rem; border-radius: 999px; color: var(--muted); background: var(--accent-soft); font-size: .65rem; font-weight: 700; }
-.history-list time { color: var(--muted); font-size: .76rem; text-align: right; }
-.search-panel { display: grid; width: min(820px, calc(100vw - 2rem)); gap: 1rem; margin: auto; }
+.history-list time, .history-imported { color: var(--muted); font-size: .76rem; text-align: right; }
+.search-panel { display: grid; width: min(42rem, calc(100vw - 2rem)); gap: 1rem; margin: auto; }
 .search-panel form { display: grid; gap: .5rem; }
 .search-panel label { color: var(--muted); font-size: .76rem; font-weight: 750; }
 .search-panel input { width: 100%; min-height: 52px; padding: .8rem 1rem; border: 1px solid var(--border); border-radius: 16px; color: var(--ink); background: var(--surface-strong); box-shadow: var(--inner-highlight); font-size: 1rem; }
@@ -217,7 +217,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .search-history li { display: grid; grid-template-columns: minmax(0, 1fr) auto; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
 .search-history button { min-height: 44px; padding: .65rem .8rem; border: 0; color: inherit; background: transparent; cursor: pointer; text-align: left; }
 .search-history > div button, .search-history li > button:last-child { color: var(--accent); font-size: .75rem; font-weight: 700; }
-.profile-panel { width: min(820px, calc(100vw - 2rem)); margin: auto; padding: clamp(1.25rem, 4vw, 2.5rem); border: 1px solid var(--border); border-radius: 26px; background: var(--card); box-shadow: var(--inner-highlight), 0 18px 45px rgba(0,0,0,.1); }
+.profile-panel { width: min(42rem, calc(100vw - 2rem)); margin: auto; padding: clamp(1.25rem, 4vw, 2.5rem); border: 1px solid var(--border); border-radius: 26px; background: var(--card); box-shadow: var(--inner-highlight), 0 18px 45px rgba(0,0,0,.1); }
 .account-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 2rem; box-shadow: inset 0 -1px 0 var(--border); }
 .account-card img, .account-avatar { width: 56px; height: 56px; border-radius: 50%; box-shadow: var(--inner-highlight), var(--glass-gleam); }
 .account-avatar { display: grid; place-items: center; color: var(--accent); background: var(--surface-strong); font: 700 1.25rem/1 ui-serif, Georgia, serif; }
@@ -225,6 +225,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .account-card div > p:last-child { margin: .35rem 0 0; color: var(--muted); font-size: .78rem; line-height: 1.4; }
 .account-card > button { min-height: 44px; padding: .65rem .9rem; border: 0; border-radius: 13px; color: var(--accent); background: var(--surface-strong); box-shadow: var(--inner-highlight); cursor: pointer; font-size: .8rem; font-weight: 750; }
 .account-card > .skeleton { grid-column: 1 / -1; width: min(28rem, 100%); }
+.profile-settings-loading { width: min(28rem, 100%); margin: auto; }
 .setting-heading { display: flex; align-items: start; justify-content: space-between; gap: 2rem; }
 .setting-heading h3 { margin: .3rem 0 0; font: 700 clamp(1.7rem, 4vw, 2.5rem)/1 ui-serif, Georgia, serif; letter-spacing: -.035em; }
 .setting-heading output { display: grid; max-width: 260px; gap: .25rem; text-align: right; }
