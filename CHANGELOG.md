@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.31.2 - 2026-07-14
+
+- Animate verse copy actions symmetrically from their verse-number trigger and remove motion when requested by the operating system.
+- Share one safe-area-aware screen inset between the reading pane and floating controls.
+
 ## 0.31.1 - 2026-07-13
 
 - Reconcile cloud snapshots transactionally so offline clears, removals, and concurrent additions remain durable across devices.
