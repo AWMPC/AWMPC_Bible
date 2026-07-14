@@ -37,9 +37,10 @@
   --overlay-backdrop: light-dark(var(--day-backdrop), var(--night-backdrop));
   --motion-easing: cubic-bezier(.42,0,.58,1);
   --motion-duration: 210ms;
+  --screen-edge-inset: 1rem;
   --radius: 24px;
   --blur: blur(24px) saturate(130%);
-  --dock-clearance: calc(5rem + max(1rem, env(safe-area-inset-bottom)));
+  --dock-clearance: calc(5rem + max(var(--screen-edge-inset), env(safe-area-inset-bottom)));
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -64,20 +65,20 @@ button, input, select, a { -webkit-tap-highlight-color: transparent; }
 button:focus:not(:focus-visible), input:focus:not(:focus-visible), select:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
-.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --workspace-inline-padding: clamp(.5rem, 1.5vw, 1rem); --location-controls-clearance: calc(max(1rem, env(safe-area-inset-top)) + 44px + 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: var(--bg); }
+.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --edge-inset-left: max(var(--screen-edge-inset), env(safe-area-inset-left)); --edge-inset-right: max(var(--screen-edge-inset), env(safe-area-inset-right)); --location-controls-clearance: calc(max(var(--screen-edge-inset), env(safe-area-inset-top)) + 44px + 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: var(--bg); }
 .awmpc-bible-shell[data-text-scale="compact"] { --verse-text-size: 1rem; --verse-number-size: .64rem; --verse-line-height: 1.46; }
 .awmpc-bible-shell[data-text-scale="standard"] { --verse-text-size: 1.2rem; --verse-number-size: .72rem; --verse-line-height: 1.5; }
 .awmpc-bible-shell[data-text-scale="comfortable"] { --verse-text-size: 1.4rem; --verse-number-size: .8rem; --verse-line-height: 1.52; }
 .awmpc-bible-shell[data-text-scale="large"] { --verse-text-size: 1.62rem; --verse-number-size: .9rem; --verse-line-height: 1.54; }
 .awmpc-bible-shell[data-text-scale="extra-large"] { --verse-text-size: 1.9rem; --verse-number-size: 1rem; --verse-line-height: 1.56; }
-.awmpc-bible-shell[data-dual-language="true"] { --location-controls-clearance: calc(max(1rem, env(safe-area-inset-top)) + 62px + 1rem); }
+.awmpc-bible-shell[data-dual-language="true"] { --location-controls-clearance: calc(max(var(--screen-edge-inset), env(safe-area-inset-top)) + 62px + 1rem); }
 .awmpc-bible-shell[data-verse-font="system-serif"] { --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; }
 .awmpc-bible-shell[data-verse-font="system-sans"] { --verse-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .awmpc-bible-shell[data-verse-font="monospace"] { --verse-font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 .skip-link { position: fixed; z-index: 10; left: 1rem; top: 1rem; transform: translateY(-180%); padding: .7rem 1rem; border-radius: 99px; background: var(--ink); color: var(--bg); }
 .skip-link:focus { transform: none; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.workspace { width: min(100%, calc(70ch + var(--verse-number-gutter) + var(--verse-column-gap) + var(--reader-inline-padding) + var(--reader-inline-padding) + var(--workspace-inline-padding) + var(--workspace-inline-padding))); min-height: 100vh; margin: auto; padding: var(--location-controls-clearance) var(--workspace-inline-padding) calc(7.5rem + env(safe-area-inset-bottom)); font-family: var(--verse-font-family); font-size: var(--verse-text-size); }
+.workspace { width: min(100%, calc(70ch + var(--verse-number-gutter) + var(--verse-column-gap) + var(--reader-inline-padding) + var(--reader-inline-padding) + var(--edge-inset-left) + var(--edge-inset-right))); min-height: 100vh; margin: auto; padding: var(--location-controls-clearance) var(--edge-inset-right) calc(7.5rem + env(safe-area-inset-bottom)) var(--edge-inset-left); font-family: var(--verse-font-family); font-size: var(--verse-text-size); }
 .reading-pane { min-height: calc(100vh - 2rem); padding: var(--reader-inline-padding); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--inner-highlight), var(--shadow); touch-action: pan-y pinch-zoom; overscroll-behavior-x: none; -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
 .eyebrow { margin: 0; color: var(--accent); font-size: .7rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .reading-pane:focus { outline: none; }
@@ -92,6 +93,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .verse-number:hover, .verse-number[aria-expanded="true"] { background: var(--accent-soft); }
 .verse-number:active { transform: scale(.92); }
 .verse-actions-menu { position: fixed; z-index: 30; display: grid; min-width: 150px; padding: .35rem; border: 1px solid var(--border); border-radius: 14px; background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 14px 38px rgba(0, 0, 0, .2); -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%); }
+.verse-actions-menu.is-opening { animation: verse-actions-enter var(--motion-duration) var(--motion-easing) both; }
+.verse-actions-menu.is-closing { pointer-events: none; animation: verse-actions-exit var(--motion-duration) var(--motion-easing) both; }
+@keyframes verse-actions-enter { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
+@keyframes verse-actions-exit { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.88); } }
 .verse-actions-menu button { min-height: 42px; padding: .65rem .8rem; border: 0; border-radius: 10px; color: var(--ink); background: transparent; cursor: pointer; text-align: left; font: inherit; font-size: .86rem; font-weight: 700; }
 .verse-actions-menu button:hover, .verse-actions-menu button:focus-visible { background: var(--surface-strong); }
 .secondary-verse-skeleton { opacity: .72; }
@@ -124,20 +129,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 @keyframes shimmer { to { background-position-x: -220%; } }
 
 .reading-location-controls { position: fixed; z-index: 8; inset: 0; pointer-events: none; }
-.reading-location-button { position: absolute; top: max(1rem, env(safe-area-inset-top)); width: max-content; max-width: calc(50vw - 1.5rem); min-height: 44px; padding: .65rem .9rem; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; opacity: 1; color: var(--ink); background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 12px 34px rgba(0, 0, 0, .14); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); cursor: pointer; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; translate: 0 0; transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), background-color 140ms ease, transform 140ms ease; }
-.book-location-button { left: max(1rem, env(safe-area-inset-left)); font-family: ui-serif, Georgia, serif; }
-.chapter-location-button { right: max(1rem, env(safe-area-inset-right)); }
+.reading-location-button { position: absolute; top: max(var(--screen-edge-inset), env(safe-area-inset-top)); width: max-content; max-width: calc(50vw - 1.5rem); min-height: 44px; padding: .65rem .9rem; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; opacity: 1; color: var(--ink); background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 12px 34px rgba(0, 0, 0, .14); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); cursor: pointer; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; translate: 0 0; transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), background-color 140ms ease, transform 140ms ease; }
+.book-location-button { left: var(--edge-inset-left); font-family: ui-serif, Georgia, serif; }
+.chapter-location-button { right: var(--edge-inset-right); }
 .reading-location-button:hover, .reading-location-button[aria-expanded="true"] { background: var(--surface-strong); }
 .book-location-button { display: grid; justify-items: start; line-height: 1.05; }
 .book-location-button > .overflow-marquee, .book-location-button > small { width: 100%; max-width: 100%; }
 .book-location-button small { margin-top: .2rem; color: var(--muted); font-size: .68rem; font-weight: 650; }
 .reading-location-button:active { transform: scale(.96); }
-.reading-location-controls.is-hidden .reading-location-button { opacity: 0; translate: 0 calc(-100% - max(1rem, env(safe-area-inset-top)) - 1rem); pointer-events: none; }
+.reading-location-controls.is-hidden .reading-location-button { opacity: 0; translate: 0 calc(-100% - max(var(--screen-edge-inset), env(safe-area-inset-top)) - 1rem); pointer-events: none; }
 .reading-location-controls.is-hidden:not(.is-obscured):focus-within .reading-location-button { opacity: 1; translate: 0 0; pointer-events: auto; }
 .reading-location-controls.is-obscured .reading-location-button { pointer-events: none; }
 
-.floating-dock { position: fixed; z-index: 12; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 16px 44px rgba(0, 0, 0, .18); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
-.floating-dock.is-hidden { opacity: 0; translate: 0 calc(100% + max(1rem, env(safe-area-inset-bottom)) + 1rem); pointer-events: none; }
+.floating-dock { position: fixed; z-index: 12; right: var(--edge-inset-right); bottom: max(var(--screen-edge-inset), env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 16px 44px rgba(0, 0, 0, .18); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
+.floating-dock.is-hidden { opacity: 0; translate: 0 calc(100% + max(var(--screen-edge-inset), env(safe-area-inset-bottom)) + 1rem); pointer-events: none; }
 .floating-dock.is-hidden:focus-within { opacity: 1; translate: 0 0; pointer-events: auto; }
 .overlay-shade { position: fixed; z-index: 9; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; opacity: 0; background: var(--overlay-backdrop); pointer-events: none; cursor: default; transition: opacity var(--motion-duration) var(--motion-easing); }
 .overlay-shade.is-visible { opacity: 1; pointer-events: auto; }
@@ -246,7 +251,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .setting-select { min-width: min(240px, 100%); min-height: 48px; padding: .7rem 2.2rem .7rem .9rem; color: var(--ink); border: 0; border-radius: 14px; background: var(--surface-strong); box-shadow: var(--inner-highlight), 0 8px 20px rgba(44,73,84,.09); cursor: pointer; }
 
 @media (max-width: 720px) {
-  .awmpc-bible-shell { --reader-inline-padding: 1rem; --workspace-inline-padding: .5rem; }
+  .awmpc-bible-shell { --reader-inline-padding: 1rem; }
   .workspace { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
   .floating-dock { right: 50%; transform: translateX(50%); }
   .feature-overlay { max-width: 100vw; border-radius: 24px; }
@@ -269,6 +274,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .dock-button { transition: none; }
   .reading-location-button { transition: none; }
   .footnote-marker-reveal, .footnotes-toggle, .footnotes-reveal { transition: none; }
+  .verse-actions-menu.is-opening, .verse-actions-menu.is-closing { animation: none; }
   .floating-dock { transition: none; }
   .overlay-shade { transition: none; }
   .overflow-marquee[data-overflow] .overflow-marquee-track { animation: none; will-change: auto; }

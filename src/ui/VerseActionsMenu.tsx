@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Verse } from "../data/contracts";
 import { createVerseLink, formatVerseForCopy } from "../links/verseLinks";
 import type { BibleLanguage } from "../settings/bibleLanguage";
 import { copyPlainText } from "./clipboard";
+import { MOTION_DURATION_MS } from "./motion";
 
 export type VerseActionTarget = Readonly<{
   bibleLanguage: BibleLanguage;
@@ -20,11 +21,23 @@ type VerseActionsMenuProps = {
 
 export function VerseActionsMenu({ target, onClose, onStatus }: VerseActionsMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [renderedTarget, setRenderedTarget] = useState(target);
+
+  useLayoutEffect(() => {
+    if (target) {
+      setRenderedTarget(target);
+      return;
+    }
+    if (!renderedTarget) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => setRenderedTarget(null), reducedMotion ? 0 : MOTION_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [renderedTarget, target]);
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
-    if (!target || !menu) return;
-    const trigger = target.trigger.getBoundingClientRect();
+    if (!target || !renderedTarget || !menu) return;
+    const trigger = renderedTarget.trigger.getBoundingClientRect();
     const bounds = menu.getBoundingClientRect();
     const gap = 8;
     const left = Math.min(window.innerWidth - bounds.width - gap, Math.max(gap, trigger.left));
@@ -32,8 +45,9 @@ export function VerseActionsMenu({ target, onClose, onStatus }: VerseActionsMenu
     const top = below + bounds.height <= window.innerHeight - gap ? below : Math.max(gap, trigger.top - bounds.height - gap);
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
+    menu.style.transformOrigin = `${trigger.left + trigger.width / 2 - left}px ${trigger.top + trigger.height / 2 - top}px`;
     menu.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
-  }, [target]);
+  }, [renderedTarget, target]);
 
   useEffect(() => {
     if (!target) return;
@@ -59,9 +73,10 @@ export function VerseActionsMenu({ target, onClose, onStatus }: VerseActionsMenu
     };
   }, [onClose, target]);
 
-  if (!target) return null;
+  if (!renderedTarget) return null;
 
   const copy = async (kind: "verse" | "link") => {
+    if (!target) return;
     try {
       const text = kind === "verse"
         ? formatVerseForCopy({ book: target.book, chapter: target.chapter, verse: target.verse.number, text: target.verse.text })
@@ -85,7 +100,7 @@ export function VerseActionsMenu({ target, onClose, onStatus }: VerseActionsMenu
   };
 
   return (
-    <div ref={menuRef} id="verse-actions-menu" className="verse-actions-menu" role="menu" aria-label={`${target.book} ${target.chapter}:${target.verse.number} actions`} onKeyDown={moveFocus}>
+    <div ref={menuRef} id="verse-actions-menu" className={`verse-actions-menu ${target ? "is-opening" : "is-closing"}`} role="menu" aria-label={`${renderedTarget.book} ${renderedTarget.chapter}:${renderedTarget.verse.number} actions`} aria-hidden={!target || undefined} inert={!target} onKeyDown={moveFocus}>
       <button type="button" role="menuitem" onClick={() => void copy("verse")}>Copy Verse</button>
       <button type="button" role="menuitem" onClick={() => void copy("link")}>Copy Link</button>
     </div>
