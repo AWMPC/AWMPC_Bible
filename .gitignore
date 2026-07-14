@@ -23,6 +23,7 @@ npm-debug.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # Local structured-text datasets (never commit source content)
 **/bible-*.json

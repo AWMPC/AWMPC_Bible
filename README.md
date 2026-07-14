@@ -16,7 +16,7 @@ server and can be served from a VM, CDN, or any static web host.
 - Separate floating Book and Chapter controls open Navigation directly at the corresponding selection list.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
-- Verse selections create bounded, device-local history entries containing only references and timestamps.
+- Verse selections create bounded history entries containing only references and timestamps.
 - Profile offers five meaningful, snapping text scales for every verse and verse number.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
 - The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
@@ -27,7 +27,7 @@ server and can be served from a VM, CDN, or any static web host.
 - Language changes preserve the verse crossing the viewport midpoint and recenter its translated counterpart.
 - Reader swipes move through adjacent chapters: left advances, right returns, and trackpad momentum is limited to one chapter per gesture.
 - Horizontal chapter gestures preserve native vertical scrolling, pinch zoom, interactive controls, overlays, and global book boundaries.
-- History remains global across languages; Search is intentionally scoped to only the currently active language texts.
+- History and search history remain global across languages; Search is intentionally scoped to only the currently active language texts.
 - Search lazily builds a bounded fuzzy index inside each active language worker, keeping indexing and typo-tolerant scoring off the reading thread.
 - Search results use the same centered verse-selection transition as Navigation and History and record the result's exact language.
 - Verse actions stay attached to their exact translation, so copied text and links retain the selected verse language.
@@ -35,8 +35,9 @@ server and can be served from a VM, CDN, or any static web host.
 - The acceleration boundary leaves room for WASM search acceleration and optional
   WebGPU effects without making either necessary for correct reading.
 
-All content is rendered as text. AWMPC Bible does not use analytics, remote fonts,
-or third-party runtime services.
+All Bible content is rendered as text. AWMPC Bible does not use analytics or
+remote fonts. Optional Firebase modules load after the reader only when the
+deployment supplies Firebase configuration.
 
 ## Development
 
@@ -64,7 +65,9 @@ references are relative, so the unchanged `dist/` directory may be hosted at
 the domain root or beneath any VM directory path.
 
 The production host should send a restrictive Content Security Policy allowing
-only same-origin scripts, styles, workers, data, and connections. It should also
+same-origin scripts, styles, workers, and data. A Firebase-enabled deployment
+must also allow its configured Auth domain plus the required Google Auth and
+Firestore endpoints in `connect-src` and `frame-src`. It should also
 set `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, a minimal
 `Permissions-Policy`, and deny framing with `frame-ancestors 'none'`. Keep the
 dataset response same-origin and serve it with the correct JSON content type.
@@ -98,12 +101,31 @@ Marker numbers must be unique canonical positive integers and every marker must
 have exactly one matching note. All values are validated and rendered only as
 text.
 
-## Persistence direction
+## Optional Google sign-in and cloud sync
 
-Reading history, search history, preferences, and identity are intentionally not
-coupled to a server database. Future persistence should use small application
-interfaces with a Firebase adapter, user-scoped security rules, bounded retention,
-and explicit clear/export controls.
+Create an ignored `.env.local` containing these deployment-specific public web
+configuration values; never commit the values or an Admin SDK credential:
+
+```text
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_APP_ID=...
+```
+
+Enable Google as an Authentication provider and add every served hostname to
+Firebase Authentication's authorized domains. Firestore must permit an
+authenticated user to read and merge-write only `users/{uid}` where
+`request.auth.uid == uid`; deny all other client access.
+
+The first authenticated hydration uses a server transaction before any write.
+It adopts the existing `themeMode`, `font`, `history`, and `searchHistory`
+fields, merges local bounded activity, and writes a versioned `awmpcBible`
+namespace plus legacy-compatible fields. Merge writes intentionally preserve
+unknown preexisting fields such as old-site configuration. Settings, reading
+history, and search history then synchronize after a short debounce with bounded
+jittered retry. Signing out or switching accounts clears owner-scoped state from
+the visible local session.
 
 ## Dataset licensing
 

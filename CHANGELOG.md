@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.31.0 - 2026-07-13
+
+- Add lazy Google sign-in and Firebase cloud synchronization for settings, reading history, and search history.
+- Adopt compatible legacy cloud fields through a server-first transaction while preserving unknown document data.
+- Show the signed-in Google profile photo and sync state in Profile with loading and privacy-safe fallbacks.
+- Add bounded local and cloud-backed recent searches with shared result selection behavior.
+- Isolate account-owned local state across sign-out and account switches and retry transient cloud failures with bounded jitter.
+
 ## 0.30.0 - 2026-07-13
 
 - Center and shrink-wrap feature sheets within the usable space above the floating dock.
