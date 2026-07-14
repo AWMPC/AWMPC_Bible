@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.31.1 - 2026-07-13
+
+- Reconcile cloud snapshots transactionally so offline clears, removals, and concurrent additions remain durable across devices.
+- Preserve local data on Auth observer and sign-out failures, quarantine prior-owner activity, and retry dirty saves after recovery.
+- Consolidate persistence orchestration, explicit search states, account UI, loading skeletons, and profile-photo fallback behavior.
+- Narrow sparse Search and Profile sheets while retaining centered mobile-safe layouts and confirmed destructive clears.
+- Add versioned owner-only Firestore rules, future-schema protection, deterministic search-history keys, and cancellation cleanup.
+
 ## 0.31.0 - 2026-07-13
 
 - Add lazy Google sign-in and Firebase cloud synchronization for settings, reading history, and search history.

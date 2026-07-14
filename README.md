@@ -64,13 +64,20 @@ only for local previewing of a completed build. All generated asset and dataset
 references are relative, so the unchanged `dist/` directory may be hosted at
 the domain root or beneath any VM directory path.
 
-The production host should send a restrictive Content Security Policy allowing
-same-origin scripts, styles, workers, and data. A Firebase-enabled deployment
-must also allow its configured Auth domain plus the required Google Auth and
-Firestore endpoints in `connect-src` and `frame-src`. It should also
-set `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, a minimal
-`Permissions-Policy`, and deny framing with `frame-ancestors 'none'`. Keep the
-dataset response same-origin and serve it with the correct JSON content type.
+The production host should send restrictive security headers. A Firebase-enabled
+deployment can begin with this CSP, replacing `AUTH_DOMAIN` with the exact
+`VITE_FIREBASE_AUTH_DOMAIN` value:
+
+```text
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self' https://*.googleapis.com; frame-src https://AUTH_DOMAIN https://accounts.google.com; img-src 'self' data: https://*.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+X-Content-Type-Options: nosniff
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
+
+Keep the dataset response same-origin and serve it with the correct JSON content
+type. Tighten endpoint wildcards after confirming the selected Firebase
+project's observed Auth and Firestore requests.
 
 Keep the ignored `bible-en.json` and `bible-ko.json` files at the repository
 root. During `npm run dev`, Vite serves those root files directly with caching
@@ -104,7 +111,9 @@ text.
 ## Optional Google sign-in and cloud sync
 
 Create an ignored `.env.local` containing these deployment-specific public web
-configuration values; never commit the values or an Admin SDK credential:
+configuration values; never commit the values or an Admin SDK credential. Vite
+compiles `VITE_*` values into the static JavaScript during `npm run build`, so
+changing VM environment variables after a build does not reconfigure `dist/`:
 
 ```text
 VITE_FIREBASE_API_KEY=...
@@ -114,18 +123,24 @@ VITE_FIREBASE_APP_ID=...
 ```
 
 Enable Google as an Authentication provider and add every served hostname to
-Firebase Authentication's authorized domains. Firestore must permit an
-authenticated user to read and merge-write only `users/{uid}` where
-`request.auth.uid == uid`; deny all other client access.
+Firebase Authentication's authorized domains. The versioned
+[Firestore rules](firestore.rules) permit an authenticated user to read and
+bounded merge-write only `users/{uid}` where `request.auth.uid == uid`, deny
+document deletion, and deny all fallback access. The repository does not deploy
+these rules automatically. Review them against existing production rules and
+obtain explicit human approval before running a Firebase rules deployment.
 
 The first authenticated hydration uses a server transaction before any write.
 It adopts the existing `themeMode`, `font`, `history`, and `searchHistory`
 fields, merges local bounded activity, and writes a versioned `awmpcBible`
 namespace plus legacy-compatible fields. Merge writes intentionally preserve
 unknown preexisting fields such as old-site configuration. Settings, reading
-history, and search history then synchronize after a short debounce with bounded
-jittered retry. Signing out or switching accounts clears owner-scoped state from
-the visible local session.
+history, and search history then synchronize through server transactions after
+a short debounce with bounded jittered retry. A local owner-scoped baseline
+performs three-way reconciliation so offline removals, clears, and concurrent
+device additions do not overwrite or resurrect one another. Signing out or
+switching accounts quarantines owner-scoped state from the visible local session,
+and no raw Firebase UID is added to application storage.
 
 ## Dataset licensing
 
