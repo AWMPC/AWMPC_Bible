@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.3 - 2026-07-14
+
+- Keep the Search sheet at the full available viewport size so changing results never causes distracting layout snaps.
+
 ## 0.31.2 - 2026-07-14
 
 - Animate verse copy actions symmetrically from their verse-number trigger and remove motion when requested by the operating system.
