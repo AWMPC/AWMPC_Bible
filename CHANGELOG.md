@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.30.0 - 2026-07-13
+
+- Center and shrink-wrap feature sheets within the usable space above the floating dock.
+- Cap oversized sheets to the mobile viewport while preserving internal scrolling and navigation spacing.
+- Add overflow-measured, bidirectional marquee labels with reduced-motion and cleanup safeguards.
+
 ## 0.23.3 - 2026-07-12
 
 - Remove the obsolete four-rem top clearance formerly reserved for the reader header.
