@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owns(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function boundedList(data, field, maximum) {
+      return !(field in data) || (data[field] is list && data[field].size() <= maximum);
+    }
+
+    function validCanonical(data) {
+      return !("awmpcBible" in data) || (
+        data.awmpcBible is map
+        && data.awmpcBible.keys().hasOnly(["schemaVersion", "settings", "history", "searchHistory", "updatedAt"])
+        && data.awmpcBible.schemaVersion is int
+        && data.awmpcBible.schemaVersion >= 1
+        && data.awmpcBible.schemaVersion <= 2
+        && data.awmpcBible.settings is map
+        && data.awmpcBible.settings.keys().hasOnly(["textScale", "verseFont", "appearance", "primaryBibleLanguage", "secondaryBibleLanguage"])
+        && data.awmpcBible.history is list
+        && data.awmpcBible.history.size() <= 200
+        && data.awmpcBible.searchHistory is list
+        && data.awmpcBible.searchHistory.size() <= 20
+        && data.awmpcBible.updatedAt is timestamp
+      );
+    }
+
+    function validUserDocument(data) {
+      return boundedList(data, "history", 200)
+        && boundedList(data, "searchHistory", 20)
+        && validCanonical(data);
+    }
+
+    match /users/{uid} {
+      allow read: if owns(uid);
+      allow create, update: if owns(uid) && validUserDocument(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
