@@ -3,6 +3,7 @@ import type { BibleSearchStatus, LocalizedSearchResult } from "../search/useBibl
 import type { RefObject } from "react";
 import { EmptyFeature } from "./EmptyFeature";
 import { Skeleton } from "./Skeleton";
+import { OverflowMarquee } from "./OverflowMarquee";
 
 type SearchPanelProps = {
   query: string;
@@ -29,7 +30,7 @@ export function SearchPanel({ query, status, results, inputRef, onQueryChange, o
             : status === "ready" && results.length === 0 ? <EmptyFeature title="No matching verses" detail="Try fewer words or a slightly different spelling." />
               : <ol className="search-results">{results.map((result) => {
                 const language = BIBLE_LANGUAGE_OPTIONS.find(({ id }) => id === result.bibleLanguage)?.label ?? result.bibleLanguage;
-                return <li key={`${result.bibleLanguage}:${result.book}:${result.chapter}:${result.verse}`}><button type="button" onClick={() => onSelect(result)}><span><strong lang={result.bibleLanguage}>{result.book}</strong> {result.chapter}:{result.verse}<small>{language}</small></span><p lang={result.bibleLanguage}>{result.text}</p></button></li>;
+                return <li key={`${result.bibleLanguage}:${result.book}:${result.chapter}:${result.verse}`}><button type="button" onClick={() => onSelect(result)}><OverflowMarquee className="search-result-reference"><strong lang={result.bibleLanguage}>{result.book}</strong> {result.chapter}:{result.verse}{" "}<small>{language}</small></OverflowMarquee><span className="search-result-text" lang={result.bibleLanguage}>{result.text}</span></button></li>;
               })}</ol>}
     </section>
   );

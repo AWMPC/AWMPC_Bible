@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { DOCK_FEATURES, type FeatureId } from "./features";
+import { OverflowMarquee } from "./OverflowMarquee";
 
 type FloatingDockProps = {
   activeFeature: FeatureId | null;
@@ -24,7 +25,7 @@ export const FloatingDock = forwardRef<HTMLElement, FloatingDockProps>(function 
             onClick={(event) => onOpen(feature.id, event.currentTarget)}
           >
             <span className={`dock-symbol dock-symbol-${feature.id}`} aria-hidden="true" />
-            <span>{feature.shortLabel}</span>
+            <OverflowMarquee>{feature.shortLabel}</OverflowMarquee>
           </button>
         ))}
       </div>

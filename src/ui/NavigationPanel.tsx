@@ -5,6 +5,7 @@ import { scrollNavigationSection, type NavigationScrollAlignment } from "./navig
 import type { NavigationSectionRequest } from "./navigationTarget";
 import { groupBooksByTestament } from "./testaments";
 import { Skeleton } from "./Skeleton";
+import { OverflowMarquee } from "./OverflowMarquee";
 
 export type NavigationPanelProps = {
   books: Book[];
@@ -93,7 +94,7 @@ function TestamentBookGroup({ id, title, books, secondaryNames, secondaryLanguag
     <section className="testament-group" aria-labelledby={id}>
       <h4 id={id}>{title}</h4>
       <div className="choice-grid books-grid">{books.map((item) => (
-        <button key={item.name} type="button" aria-current={currentBook === item.name ? "page" : undefined} onClick={() => onBook(item.name)}><span>{item.name}</span>{secondaryLanguage && secondaryNames.get(item.name) && <small className="book-choice-secondary" lang={secondaryLanguage}>{secondaryNames.get(item.name)}</small>}</button>
+        <button key={item.name} type="button" aria-current={currentBook === item.name ? "page" : undefined} onClick={() => onBook(item.name)}><OverflowMarquee>{item.name}</OverflowMarquee>{secondaryLanguage && secondaryNames.get(item.name) && <small className="book-choice-secondary" lang={secondaryLanguage}><OverflowMarquee>{secondaryNames.get(item.name)}</OverflowMarquee></small>}</button>
       ))}</div>
     </section>
   );

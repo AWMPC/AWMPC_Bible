@@ -70,7 +70,7 @@ test("chapter progress drives day and night water palettes", async () => {
 });
 
 test("panels retain semantic native controls", async () => {
-  const [app, navigation, history, search, overlay, overlayLifecycle, profile, verseActions, styles] = await Promise.all([
+  const [app, navigation, history, search, overlay, overlayLifecycle, profile, verseActions, marquee, styles] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),
     read("../src/ui/NavigationPanel.tsx"),
     read("../src/ui/HistoryPanel.tsx"),
@@ -79,6 +79,7 @@ test("panels retain semantic native controls", async () => {
     read("../src/ui/useOverlayLifecycle.ts"),
     read("../src/ui/ProfilePanel.tsx"),
     read("../src/ui/VerseActionsMenu.tsx"),
+    read("../src/ui/OverflowMarquee.tsx"),
     read("../src/styles.css"),
   ]);
   assert.match(navigation, /Old Testament/);
@@ -117,6 +118,10 @@ test("panels retain semantic native controls", async () => {
   assert.match(search, /aria-busy/);
   assert.match(search, /<Skeleton/);
   assert.doesNotMatch(search, /dangerouslySetInnerHTML|innerHTML/);
+  assert.match(marquee, /new ResizeObserver/);
+  assert.match(marquee, /observer\?\.disconnect\(\)/);
+  assert.match(marquee, /cancelAnimationFrame\(frame\)/);
+  assert.doesNotMatch(marquee, /innerHTML|setInterval/);
   assert.doesNotMatch(app, /history\.filter\(/);
   assert.match(verseActions, /role="menu"/);
   assert.match(verseActions, />Copy Verse</);

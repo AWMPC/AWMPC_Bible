@@ -13,22 +13,27 @@ export function useOverlayViewport({ active, fallbackHeight, dialogRef, dockRef 
   useLayoutEffect(() => {
     if (!active) return;
 
-    const updateHeight = () => {
+    const updateGeometry = () => {
       const dialog = dialogRef.current;
       if (!dialog) return;
       const dockTop = dockRef.current?.getBoundingClientRect().y;
-      const height = dockTop === undefined
+      const availableHeight = dockTop === undefined
         ? fallbackHeight
         : Math.max(0, Math.floor(dockTop - OVERLAY_DOCK_GAP_PX));
-      if (height !== undefined) dialog.style.height = `${height}px`;
+      if (availableHeight !== undefined) {
+        dialog.style.setProperty("--overlay-max-height", `${availableHeight}px`);
+        dialog.style.setProperty("--overlay-center-y", `${availableHeight / 2}px`);
+      }
     };
 
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
-    window.visualViewport?.addEventListener("resize", updateHeight);
+    updateGeometry();
+    window.addEventListener("resize", updateGeometry);
+    window.visualViewport?.addEventListener("resize", updateGeometry);
     return () => {
-      window.removeEventListener("resize", updateHeight);
-      window.visualViewport?.removeEventListener("resize", updateHeight);
+      window.removeEventListener("resize", updateGeometry);
+      window.visualViewport?.removeEventListener("resize", updateGeometry);
+      dialogRef.current?.style.removeProperty("--overlay-max-height");
+      dialogRef.current?.style.removeProperty("--overlay-center-y");
     };
   }, [active, dialogRef, dockRef, fallbackHeight]);
 }

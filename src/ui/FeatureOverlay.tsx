@@ -63,6 +63,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
           ref={dialogRef}
           id="feature-overlay"
           className="feature-overlay"
+          data-feature={activeFeature ?? undefined}
           aria-labelledby="feature-overlay-title"
           onCancel={(event) => { event.preventDefault(); void close(); }}
           onClose={() => { handleDialogClose(); onClose(); }}

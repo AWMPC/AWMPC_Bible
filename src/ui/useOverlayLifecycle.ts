@@ -23,7 +23,7 @@ function overlayFrames(dialog: HTMLDialogElement, origin: OverlayOrigin): Keyfra
       transform: `translate(${offsetX}px, ${offsetY}px) scale(${origin.width / target.width}, ${origin.height / target.height})`,
       borderRadius: "16px",
     },
-    { opacity: 1, transform: "translate(0, 0) scale(1)", borderRadius: "0 0 30px 30px" },
+    { opacity: 1, transform: "translate(0, 0) scale(1)", borderRadius: "30px" },
   ];
 }
 
@@ -119,7 +119,7 @@ export function useOverlayLifecycle({ active, origin, dialogRef, surfaceRef, ini
       animationsRef.current = [];
       dialog.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
     };
-  }, [active, dialogRef, initialFocusRef, origin, setPhase, surfaceRef]);
+  }, [active, dialogRef, origin, setPhase, surfaceRef]);
 
   useEffect(() => {
     if (!active) return;

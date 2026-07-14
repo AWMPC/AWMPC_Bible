@@ -17,6 +17,7 @@ import { createVerseLink, formatVerseForCopy, parseVerseLink } from "../src/link
 import { pairedBookName, versesByNumber } from "../src/data/dualLanguage.ts";
 import { adjacentChapter } from "../src/navigation/adjacentChapter.ts";
 import { horizontalSwipeDirection, horizontalWheelDirection, wheelSequenceHasEnded } from "../src/ui/useChapterSwipe.ts";
+import { overflowMarqueeMetrics } from "../src/ui/marqueeMetrics.ts";
 
 test("chapter scroll progress is exact through the chapter's scrollable range", () => {
   const base = { viewportHeight: 800, chapterTop: 100, chapterHeight: 2800 };
@@ -118,6 +119,14 @@ test("settings allowlists and scale snapping remain exact", () => {
 
 test("overlay origin stops above the dock", () => {
   assert.deepEqual(createOverlayOrigin({ x: 640, y: 720, width: 72, height: 52 }, { x: 600, y: 708, width: 360, height: 60 }), { x: 640, y: 720, width: 72, height: 52, availableHeight: 700 });
+});
+
+test("overflow marquee activates only for measured overflow with bounded timing", () => {
+  assert.deepEqual(overflowMarqueeMetrics(120, 120.9), { distance: 0, duration: 6, overflowing: false });
+  assert.deepEqual(overflowMarqueeMetrics(120, 122), { distance: 2, duration: 6, overflowing: true });
+  assert.deepEqual(overflowMarqueeMetrics(100, 250), { distance: 150, duration: 14, overflowing: true });
+  assert.deepEqual(overflowMarqueeMetrics(100, 10_000), { distance: 9900, duration: 18, overflowing: true });
+  assert.deepEqual(overflowMarqueeMetrics(Number.NaN, 200), { distance: 0, duration: 6, overflowing: false });
 });
 
 test("navigation progression scrolls only its overlay container and respects reduced motion", () => {

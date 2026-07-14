@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import { createOverlayOrigin, type OverlayOrigin } from "./features";
 import type { NavigationSection } from "./navigationTarget";
 import type { BibleLanguage } from "../settings/bibleLanguage";
+import { OverflowMarquee } from "./OverflowMarquee";
 
 type ReadingLocationControlsProps = {
   book: string;
@@ -23,7 +24,7 @@ export function ReadingLocationControls({ book, secondaryBook = null, secondaryL
 
   return (
     <nav className={`reading-location-controls${visible ? "" : " is-hidden"}${obscured ? " is-obscured" : ""}`} aria-label="Reading location" aria-hidden={obscured || undefined} inert={obscured}>
-      <button className="reading-location-button book-location-button" type="button" disabled={!book} aria-label={`Choose book, currently ${book || "loading"}${secondaryBook ? `, ${secondaryBook}` : ""}`} aria-haspopup="dialog" aria-controls="feature-overlay" aria-expanded={activeSection === "books"} onClick={(event) => open("books", event.currentTarget)}><span>{book || "Book"}</span>{secondaryBook && secondaryLanguage && <small lang={secondaryLanguage}>{secondaryBook}</small>}</button>
+      <button className="reading-location-button book-location-button" type="button" disabled={!book} aria-label={`Choose book, currently ${book || "loading"}${secondaryBook ? `, ${secondaryBook}` : ""}`} aria-haspopup="dialog" aria-controls="feature-overlay" aria-expanded={activeSection === "books"} onClick={(event) => open("books", event.currentTarget)}><OverflowMarquee>{book || "Book"}</OverflowMarquee>{secondaryBook && secondaryLanguage && <small lang={secondaryLanguage}><OverflowMarquee>{secondaryBook}</OverflowMarquee></small>}</button>
       <button className="reading-location-button chapter-location-button" type="button" disabled={!chapter} aria-label={`Choose chapter, currently chapter ${chapter || "loading"}`} aria-haspopup="dialog" aria-controls="feature-overlay" aria-expanded={activeSection === "chapters"} onClick={(event) => open("chapters", event.currentTarget)}>Chapter {chapter || ""}</button>
     </nav>
   );

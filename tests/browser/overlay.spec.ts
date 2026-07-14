@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const packageMetadata = JSON.parse(
   readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
 ) as { version: string };
+const LONG_BOOK_NAME = "ExtraordinarilyLongDemonstrationBookNameThatCannotFitInsideOneNavigationButton";
 
 async function waitForScrollIdle(page: import("@playwright/test").Page) {
   await page.evaluate(() => new Promise<void>((resolve) => {
@@ -27,7 +28,7 @@ const dataset = {
   },
   Matthew: Object.fromEntries(Array.from({ length: 20 }, (_, chapterIndex) => [String(chapterIndex + 1), Object.fromEntries(Array.from({ length: 12 }, (_, verseIndex) => [String(verseIndex + 1), `Matthew chapter ${chapterIndex + 1} verse ${verseIndex + 1}.`]))])),
   Acts: { "13": { "6": "They met a Jewish sorcerer and false prophet named Bar-Jesus." } },
-  ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
+  ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [index === 63 ? LONG_BOOK_NAME : `Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
 };
 
 const koreanDataset = {
@@ -104,6 +105,55 @@ test("shows package semver immediately right of the overlay brand", async ({ pag
     expect(Math.abs((versionBox!.y + versionBox!.height / 2) - (brandBox!.y + brandBox!.height / 2))).toBeLessThan(3);
     expect(versionBox!.x + versionBox!.width).toBeLessThan(closeBox!.x);
   }
+});
+
+test("centers shrink-wrapped sheets and caps overflowing navigation on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
+    await page.getByRole("button", { name: sheet }).click();
+    await expect.poll(async () => {
+      const box = await page.getByRole("dialog").boundingBox();
+      return box ? Math.abs(box.x + box.width / 2 - 640) : Number.POSITIVE_INFINITY;
+    }).toBeLessThan(2);
+    const [dialogBox, dockBox] = await Promise.all([page.getByRole("dialog").boundingBox(), page.locator(".floating-dock").boundingBox()]);
+    expect(dialogBox).not.toBeNull();
+    expect(dockBox).not.toBeNull();
+    const availableHeight = dockBox!.y - 8;
+    expect(Math.abs(dialogBox!.x + dialogBox!.width / 2 - 640)).toBeLessThan(2);
+    expect(Math.abs(dialogBox!.y + dialogBox!.height / 2 - availableHeight / 2)).toBeLessThan(2);
+    expect(dialogBox!.width).toBeLessThan(1280);
+    expect(dialogBox!.height).toBeLessThanOrEqual(availableHeight + 1);
+    if (sheet === "Reading history" || sheet === "Search") expect(dialogBox!.height).toBeLessThan(availableHeight * .75);
+    await page.locator(".overlay-close").click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  const dialog = page.getByRole("dialog");
+  const dialogBox = await dialog.boundingBox();
+  expect(dialogBox).not.toBeNull();
+  expect(dialogBox!.x).toBeGreaterThanOrEqual(-1);
+  expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(391);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  const content = page.locator(".overlay-content");
+  expect(await content.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await content.evaluate((element) => element.clientHeight));
+
+  const longButton = page.getByRole("button", { name: LONG_BOOK_NAME, exact: true });
+  const marquee = longButton.locator(".overflow-marquee");
+  await expect(marquee).toHaveAttribute("data-overflow", "true");
+  const motion = await marquee.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const frames = element.firstElementChild?.getAnimations()[0]?.effect?.getKeyframes() ?? [];
+    return { distance: Number.parseFloat(style.getPropertyValue("--marquee-distance")), transforms: frames.map(({ transform }) => transform) };
+  });
+  expect(motion.distance).toBeGreaterThan(0);
+  expect(motion.transforms.at(0)).toBe("translateX(0px)");
+  expect(motion.transforms.some((transform) => transform !== "translateX(0px)")).toBe(true);
+  await expect(page.getByRole("button", { name: "Acts", exact: true }).locator(".overflow-marquee")).not.toHaveAttribute("data-overflow", "true");
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await marquee.locator(".overflow-marquee-track").evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
 });
 
 test("offers only Sans, Serif, and Mono fonts in that order", async ({ page }) => {
