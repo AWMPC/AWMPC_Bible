@@ -13,7 +13,8 @@ test("runtime remains a lean text-only Vite worker application", async () => {
   assert.doesNotMatch(app, /dangerouslySetInnerHTML|innerHTML/);
   assert.match(libraryHook, /data\.worker\?worker/);
   assert.match(libraryHook, /worker\.terminate\(\)/);
-  assert.deepEqual(Object.keys(JSON.parse(manifest).dependencies), ["react", "react-dom"]);
+  assert.deepEqual(Object.keys(JSON.parse(manifest).dependencies), ["firebase", "react", "react-dom"]);
+  assert.match(app, /useCloudAccount/);
 });
 
 test("Liquid Glass accessibility and motion fallbacks remain present", async () => {
@@ -106,6 +107,10 @@ test("panels retain semantic native controls", async () => {
   assert.match(styles, /--range-thumb-size:\s*30px/);
   assert.doesNotMatch(styles, /\.scale-labels\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*1fr\)/);
   assert.match(profile, /<select/);
+  assert.match(profile, /referrerPolicy="no-referrer"/);
+  assert.match(profile, /loading="lazy"/);
+  assert.match(profile, /decoding="async"/);
+  assert.match(profile, /<Skeleton rows=\{2\}/);
   assert.match(profile, />Primary language</);
   assert.match(profile, />Secondary language</);
   assert.match(navigation, /book-choice-secondary/);

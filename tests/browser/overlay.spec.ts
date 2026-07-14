@@ -82,6 +82,18 @@ test("persists the selected Bible language", async ({ page }) => {
   await expect(page.getByRole("combobox", { name: "Primary language" })).toHaveValue("ko");
 });
 
+test("keeps the local reader private and usable when cloud sync is not configured", async ({ page }) => {
+  const remoteRequests: string[] = [];
+  page.on("request", (request) => {
+    if (/googleapis|firebaseio|googleusercontent/.test(request.url())) remoteRequests.push(request.url());
+  });
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await expect(page.getByText("Cloud sync is not configured for this deployment.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Appearance" })).toBeEnabled();
+  expect(remoteRequests).toEqual([]);
+});
+
 test("shows package semver immediately right of the overlay brand", async ({ page }) => {
   for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
     await page.getByRole("button", { name: sheet }).click();
@@ -248,6 +260,27 @@ test("fuzzy search selects through chooseVerse and records one history entry", a
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^Matthew 2:5/ })).toBeVisible();
   await expect(page.locator(".history-list > li")).toHaveCount(1);
+});
+
+test("records, reuses, removes, and clears bounded search history", async ({ page }) => {
+  await page.getByRole("button", { name: "Search" }).click();
+  const input = page.getByRole("searchbox", { name: "Search active Bible text" });
+  await input.fill("Bar-Jesus");
+  await input.press("Enter");
+  await input.fill("");
+  const recent = page.getByRole("button", { name: "Bar-Jesus", exact: true });
+  await expect(recent).toBeVisible();
+  await recent.click();
+  await expect(input).toHaveValue("Bar-Jesus");
+  await input.fill("");
+  await page.getByRole("button", { name: "Remove Bar-Jesus from search history" }).click();
+  await expect(recent).toHaveCount(0);
+
+  await input.fill("Matthew");
+  await input.press("Enter");
+  await input.fill("");
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(page.getByText("Search the active text")).toBeVisible();
 });
 
 test("focuses search when opening it directly or switching from another sheet", async ({ page }) => {
