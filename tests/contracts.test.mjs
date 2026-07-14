@@ -29,6 +29,7 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(styles, /--motion-easing:\s*linear\(/);
   assert.match(motion, /MOTION_DURATION_MS = 210/);
   assert.match(styles, /--motion-duration:\s*210ms/);
+  assert.match(styles, /--screen-edge-inset:\s*1rem/);
   assert.doesNotMatch(styles, /\.reading-header|\.chapter-indicator/);
   assert.match(styles, /\.reading-pane\s*\{[^}]*padding:\s*var\(--reader-inline-padding\)/);
   assert.doesNotMatch(styles, /\.reading-pane article\s*\{[^}]*margin-top/);
@@ -38,6 +39,9 @@ test("Liquid Glass accessibility and motion fallbacks remain present", async () 
   assert.match(styles, /--verse-column-gap:\s*\.4rem/);
   assert.match(styles, /--location-controls-clearance:/);
   assert.match(styles, /\.workspace\s*\{[^}]*padding:\s*var\(--location-controls-clearance\)/);
+  assert.match(styles, /--edge-inset-left:\s*max\(var\(--screen-edge-inset\), env\(safe-area-inset-left\)\)/);
+  assert.match(styles, /--edge-inset-right:\s*max\(var\(--screen-edge-inset\), env\(safe-area-inset-right\)\)/);
+  assert.match(styles, /\.workspace\s*\{[^}]*padding:[^;}]*var\(--edge-inset-right\)[^;}]*var\(--edge-inset-left\)/);
   assert.match(styles, /\.awmpc-bible-shell\s*\{[^}]*background:\s*var\(--bg\)/);
   assert.doesNotMatch(styles, /radial-gradient|--(?:day-|night-)?glow-(?:one|two)|\.awmpc-bible-shell::before|\.awmpc-bible-shell::after/);
   assert.match(styles, /grid-template-columns:\s*var\(--verse-number-gutter\) minmax\(0, 1fr\)/);
@@ -133,6 +137,11 @@ test("panels retain semantic native controls", async () => {
   assert.match(verseActions, /role="menu"/);
   assert.match(verseActions, />Copy Verse</);
   assert.match(verseActions, />Copy Link</);
+  assert.match(verseActions, /MOTION_DURATION_MS/);
+  assert.match(verseActions, /inert=\{!target\}/);
+  assert.match(styles, /\.verse-actions-menu\.is-opening\s*\{[^}]*verse-actions-enter var\(--motion-duration\) var\(--motion-easing\)/);
+  assert.match(styles, /\.verse-actions-menu\.is-closing\s*\{[^}]*verse-actions-exit var\(--motion-duration\) var\(--motion-easing\)/);
+  assert.match(styles, /prefers-reduced-motion:[\s\S]*?\.verse-actions-menu\.is-opening, \.verse-actions-menu\.is-closing\s*\{\s*animation:\s*none/);
 });
 
 test("overlay geometry uses owned refs instead of global selectors", async () => {

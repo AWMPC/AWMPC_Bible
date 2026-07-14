@@ -431,6 +431,16 @@ test("first verse begins at the reading pane's normal inset", async ({ page }) =
       return pane.top - Math.max(...controls.map(({ bottom }) => bottom));
     });
     expect(clearance).toBeGreaterThanOrEqual(15);
+    if (viewport.width === 390) {
+      const edges = await page.evaluate(() => {
+        const pane = document.querySelector<HTMLElement>(".reading-pane")!.getBoundingClientRect();
+        const book = document.querySelector<HTMLElement>(".book-location-button")!.getBoundingClientRect();
+        const chapter = document.querySelector<HTMLElement>(".chapter-location-button")!.getBoundingClientRect();
+        return { paneLeft: pane.left, bookLeft: book.left, paneRight: innerWidth - pane.right, chapterRight: innerWidth - chapter.right };
+      });
+      expect(Math.abs(edges.paneLeft - edges.bookLeft)).toBeLessThan(1);
+      expect(Math.abs(edges.paneRight - edges.chapterRight)).toBeLessThan(1);
+    }
   }
 });
 
@@ -553,12 +563,19 @@ test("verse number actions copy plain text and a loadable centered link", async 
   const trigger = page.getByRole("button", { name: "Actions for verse 40", exact: true });
   await trigger.click();
   const menu = page.getByRole("menu", { name: "Genesis 1:40 actions" });
+  const menuElement = page.locator(".verse-actions-menu");
   await expect(menu).toBeVisible();
+  await expect(menuElement).toHaveClass(/is-opening/);
+  await expect(menuElement).toHaveCSS("animation-name", "verse-actions-enter");
+  await expect(menuElement).toHaveCSS("animation-duration", "0.21s");
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("menuitem", { name: "Copy Link" })).toBeFocused();
   await page.keyboard.press("Escape");
+  await expect(menuElement).toHaveClass(/is-closing/);
+  await expect(menuElement).toHaveCSS("animation-name", "verse-actions-exit");
   await expect(menu).not.toBeVisible();
+  await expect(menuElement).toHaveCount(0);
   await expect(trigger).toBeFocused();
   await trigger.click();
   await page.getByRole("menuitem", { name: "Copy Verse" }).click();
@@ -578,6 +595,17 @@ test("verse number actions copy plain text and a loadable centered link", async 
   }).toBeLessThan(6);
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByText("No reading history yet")).toBeVisible();
+});
+
+test("verse actions remove motion when reduced motion is requested", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const trigger = page.getByRole("button", { name: "Actions for verse 1", exact: true });
+  await trigger.click();
+  const menu = page.locator(".verse-actions-menu");
+  await expect(menu).toHaveCSS("animation-name", "none");
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toBeFocused();
 });
 
 test("resizes an open overlay with the viewport", async ({ page }) => {
