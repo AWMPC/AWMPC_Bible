@@ -1,9 +1,9 @@
 export const TEXT_SCALES = Object.freeze([
-  { id: "compact", label: "Compact", detail: "More verses on screen" },
-  { id: "standard", label: "Standard", detail: "Balanced for everyday reading" },
-  { id: "comfortable", label: "Comfortable", detail: "A little more room to breathe" },
-  { id: "large", label: "Large", detail: "Clear text at greater distance" },
-  { id: "extra-large", label: "Extra large", detail: "Maximum reading presence" },
+  { id: "compact", label: "Compact", marker: "80%", detail: "More verses on screen" },
+  { id: "standard", label: "Standard", marker: "90%", detail: "Balanced for everyday reading" },
+  { id: "comfortable", label: "Comfortable", marker: "100%", detail: "A little more room to breathe" },
+  { id: "large", label: "Large", marker: "110%", detail: "Clear text at greater distance" },
+  { id: "extra-large", label: "Extra large", marker: "120%", detail: "Maximum reading presence" },
 ] as const);
 
 export type TextScale = (typeof TEXT_SCALES)[number]["id"];

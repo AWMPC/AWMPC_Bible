@@ -52,7 +52,7 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
               return (
                 <span className={`scale-mark${scale.id === textScale ? " is-selected" : ""}`} style={{ left: position }} key={scale.id}>
                   <span className="scale-tick" />
-                  <span className="scale-label">{scale.label}</span>
+                  <span className="scale-label">{scale.marker}</span>
                 </span>
               );
             })}

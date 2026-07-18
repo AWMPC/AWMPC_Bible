@@ -20,7 +20,17 @@ type SearchPanelProps = {
 };
 
 function RecentSearches({ entries, onChoose, onRemove, onClear }: { entries: string[]; onChoose: (query: string) => void; onRemove: (query: string) => void; onClear: () => void }) {
-  return <section className="search-history" aria-label="Search history"><div><p>Recent searches</p><button type="button" onClick={() => { if (window.confirm("Clear all search history? This also clears synced search history.")) onClear(); }}>Clear</button></div><ul>{entries.map((entry) => <li key={entry}><button type="button" onClick={() => onChoose(entry)}><OverflowMarquee>{entry}</OverflowMarquee></button><button type="button" aria-label={`Remove ${entry} from search history`} onClick={() => onRemove(entry)}>Remove</button></li>)}</ul></section>;
+  return (
+    <section className="search-history" aria-label="Search history">
+      <div><p>Recent searches</p><button type="button" onClick={() => { if (window.confirm("Clear all search history? This also clears synced search history.")) onClear(); }}>Clear All</button></div>
+      <ul>{entries.map((entry) => (
+        <li key={entry}>
+          <button type="button" onClick={() => onChoose(entry)}><OverflowMarquee>{entry}</OverflowMarquee></button>
+          <button className="item-clear-button" type="button" aria-label={`Remove ${entry} from search history`} onClick={() => onRemove(entry)}>Clear</button>
+        </li>
+      ))}</ul>
+    </section>
+  );
 }
 
 function SearchMatches({ results, query, onRecord, onSelect }: Pick<SearchPanelProps, "results" | "onRecord" | "onSelect"> & { query: string }) {

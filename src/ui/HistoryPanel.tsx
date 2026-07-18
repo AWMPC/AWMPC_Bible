@@ -21,7 +21,7 @@ export function HistoryPanel({ entries, onSelect, onRemove, onClear }: HistoryPa
           <OverflowMarquee className="history-reference"><strong lang={entry.bibleLanguage}>{entry.book}</strong> {entry.chapter}:{entry.verse} <small className="history-language">{BIBLE_LANGUAGE_OPTIONS.find(({ id }) => id === entry.bibleLanguage)?.label ?? entry.bibleLanguage}</small></OverflowMarquee>
           {entry.id.startsWith("legacy-") && entry.visitedAt === "1970-01-01T00:00:00.000Z" ? <span className="history-imported">Imported</span> : <time dateTime={entry.visitedAt}>{new Date(entry.visitedAt).toLocaleString()}</time>}
         </button>
-        <button className="history-remove" type="button" aria-label={`Remove ${entry.book} ${entry.chapter}:${entry.verse} (${entry.bibleLanguage}) from history`} onClick={() => onRemove(entry.id)}>Remove</button>
+        <button className="history-remove item-clear-button" type="button" aria-label={`Remove ${entry.book} ${entry.chapter}:${entry.verse} (${entry.bibleLanguage}) from history`} onClick={() => onRemove(entry.id)}>Clear</button>
       </li>
       ))}</ol>
     </section>

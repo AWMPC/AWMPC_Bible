@@ -104,8 +104,10 @@ test("panels retain semantic native controls", async () => {
   assert.match(app, /overlayRef\.current\?\.keepOpen\(\)/);
   assert.match(styles, /\.overlay-shade\s*\{[^}]*opacity:\s*0[^}]*transition:\s*opacity var\(--motion-duration\) var\(--motion-easing\)/);
   assert.match(styles, /\.overlay-shade\.is-visible\s*\{[^}]*opacity:\s*1/);
-  assert.match(styles, /\.feature-overlay\[data-feature="search"\]\s*\{[^}]*top:\s*max\(var\(--screen-edge-inset\), env\(safe-area-inset-top\)\)[^}]*width:\s*calc\(100vw - var\(--edge-inset-left\) - var\(--edge-inset-right\)\)[^}]*height:\s*max\(0px, calc\(var\(--overlay-max-height/);
-  assert.match(styles, /\.feature-overlay\[data-feature="search"\] \.overlay-surface\s*\{[^}]*width:\s*100%[^}]*height:\s*100%/);
+  assert.match(styles, /\.feature-overlay\s*\{[^}]*--overlay-desktop-width:\s*50vw[^}]*right:\s*var\(--edge-inset-right\)[^}]*width:\s*min\(var\(--overlay-desktop-width\), calc\(100vw - var\(--edge-inset-left\) - var\(--edge-inset-right\)\)\)[^}]*min-width:\s*min\(50vw,[^}]*height:\s*max\(0px, calc\(var\(--overlay-max-height/);
+  assert.match(styles, /\.feature-overlay\[data-feature="search"\], \.feature-overlay\[data-feature="profile"\]\s*\{[^}]*--overlay-desktop-width:\s*max\(50vw, 46rem\)/);
+  assert.match(styles, /\.overlay-surface\s*\{[^}]*width:\s*100%[^}]*height:\s*100%/);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.feature-overlay\s*\{[^}]*left:\s*var\(--edge-inset-left\)[^}]*width:\s*auto[^}]*min-width:\s*0/);
   assert.match(styles, /\.reading-location-controls\.is-hidden \.reading-location-button\s*\{[^}]*translate:\s*0 calc\(-100%/);
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);

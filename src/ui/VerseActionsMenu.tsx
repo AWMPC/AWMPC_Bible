@@ -51,6 +51,8 @@ export function VerseActionsMenu({ target, onClose, onStatus }: VerseActionsMenu
 
   useEffect(() => {
     if (!target) return;
+    let dismissViewportChanges = false;
+    const readyFrame = requestAnimationFrame(() => { dismissViewportChanges = true; });
     const dismissPointer = (event: PointerEvent) => {
       if (!menuRef.current?.contains(event.target as Node) && event.target !== target.trigger) onClose(false);
     };
@@ -60,12 +62,15 @@ export function VerseActionsMenu({ target, onClose, onStatus }: VerseActionsMenu
         onClose(true);
       }
     };
-    const dismissViewportChange = () => onClose(false);
+    const dismissViewportChange = () => {
+      if (dismissViewportChanges) onClose(false);
+    };
     document.addEventListener("pointerdown", dismissPointer, true);
     document.addEventListener("keydown", dismissKey);
     window.addEventListener("resize", dismissViewportChange, { passive: true });
     window.addEventListener("scroll", dismissViewportChange, { passive: true, capture: true });
     return () => {
+      cancelAnimationFrame(readyFrame);
       document.removeEventListener("pointerdown", dismissPointer, true);
       document.removeEventListener("keydown", dismissKey);
       window.removeEventListener("resize", dismissViewportChange);
