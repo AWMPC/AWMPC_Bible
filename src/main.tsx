@@ -12,3 +12,10 @@ createRoot(root).render(
     <AwmpcBibleApp />
   </StrictMode>,
 );
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    const serviceWorkerUrl = new URL("./sw.js", document.baseURI);
+    navigator.serviceWorker.register(serviceWorkerUrl).catch(() => undefined);
+  });
+}

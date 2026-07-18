@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import packageMetadata from "./package.json" with { type: "json" };
@@ -36,10 +36,23 @@ function localDatasetPlugin(): Plugin {
   };
 }
 
+function serviceWorkerVersionPlugin(): Plugin {
+  return {
+    name: "awmpc-service-worker-version",
+    apply: "build",
+    async writeBundle(options) {
+      const outDir = options.dir ?? resolve(import.meta.dirname, "dist");
+      const swPath = resolve(outDir, "sw.js");
+      const source = await readFile(swPath, "utf8");
+      await writeFile(swPath, source.replaceAll("__APP_VERSION__", packageMetadata.version));
+    },
+  };
+}
+
 export default defineConfig({
   base: "./",
   define: { __APP_VERSION__: JSON.stringify(packageMetadata.version) },
-  plugins: [localDatasetPlugin(), react()],
+  plugins: [localDatasetPlugin(), serviceWorkerVersionPlugin(), react()],
   server: isCodexSeatbeltSandbox
     ? { watch: { useFsEvents: false, usePolling: true } }
     : undefined,

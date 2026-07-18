@@ -5,6 +5,8 @@ JSON text using a book → chapter → verse hierarchy.
 
 The application is a static React SPA built with Vite. It requires no application
 server and can be served from a VM, CDN, or any static web host.
+Browsers can install the site as a PWA from the checked-in web manifest, app
+icons, and same-origin service worker.
 
 ## Design
 
@@ -32,6 +34,9 @@ server and can be served from a VM, CDN, or any static web host.
 - Search results use the same centered verse-selection transition as Navigation and History and record the result's exact language.
 - Verse actions stay attached to their exact translation, so copied text and links retain the selected verse language.
 - Verse-number menus copy plain verse text or a bounded, deployable deep link to that verse.
+- The static shell registers a same-origin service worker for browser
+  installability, uses the app semver in its cache name, and excludes Bible
+  datasets from runtime caching.
 - The acceleration boundary leaves room for WASM search acceleration and optional
   WebGPU effects without making either necessary for correct reading.
 
@@ -78,6 +83,31 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 Keep the dataset response same-origin and serve it with the correct JSON content
 type. Tighten endpoint wildcards after confirming the selected Firebase
 project's observed Auth and Firestore requests.
+
+For VM-hosted static deployments, prefer synchronizing the contents of `dist/`
+over manually deleting and re-copying the remote web root:
+
+```bash
+rsync -az --delete dist/ user@host:/srv/awmpc-bible/
+```
+
+The trailing slashes are intentional: they copy the built files inside `dist/`
+into the remote directory. `--delete` removes stale hashed assets on the remote
+side, which keeps browser caches and the service worker from seeing old code.
+The service worker uses a semvered shell cache and network-first static asset
+fetches, so a complete `dist/` sync should make a new build visible without
+manually editing cache names.
+Do not use a target directory that also stores server-owned files such as
+private environment files, certificates, logs, uploaded content, or backups. If
+the web root must contain such files, exclude them explicitly or publish each
+build to a versioned release directory and update the web server symlink after
+the upload succeeds.
+
+Removing only the remote static web directory does not delete Firebase Auth or
+Firestore data, because those live in Firebase services rather than in `dist/`.
+The Firebase deployment configuration in this repository is limited to
+`firestore.rules`; deploying those rules is still a separate destructive-adjacent
+operation that requires explicit human review.
 
 Keep the ignored `bible-en.json` and `bible-ko.json` files at the repository
 root. During `npm run dev`, Vite serves those root files directly with caching
