@@ -32,6 +32,7 @@ function isIgnoredTarget(target: EventTarget | null): boolean {
 
 export type ChromeVisibility = Readonly<{
   visible: boolean;
+  hide: () => void;
   toggle: () => void;
 }>;
 
@@ -116,5 +117,10 @@ export function useUserScrollChromeVisibility(enabled: boolean): ChromeVisibilit
     });
   }, [enabled]);
 
-  return { visible, toggle };
+  const hide = useCallback(() => {
+    visibleRef.current = false;
+    setVisible(false);
+  }, []);
+
+  return { visible, hide, toggle };
 }

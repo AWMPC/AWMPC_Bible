@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
 import type { Book, Verse } from "../data/contracts";
 import type { BibleLanguage } from "../settings/bibleLanguage";
-import { scrollNavigationSection, type NavigationScrollAlignment } from "./navigationScroll";
 import type { NavigationSectionRequest } from "./navigationTarget";
 import { groupBooksByTestament } from "./testaments";
 import { Skeleton } from "./Skeleton";
 import { OverflowMarquee } from "./OverflowMarquee";
+import { useNavigationPanelScroll } from "./useNavigationPanelScroll";
 
 export type NavigationPanelProps = {
   books: Book[];
@@ -29,36 +29,7 @@ export function NavigationPanel({ books, secondaryBooks = [], secondaryLanguage 
   const booksRef = useRef<HTMLElement>(null);
   const chaptersRef = useRef<HTMLElement>(null);
   const versesRef = useRef<HTMLElement>(null);
-  const scrollFrameRef = useRef(0);
-
-  const scheduleScroll = useCallback((target: HTMLElement | null, alignment: NavigationScrollAlignment = "start") => {
-    cancelAnimationFrame(scrollFrameRef.current);
-    scrollFrameRef.current = requestAnimationFrame(() => {
-      const container = scrollContainerRef.current;
-      if (container && target) {
-        scrollNavigationSection(container, target, window.matchMedia("(prefers-reduced-motion: reduce)").matches, alignment);
-      }
-    });
-  }, [scrollContainerRef]);
-
-  useEffect(() => () => cancelAnimationFrame(scrollFrameRef.current), []);
-
-  useEffect(() => {
-    if (initialLoading || !sectionRequest) return;
-    const section = sectionRequest.section === "books" ? booksRef.current : chaptersRef.current;
-    const selected = section?.querySelector<HTMLElement>('button[aria-current="page"]') ?? null;
-    scheduleScroll(selected ?? section, "center");
-  }, [initialLoading, scheduleScroll, sectionRequest]);
-
-  const chooseBook = useCallback((nextBook: string) => {
-    onBook(nextBook);
-    scheduleScroll(chaptersRef.current);
-  }, [onBook, scheduleScroll]);
-
-  const chooseChapter = useCallback((nextChapter: string) => {
-    onChapter(nextChapter);
-    scheduleScroll(versesRef.current);
-  }, [onChapter, scheduleScroll]);
+  const { chooseBook, chooseChapter } = useNavigationPanelScroll({ booksRef, chaptersRef, versesRef, scrollContainerRef, initialLoading, sectionRequest, versesLoading, versesLength: verses.length, onBook, onChapter });
 
   if (initialLoading) return <Skeleton rows={8} />;
   const testamentBooks = groupBooksByTestament(books);
