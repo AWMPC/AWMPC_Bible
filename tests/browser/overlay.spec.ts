@@ -683,6 +683,9 @@ test("selecting a verse centers it and records one removable history entry", asy
   await page.getByRole("button", { name: "50", exact: true }).click();
   const verse = page.locator("#verse-1-50");
   await expect(verse).toBeInViewport({ ratio: 1 });
+  await expect(verse).toHaveClass(/verse-selected-indicator/);
+  await expect(verse).not.toHaveClass(/verse-selected-glow/);
+  expect(Number.parseFloat(await verse.evaluate((element) => getComputedStyle(element, "::before").width))).toBeGreaterThan(0);
 
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^Genesis 1:50/ })).toBeVisible();

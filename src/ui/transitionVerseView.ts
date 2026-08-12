@@ -1,7 +1,7 @@
 import { motionEasing, READER_FADE_DURATION_MS } from "./motion.ts";
 
-const VERSE_SELECTED_GLOW_DURATION_MS = 7000;
-const glowCleanups = new WeakMap<HTMLElement, () => void>();
+const VERSE_SELECTED_INDICATOR_DURATION_MS = 7000;
+const indicatorCleanups = new WeakMap<HTMLElement, () => void>();
 
 export type VerseTransitionEnvironment = Readonly<{
   prefersReducedMotion: () => boolean;
@@ -41,24 +41,24 @@ export function verseElementId(chapter: string, verse: string): string {
   return `verse-${chapter}-${verse}`;
 }
 
-function glowSelectedVerse(target: HTMLElement | null): void {
+function indicateSelectedVerse(target: HTMLElement | null): void {
   if (!target?.classList) return;
-  glowCleanups.get(target)?.();
-  target.classList.remove("verse-selected-glow");
+  indicatorCleanups.get(target)?.();
+  target.classList.remove("verse-selected-indicator");
   void target.offsetWidth;
   const cleanup = () => {
     globalThis.clearTimeout(fallback);
     target.removeEventListener("animationend", onAnimationEnd);
-    target.classList.remove("verse-selected-glow");
-    if (glowCleanups.get(target) === cleanup) glowCleanups.delete(target);
+    target.classList.remove("verse-selected-indicator");
+    if (indicatorCleanups.get(target) === cleanup) indicatorCleanups.delete(target);
   };
   const onAnimationEnd = (event: AnimationEvent) => {
-    if (event.target === target && event.animationName === "selected-verse-glow") cleanup();
+    if (event.target === target && event.animationName === "selected-verse-indicator") cleanup();
   };
-  const fallback = globalThis.setTimeout(cleanup, VERSE_SELECTED_GLOW_DURATION_MS + 250);
+  const fallback = globalThis.setTimeout(cleanup, VERSE_SELECTED_INDICATOR_DURATION_MS + 250);
   target.addEventListener("animationend", onAnimationEnd);
-  glowCleanups.set(target, cleanup);
-  target.classList.add("verse-selected-glow");
+  indicatorCleanups.set(target, cleanup);
+  target.classList.add("verse-selected-indicator");
 }
 
 function centerTargetAfterScroll(target: HTMLElement | null): void {
@@ -98,7 +98,7 @@ export async function transitionVerseView(
       signal?.throwIfAborted();
       target?.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
       centerTargetAfterScroll(target);
-      glowSelectedVerse(target);
+      indicateSelectedVerse(target);
     } else {
       signal?.throwIfAborted();
       environment.scrollToTop();
@@ -106,7 +106,7 @@ export async function transitionVerseView(
       signal?.throwIfAborted();
       target?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
       centerTargetAfterScroll(target);
-      glowSelectedVerse(target);
+      indicateSelectedVerse(target);
     }
   } finally {
     pane.style.removeProperty("opacity");

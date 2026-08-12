@@ -230,6 +230,33 @@ test("verse reveal performs the ordered fade and centered scroll", async () => {
   assert.deepEqual(animations, [[{ opacity: 1 }, { opacity: 0 }], [{ opacity: 0 }, { opacity: 1 }]]);
 });
 
+test("verse reveal temporarily marks the selected verse with an indicator", async () => {
+  const classes = new Set();
+  const listeners = new Map();
+  const target = {
+    classList: {
+      add: (name) => classes.add(name),
+      remove: (name) => classes.delete(name),
+    },
+    get offsetWidth() { return 1; },
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: (name) => listeners.delete(name),
+    scrollIntoView: () => {},
+  };
+  const pane = { style: { opacity: "", removeProperty: () => {} } };
+  await transitionVerseView(pane, verseElementId("3", "16"), () => {}, async () => {}, {
+    prefersReducedMotion: () => true,
+    afterPaint: async () => {},
+    scrollToTop: () => {},
+    findTarget: () => target,
+  });
+  assert.equal(classes.has("verse-selected-indicator"), true);
+  assert.equal(classes.has("verse-selected-glow"), false);
+  listeners.get("animationend")?.({ target, animationName: "selected-verse-indicator" });
+  assert.equal(classes.has("verse-selected-indicator"), false);
+  assert.equal(listeners.has("animationend"), false);
+});
+
 test("verse reveal cancellation after overlay close prevents late paint and scroll", async () => {
   const events = [];
   const controller = new AbortController();
