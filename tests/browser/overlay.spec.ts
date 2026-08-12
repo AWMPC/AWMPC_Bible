@@ -644,6 +644,24 @@ test("top reading controls and bottom dock share hide and tap visibility", async
   await expect(dock).toHaveClass(/is-hidden/);
 });
 
+test("top navigation resumes shared auto-hide after selecting a verse", async ({ page }) => {
+  await page.getByRole("button", { name: /Choose book, currently Genesis/ }).click();
+  await page.getByRole("button", { name: "50", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.mouse.wheel(0, 700);
+  await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
+  await expect(page.locator(".floating-dock")).toHaveClass(/is-hidden/);
+});
+
+test("dock navigation resumes shared auto-hide after selecting a verse", async ({ page }) => {
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await page.getByRole("button", { name: "50", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.mouse.wheel(0, 700);
+  await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
+  await expect(page.locator(".floating-dock")).toHaveClass(/is-hidden/);
+});
+
 test("switches and closes overlays without moving the reader", async ({ page }) => {
   await page.evaluate(() => window.scrollTo(0, 500));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500);
