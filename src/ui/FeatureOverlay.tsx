@@ -19,11 +19,12 @@ type FeatureOverlayProps = {
   contentRef: RefObject<HTMLDivElement | null>;
   initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
+  onCloseStart: () => void;
   onClose: () => void;
 };
 
 export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayProps>(
-  function FeatureOverlay({ activeFeature, origin, dockRef, contentRef, initialFocusRef, children, onClose }, ref) {
+  function FeatureOverlay({ activeFeature, origin, dockRef, contentRef, initialFocusRef, children, onCloseStart, onClose }, ref) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const surfaceRef = useRef<HTMLDivElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -39,6 +40,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
     const { phase, close, keepOpen, handleDialogClose } = useOverlayLifecycle({
       active,
       origin,
+      onCloseStart,
       dialogRef,
       surfaceRef,
       initialFocusRef: focusTargetRef,

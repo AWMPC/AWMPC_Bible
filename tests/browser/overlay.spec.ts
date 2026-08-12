@@ -132,6 +132,26 @@ test("browser Back closes a top navigation sheet before leaving the reader", asy
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.goBack();
   await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
+test("ordinary close restores one switched-sheet entry before normal Back", async ({ page }) => {
+  await page.evaluate(() => {
+    window.history.replaceState({ testStep: "before-reader" }, "", "/?history-step=before-reader");
+    window.history.pushState({ testStep: "reader" }, "", "/");
+  });
+  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await page.locator(".overlay-close").click();
+  await expect.poll(() => page.evaluate(() => ({
+    dialogOpen: document.querySelector("dialog")?.open ?? false,
+    historyStep: (window.history.state as { testStep?: string } | null)?.testStep ?? null,
+  }))).toEqual({ dialogOpen: true, historyStep: "reader" });
+  await expect(page.getByRole("dialog")).toBeHidden();
+
+  await page.goBack();
+  await expect.poll(() => page.evaluate(() => window.history.state?.testStep)).toBe("before-reader");
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
 });
 
 test("sizes sheets to the available area on mobile and right half on desktop", async ({ page }) => {

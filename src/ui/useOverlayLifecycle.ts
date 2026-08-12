@@ -8,6 +8,7 @@ export type OverlayPhase = "closed" | "opening" | "open" | "closing";
 type UseOverlayLifecycleOptions = {
   active: boolean;
   origin: OverlayOrigin | null;
+  onCloseStart: () => void;
   dialogRef: RefObject<HTMLDialogElement | null>;
   surfaceRef: RefObject<HTMLElement | null>;
   initialFocusRef: RefObject<HTMLElement | null>;
@@ -40,7 +41,7 @@ async function waitForAnimations(animations: Animation[]): Promise<void> {
   await Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
 }
 
-export function useOverlayLifecycle({ active, origin, dialogRef, surfaceRef, initialFocusRef }: UseOverlayLifecycleOptions) {
+export function useOverlayLifecycle({ active, origin, onCloseStart, dialogRef, surfaceRef, initialFocusRef }: UseOverlayLifecycleOptions) {
   const originRef = useRef<OverlayOrigin | null>(origin);
   const animationsRef = useRef<Animation[]>([]);
   const releaseScrollRef = useRef<(() => void) | null>(null);
@@ -60,6 +61,7 @@ export function useOverlayLifecycle({ active, origin, dialogRef, surfaceRef, ini
     const currentOrigin = originRef.current;
     if (!dialog?.open || !currentOrigin || phaseRef.current === "closing") return;
 
+    onCloseStart();
     setPhase("closing");
     const closeGeneration = ++closeGenerationRef.current;
     let animations = animationsRef.current.filter((animation) => animation.playState !== "idle");
@@ -79,7 +81,7 @@ export function useOverlayLifecycle({ active, origin, dialogRef, surfaceRef, ini
     animationsRef.current = [];
     setPhase("closed");
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-  }, [dialogRef, setPhase, surfaceRef]);
+  }, [dialogRef, onCloseStart, setPhase, surfaceRef]);
 
   const keepOpen = useCallback(() => {
     closeGenerationRef.current += 1;
