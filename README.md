@@ -18,10 +18,13 @@ icons, and same-origin service worker.
 - Separate floating Book and Chapter controls open Navigation directly at the corresponding selection list.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
+- Browser Back dismisses an open feature sheet before its normal navigation behavior continues.
 - Verse selections create bounded history entries containing only references and timestamps.
 - Profile offers five meaningful, snapping text scales for every verse and verse number.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
 - The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
+- One shared reader-chrome visibility controller keeps the top reading controls and bottom dock coordinated through reader interactions and verse changes.
+- A selected verse receives temporary left-edge accent-pill feedback.
 - Profile selects among privacy-safe local Sans, Serif, and Mono verse fonts.
 - Appearance supports explicit Day or Night modes and an Auto mode that follows the system.
 - Profile keeps one primary language and optionally stacks a distinct secondary language beneath each verse.
