@@ -1,23 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  nextReaderChromeVisibility,
+  toggleReaderChromeVisibility,
+  type ReaderChromeScrollIntent,
+  type ReaderChromeVisibility,
+} from "./readerChromeState.ts";
 
-export type ScrollIntent = Readonly<{ direction: -1 | 1; recordedAt: number }>;
+export type ScrollIntent = ReaderChromeScrollIntent;
 
 export function isTrustedReadingTap(isTrusted: boolean, detail: number, interactiveTarget: boolean): boolean {
   return isTrusted && detail > 0 && !interactiveTarget;
-}
-
-export function nextDockVisibility(
-  visible: boolean,
-  previousY: number,
-  currentY: number,
-  intent: ScrollIntent | null,
-  now: number,
-): boolean {
-  if (!intent || now - intent.recordedAt > 700) return visible;
-  const delta = currentY - previousY;
-  if (Math.abs(delta) < 5 || Math.sign(delta) !== intent.direction) return visible;
-  if (currentY <= 8) return true;
-  return delta < 0;
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -36,22 +28,22 @@ export type ChromeVisibility = Readonly<{
   toggle: () => void;
 }>;
 
-export function useUserScrollChromeVisibility(enabled: boolean): ChromeVisibility {
-  const [visible, setVisible] = useState(true);
-  const visibleRef = useRef(true);
+export function useUserScrollChromeVisibility(active: boolean): ChromeVisibility {
+  const [visibility, setVisibility] = useState<ReaderChromeVisibility>("visible");
+  const visibilityRef = useRef<ReaderChromeVisibility>("visible");
   const previousY = useRef(0);
   const touchY = useRef<number | null>(null);
   const intent = useRef<ScrollIntent | null>(null);
 
   useEffect(() => {
-    visibleRef.current = visible;
-  }, [visible]);
+    visibilityRef.current = visibility;
+  }, [visibility]);
 
   useEffect(() => {
     previousY.current = window.scrollY;
-    if (!enabled) {
+    if (!active) {
+      touchY.current = null;
       intent.current = null;
-      setVisible(true);
       return;
     }
 
@@ -82,11 +74,11 @@ export function useUserScrollChromeVisibility(enabled: boolean): ChromeVisibilit
     };
     const onScroll = () => {
       const currentY = window.scrollY;
-      const next = nextDockVisibility(visibleRef.current, previousY.current, currentY, intent.current, performance.now());
+      const next = nextReaderChromeVisibility(visibilityRef.current, previousY.current, currentY, intent.current, performance.now());
       previousY.current = currentY;
-      if (next !== visibleRef.current) {
-        visibleRef.current = next;
-        setVisible(next);
+      if (next !== visibilityRef.current) {
+        visibilityRef.current = next;
+        setVisibility(next);
       }
     };
 
@@ -106,21 +98,20 @@ export function useUserScrollChromeVisibility(enabled: boolean): ChromeVisibilit
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [enabled]);
+  }, [active]);
 
   const toggle = useCallback(() => {
-    if (!enabled) return;
-    setVisible((current) => {
-      const next = !current;
-      visibleRef.current = next;
+    setVisibility((current) => {
+      const next = toggleReaderChromeVisibility(current);
+      visibilityRef.current = next;
       return next;
     });
-  }, [enabled]);
-
-  const hide = useCallback(() => {
-    visibleRef.current = false;
-    setVisible(false);
   }, []);
 
-  return { visible, hide, toggle };
+  const hide = useCallback(() => {
+    visibilityRef.current = "hidden";
+    setVisibility("hidden");
+  }, []);
+
+  return { visible: visibility === "visible", hide, toggle };
 }

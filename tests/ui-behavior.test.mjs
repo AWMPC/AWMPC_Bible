@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { createOverlayOrigin } from "../src/ui/features.ts";
 import { groupBooksByTestament } from "../src/ui/testaments.ts";
 import { lockDocumentScroll } from "../src/ui/scrollLock.ts";
-import { isTrustedReadingTap, nextDockVisibility } from "../src/ui/useUserScrollChromeVisibility.ts";
+import { isTrustedReadingTap } from "../src/ui/useUserScrollChromeVisibility.ts";
+import { nextReaderChromeVisibility, toggleReaderChromeVisibility } from "../src/ui/readerChromeState.ts";
 import { completeStagedNavigation, stagedNavigationFrom } from "../src/navigation/useStagedNavigation.ts";
 import { transitionChapterView, transitionVerseView, verseElementId } from "../src/ui/transitionVerseView.ts";
 import { textScaleAt, TEXT_SCALES } from "../src/settings/textScale.ts";
@@ -180,13 +181,24 @@ test("scroll lock restores prior styles idempotently", () => {
   }
 });
 
-test("dock responds only to fresh matching user intent", () => {
+test("reader chrome responds only to fresh matching user intent", () => {
   const down = { direction: 1, recordedAt: 1000 };
   const up = { direction: -1, recordedAt: 1000 };
-  assert.equal(nextDockVisibility(true, 100, 180, null, 1100), true);
-  assert.equal(nextDockVisibility(true, 100, 180, down, 1100), false);
-  assert.equal(nextDockVisibility(false, 180, 90, up, 1100), true);
-  assert.equal(nextDockVisibility(false, 180, 90, up, 1800), false);
+  assert.equal(nextReaderChromeVisibility("visible", 100, 180, null, 1100), "visible");
+  assert.equal(nextReaderChromeVisibility("visible", 100, 180, down, 1100), "hidden");
+  assert.equal(nextReaderChromeVisibility("hidden", 180, 90, up, 1100), "visible");
+  assert.equal(nextReaderChromeVisibility("hidden", 180, 90, up, 1800), "hidden");
+});
+
+test("reader chrome retains its hidden state while overlays suppress scroll tracking", () => {
+  const down = { direction: 1, recordedAt: 1000 };
+  assert.equal(nextReaderChromeVisibility("visible", 100, 180, down, 1100), "hidden");
+  assert.equal(nextReaderChromeVisibility("hidden", 180, 260, null, 1200), "hidden");
+});
+
+test("reader chrome toggles both floating groups from one state", () => {
+  assert.equal(toggleReaderChromeVisibility("visible"), "hidden");
+  assert.equal(toggleReaderChromeVisibility("hidden"), "visible");
 });
 
 test("reading taps exclude untrusted, keyboard, and interactive activation", () => {
