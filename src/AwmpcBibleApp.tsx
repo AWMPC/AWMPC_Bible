@@ -20,6 +20,7 @@ import { verseElementId } from "./ui/transitionVerseView";
 import { useUserScrollChromeVisibility } from "./ui/useUserScrollChromeVisibility";
 import { useChapterScrollProgress } from "./ui/useChapterScrollProgress";
 import { useChapterSwipe } from "./ui/useChapterSwipe";
+import { useOverlayHistory } from "./ui/useOverlayHistory";
 import { middleVerseNumber } from "./ui/middleVerse";
 import { VerseActionsMenu, type VerseActionTarget } from "./ui/VerseActionsMenu";
 import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
@@ -70,6 +71,10 @@ export function AwmpcBibleApp() {
   const [navigationSectionRequest, setNavigationSectionRequest] = useState<NavigationSectionRequest | null>(null);
   const [verseActionTarget, setVerseActionTarget] = useState<VerseActionTarget | null>(null);
   const [readerStatus, setReaderStatus] = useState("");
+  const requestOverlayClose = useCallback(() => {
+    void overlayRef.current?.close();
+  }, []);
+  useOverlayHistory(activeFeature !== null, requestOverlayClose);
   const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory } = historyStore;
   const bibleSearch = useBibleSearch({
     enabled: activeFeature === "search",

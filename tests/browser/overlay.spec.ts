@@ -119,6 +119,21 @@ test("shows package semver immediately right of the overlay brand", async ({ pag
   }
 });
 
+test("browser Back closes a dock sheet before leaving the reader", async ({ page }) => {
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
+test("browser Back closes a top navigation sheet before leaving the reader", async ({ page }) => {
+  await page.getByRole("button", { name: /Choose book, currently Genesis/ }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("dialog")).toBeHidden();
+});
+
 test("sizes sheets to the available area on mobile and right half on desktop", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
