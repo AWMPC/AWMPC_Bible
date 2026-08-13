@@ -1,7 +1,7 @@
 import { TEXT_SCALES, textScaleAt, textScaleIndex, type TextScale } from "../settings/textScale";
 import { VERSE_FONTS, type VerseFont } from "../settings/verseFont";
 import { APPEARANCES, type Appearance } from "../settings/appearance";
-import { BIBLE_LANGUAGE_OPTIONS, type BibleLanguage } from "../settings/bibleLanguage";
+import type { BibleLanguage, BibleLanguageOption } from "../data/languages";
 import type { CloudAccountState } from "../cloud/contracts";
 import { Skeleton } from "./Skeleton";
 import { CloudAccountCard } from "./CloudAccountCard";
@@ -17,12 +17,13 @@ type ProfilePanelProps = {
   secondaryBibleLanguage: BibleLanguage | null;
   onPrimaryBibleLanguageChange: (language: BibleLanguage) => void;
   onSecondaryBibleLanguageChange: (language: BibleLanguage | null) => void;
+  bibleLanguageOptions: ReadonlyArray<BibleLanguageOption>;
   account: CloudAccountState;
   onSignIn: () => void;
   onSignOut: () => void;
 };
 
-export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange, primaryBibleLanguage, secondaryBibleLanguage, onPrimaryBibleLanguageChange, onSecondaryBibleLanguageChange, account, onSignIn, onSignOut }: ProfilePanelProps) {
+export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseFontChange, appearance, onAppearanceChange, primaryBibleLanguage, secondaryBibleLanguage, onPrimaryBibleLanguageChange, onSecondaryBibleLanguageChange, bibleLanguageOptions, account, onSignIn, onSignOut }: ProfilePanelProps) {
   const selected = TEXT_SCALES[textScaleIndex(textScale)];
   return (
     <div className="profile-panel">
@@ -77,7 +78,7 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
           <p>The main language used for navigation and verse selection.</p>
         </div>
         <select id="primary-bible-language" className="setting-select" value={primaryBibleLanguage} onChange={(event) => onPrimaryBibleLanguageChange(event.currentTarget.value as BibleLanguage)}>
-          {BIBLE_LANGUAGE_OPTIONS.map((language) => <option key={language.id} value={language.id}>{language.label}</option>)}
+          {bibleLanguageOptions.map((language) => <option key={language.id} value={language.id}>{language.label}</option>)}
         </select>
       </section>
       <section className="setting-group font-setting" aria-labelledby="secondary-bible-language-label">
@@ -88,7 +89,7 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
         </div>
         <select id="secondary-bible-language" className="setting-select" value={secondaryBibleLanguage ?? ""} onChange={(event) => onSecondaryBibleLanguageChange(event.currentTarget.value as BibleLanguage || null)}>
           <option value="">None</option>
-          {BIBLE_LANGUAGE_OPTIONS.filter(({ id }) => id !== primaryBibleLanguage).map((language) => <option key={language.id} value={language.id}>{language.label}</option>)}
+          {bibleLanguageOptions.filter(({ id }) => id !== primaryBibleLanguage).map((language) => <option key={language.id} value={language.id}>{language.label}</option>)}
         </select>
       </section>
       <section className="setting-group font-setting" aria-labelledby="appearance-label">

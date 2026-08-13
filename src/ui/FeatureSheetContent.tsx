@@ -3,6 +3,7 @@ import type { Book, Verse } from "../data/contracts";
 import type { CloudAccountState } from "../cloud/contracts";
 import type { HistoryEntry } from "../history/HistoryStore";
 import type { BibleLanguage } from "../settings/bibleLanguage";
+import type { BibleLanguageOption } from "../data/languages";
 import type { TextScale } from "../settings/textScale";
 import type { VerseFont } from "../settings/verseFont";
 import type { Appearance } from "../settings/appearance";
@@ -65,6 +66,7 @@ type FeatureSheetContentProps = {
     secondaryBibleLanguage: BibleLanguage | null;
     onPrimaryBibleLanguageChange: (value: BibleLanguage) => void;
     onSecondaryBibleLanguageChange: (value: BibleLanguage | null) => void;
+    bibleLanguageOptions: ReadonlyArray<BibleLanguageOption>;
     account: CloudAccountState;
     onSignIn: () => void;
     onSignOut: () => void;
@@ -82,7 +84,7 @@ export function FeatureSheetContent({ activeFeature, navigation, history, search
     return <SearchPanel query={search.query} status={search.status} results={search.results} inputRef={search.inputRef} onQueryChange={search.onQueryChange} onSelect={search.onSelect} history={search.history} historyLoading={search.historyLoading} onRecord={search.onRecord} onRemoveHistory={search.onRemoveHistory} onClearHistory={search.onClearHistory} />;
   }
   if (activeFeature === "profile") {
-    return <ProfilePanel textScale={profile.textScale} onTextScaleChange={profile.onTextScaleChange} verseFont={profile.verseFont} onVerseFontChange={profile.onVerseFontChange} appearance={profile.appearance} onAppearanceChange={profile.onAppearanceChange} primaryBibleLanguage={profile.primaryBibleLanguage} secondaryBibleLanguage={profile.secondaryBibleLanguage} onPrimaryBibleLanguageChange={profile.onPrimaryBibleLanguageChange} onSecondaryBibleLanguageChange={profile.onSecondaryBibleLanguageChange} account={profile.account} onSignIn={profile.onSignIn} onSignOut={profile.onSignOut} />;
+    return <ProfilePanel {...profile} />;
   }
   return null;
 }

@@ -26,6 +26,7 @@ import { VerseActionsMenu, type VerseActionTarget } from "./ui/VerseActionsMenu"
 import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
 import { useBibleSearch, type LocalizedSearchResult } from "./search/useBibleSearch";
 import { useReaderPersistence } from "./persistence/useReaderPersistence";
+import { useBibleCatalog } from "./data/useBibleCatalog";
 
 type LocalizedVerseReference = Readonly<{ bibleLanguage: BibleLanguage; book: string; chapter: string; verse: string }>;
 type ReferenceSelectionOptions = Readonly<{ recordHistory: boolean; allowLanguageSwitch?: boolean; prefetchedVerses?: Verse[] }>;
@@ -44,11 +45,16 @@ export function AwmpcBibleApp() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const initialVerseLinkRef = useRef<LinkedVerse | null>(parseVerseLink(window.location.href));
   const [pendingVerseLink, setPendingVerseLink] = useState<LinkedVerse | null>(initialVerseLinkRef.current);
+  const bibleLanguageOptions = useBibleCatalog();
   const { settingsStore, historyStore, searchHistoryStore: searchHistory, cloud } = useReaderPersistence(initialVerseLinkRef.current?.bibleLanguage);
   const { settings, update: updateSettings, setPrimaryBibleLanguage, setSecondaryBibleLanguage } = settingsStore;
   const { textScale, verseFont, appearance, primaryBibleLanguage, secondaryBibleLanguage } = settings;
   const primaryLibrary = useBibleLibrary(primaryBibleLanguage);
   const secondaryLibrary = useBibleLibrary(secondaryBibleLanguage);
+  useEffect(() => {
+    if (bibleLanguageOptions.length === 0 || bibleLanguageOptions.some(({ id }) => id === primaryBibleLanguage)) return;
+    setPrimaryBibleLanguage(bibleLanguageOptions[0].id);
+  }, [bibleLanguageOptions, primaryBibleLanguage, setPrimaryBibleLanguage]);
   const [passage, setPassage] = useState<Passage>({ book: "", chapter: "", verses: [] });
   const visiblePassage = primaryLibrary.status === "loading" ? { book: "", chapter: "", verses: [] } : passage;
   const { book, chapter, verses } = visiblePassage;
@@ -133,9 +139,10 @@ export function AwmpcBibleApp() {
   });
 
   const changeSecondaryLanguage = useCallback((language: BibleLanguage | null) => {
+    if (language !== null && language === primaryBibleLanguage) return;
     secondaryAnchorRef.current = middleVerseNumber(chapterRef.current);
     setSecondaryBibleLanguage(language);
-  }, [setSecondaryBibleLanguage]);
+  }, [primaryBibleLanguage, setSecondaryBibleLanguage]);
 
   const closeVerseActions = useCallback((restoreFocus: boolean) => {
     const trigger = verseActionTriggerRef.current;
@@ -304,7 +311,7 @@ export function AwmpcBibleApp() {
           navigation={{ books: primaryLibrary.books, secondaryBooks: secondaryLibrary.books, secondaryLanguage: secondaryBibleLanguage, book: navigation.state.book, chapters: navigation.chapters, chapter: navigation.state.chapter, verses: navigation.state.verses, initialLoading: primaryLibrary.status === "loading", versesLoading: navigation.state.status === "loading", error: navigation.state.error || undefined, sectionRequest: navigationSectionRequest, scrollContainerRef: overlayContentRef, onBook: navigation.chooseBook, onChapter: navigation.chooseChapter, onVerse: (verse) => selectVerseReference({ bibleLanguage: primaryBibleLanguage, book: navigation.state.book, chapter: navigation.state.chapter, verse }, { recordHistory: true, prefetchedVerses: navigation.state.verses }) }}
           history={{ entries: history, loading: cloud.state.status === "loading" || cloud.state.status === "syncing", onSelect: selectHistoryEntry, onRemove: removeHistory, onClear: clearHistory }}
           search={{ query: bibleSearch.query, status: bibleSearch.status, results: bibleSearch.results, inputRef: searchInputRef, onQueryChange: bibleSearch.setQuery, onSelect: selectSearchResult, history: searchHistory.entries, historyLoading: cloud.state.status === "loading" || cloud.state.status === "syncing", onRecord: searchHistory.record, onRemoveHistory: searchHistory.remove, onClearHistory: searchHistory.clear }}
-          profile={{ textScale, onTextScaleChange: (value) => updateSettings({ textScale: value }), verseFont, onVerseFontChange: (value) => updateSettings({ verseFont: value }), appearance, onAppearanceChange: (value) => updateSettings({ appearance: value }), primaryBibleLanguage, secondaryBibleLanguage, onPrimaryBibleLanguageChange: changeLanguage, onSecondaryBibleLanguageChange: changeSecondaryLanguage, account: cloud.state, onSignIn: cloud.signIn, onSignOut: cloud.signOut }}
+          profile={{ textScale, onTextScaleChange: (value) => updateSettings({ textScale: value }), verseFont, onVerseFontChange: (value) => updateSettings({ verseFont: value }), appearance, onAppearanceChange: (value) => updateSettings({ appearance: value }), primaryBibleLanguage, secondaryBibleLanguage, onPrimaryBibleLanguageChange: changeLanguage, onSecondaryBibleLanguageChange: changeSecondaryLanguage, bibleLanguageOptions, account: cloud.state, onSignIn: cloud.signIn, onSignOut: cloud.signOut }}
         />
       </FeatureOverlay>
     </div>
