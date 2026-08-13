@@ -37,6 +37,7 @@ const koreanDataset = {
 };
 
 test.beforeEach(async ({ page }) => {
+  await page.route("**/data/bibles.json", (route) => route.fulfill({ json: [{ id: "en", label: "English" }, { id: "ko", label: "Korean" }] }));
   await page.route("**/data/bible-en.json", (route) => route.fulfill({ json: dataset }));
   await page.route("**/data/bible-ko.json", (route) => route.fulfill({ json: koreanDataset }));
   await page.goto("/");
@@ -644,6 +645,27 @@ test("top reading controls and bottom dock share hide and tap visibility", async
   await expect(dock).toHaveClass(/is-hidden/);
 });
 
+test("profile shade close does not keep a focused dock visible after scrolling", async ({ page }) => {
+  const dock = page.locator(".floating-dock");
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await page.getByRole("combobox", { name: "Secondary language" }).selectOption("ko");
+  await page.locator(".overlay-shade").click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.mouse.wheel(0, 700);
+  await expect(dock).toHaveClass(/is-hidden/);
+  await expect(dock).toHaveCSS("opacity", "0");
+});
+
+test("top navigation shade close does not keep a focused location control visible after scrolling", async ({ page }) => {
+  const controls = page.locator(".reading-location-controls");
+  await page.getByRole("button", { name: /Choose book, currently Genesis/ }).click();
+  await page.locator(".overlay-shade").click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.mouse.wheel(0, 700);
+  await expect(controls).toHaveClass(/is-hidden/);
+  await expect(page.locator(".book-location-button")).toHaveCSS("opacity", "0");
+});
+
 test("top navigation resumes shared auto-hide after selecting a verse", async ({ page }) => {
   await page.getByRole("button", { name: /Choose book, currently Genesis/ }).click();
   await page.getByRole("button", { name: "50", exact: true }).click();
@@ -685,7 +707,16 @@ test("selecting a verse centers it and records one removable history entry", asy
   await expect(verse).toBeInViewport({ ratio: 1 });
   await expect(verse).toHaveClass(/verse-selected-indicator/);
   await expect(verse).not.toHaveClass(/verse-selected-glow/);
-  expect(Number.parseFloat(await verse.evaluate((element) => getComputedStyle(element, "::before").width))).toBeGreaterThan(0);
+  const indicatorEdges = await verse.evaluate((element) => ({
+    afterWidth: Number.parseFloat(getComputedStyle(element, "::after").width),
+    beforeWidth: Number.parseFloat(getComputedStyle(element, "::before").width),
+    leftOffset: Number.parseFloat(getComputedStyle(element, "::before").left),
+    rightOffset: Number.parseFloat(getComputedStyle(element, "::after").right),
+  }));
+  expect(indicatorEdges.beforeWidth).toBeGreaterThan(0);
+  expect(indicatorEdges.afterWidth).toBeGreaterThan(0);
+  expect(indicatorEdges.leftOffset).toBeLessThan(0);
+  expect(indicatorEdges.rightOffset).toBeLessThan(0);
 
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^Genesis 1:50/ })).toBeVisible();
