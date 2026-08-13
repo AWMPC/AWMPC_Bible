@@ -9,7 +9,7 @@ import { useAdjacentChapterNavigation } from "./navigation/useAdjacentChapterNav
 import { parseVerseLink, type LinkedVerse } from "./links/verseLinks";
 import { useChooseVerse } from "./selection/useChooseVerse";
 import { useLanguageVerseAnchor } from "./selection/useLanguageVerseAnchor";
-import { BIBLE_LANGUAGE_OPTIONS, type BibleLanguage } from "./settings/bibleLanguage";
+import type { BibleLanguage } from "./settings/bibleLanguage";
 import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FeatureSheetContent } from "./ui/FeatureSheetContent";
 import { FloatingDock } from "./ui/FloatingDock";
@@ -127,7 +127,7 @@ export function AwmpcBibleApp() {
     secondaryAnchorRef.current = middleVerseNumber(chapterRef.current);
     setPrimaryBibleLanguage(language);
   }, [setPrimaryBibleLanguage]);
-  const { changeLanguage, restoring: restoringLanguageAnchor } = useLanguageVerseAnchor({
+  const { changeLanguage, restoreAfterOverlayClose, restoring: restoringLanguageAnchor } = useLanguageVerseAnchor({
     language: primaryBibleLanguage,
     books: primaryLibrary.books,
     passage,
@@ -243,7 +243,7 @@ export function AwmpcBibleApp() {
   }, [hideChromeVisibility, selectVerseReference]);
 
   const dualLanguage = secondaryBibleLanguage !== null;
-  const languageLabels = new Map(BIBLE_LANGUAGE_OPTIONS.map(({ id, label }) => [id, label]));
+  const languageLabels = new Map(bibleLanguageOptions.map(({ id, label }) => [id, label]));
 
   function openFeature(feature: FeatureId, trigger: HTMLButtonElement) {
     const dock = dockRef.current;
@@ -286,6 +286,7 @@ export function AwmpcBibleApp() {
     setActiveFeature(null);
     setOverlayOrigin(null);
     setNavigationSectionRequest(null);
+    restoreAfterOverlayClose();
     requestAnimationFrame(() => {
       const trigger = overlayTriggerRef.current;
       overlayTriggerRef.current = null;
@@ -309,8 +310,8 @@ export function AwmpcBibleApp() {
         <FeatureSheetContent
           activeFeature={activeFeature}
           navigation={{ books: primaryLibrary.books, secondaryBooks: secondaryLibrary.books, secondaryLanguage: secondaryBibleLanguage, book: navigation.state.book, chapters: navigation.chapters, chapter: navigation.state.chapter, verses: navigation.state.verses, initialLoading: primaryLibrary.status === "loading", versesLoading: navigation.state.status === "loading", error: navigation.state.error || undefined, sectionRequest: navigationSectionRequest, scrollContainerRef: overlayContentRef, onBook: navigation.chooseBook, onChapter: navigation.chooseChapter, onVerse: (verse) => selectVerseReference({ bibleLanguage: primaryBibleLanguage, book: navigation.state.book, chapter: navigation.state.chapter, verse }, { recordHistory: true, prefetchedVerses: navigation.state.verses }) }}
-          history={{ entries: history, loading: cloud.state.status === "loading" || cloud.state.status === "syncing", onSelect: selectHistoryEntry, onRemove: removeHistory, onClear: clearHistory }}
-          search={{ query: bibleSearch.query, status: bibleSearch.status, results: bibleSearch.results, inputRef: searchInputRef, onQueryChange: bibleSearch.setQuery, onSelect: selectSearchResult, history: searchHistory.entries, historyLoading: cloud.state.status === "loading" || cloud.state.status === "syncing", onRecord: searchHistory.record, onRemoveHistory: searchHistory.remove, onClearHistory: searchHistory.clear }}
+          history={{ entries: history, loading: cloud.state.status === "loading" || cloud.state.status === "syncing", bibleLanguageOptions, onSelect: selectHistoryEntry, onRemove: removeHistory, onClear: clearHistory }}
+          search={{ query: bibleSearch.query, status: bibleSearch.status, results: bibleSearch.results, inputRef: searchInputRef, onQueryChange: bibleSearch.setQuery, onSelect: selectSearchResult, bibleLanguageOptions, history: searchHistory.entries, historyLoading: cloud.state.status === "loading" || cloud.state.status === "syncing", onRecord: searchHistory.record, onRemoveHistory: searchHistory.remove, onClearHistory: searchHistory.clear }}
           profile={{ textScale, onTextScaleChange: (value) => updateSettings({ textScale: value }), verseFont, onVerseFontChange: (value) => updateSettings({ verseFont: value }), appearance, onAppearanceChange: (value) => updateSettings({ appearance: value }), primaryBibleLanguage, secondaryBibleLanguage, onPrimaryBibleLanguageChange: changeLanguage, onSecondaryBibleLanguageChange: changeSecondaryLanguage, bibleLanguageOptions, account: cloud.state, onSignIn: cloud.signIn, onSignOut: cloud.signOut }}
         />
       </FeatureOverlay>

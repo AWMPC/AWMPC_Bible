@@ -27,6 +27,7 @@ type LanguageVerseAnchorOptions = {
 export function useLanguageVerseAnchor(options: LanguageVerseAnchorOptions) {
   const { language, books, passage, chapterRef, libraryStatus, requestChapter, commit, updateLanguage } = options;
   const pendingRef = useRef<PendingAnchor | null>(null);
+  const postOverlayAnchorRef = useRef<string | null>(null);
   const generationRef = useRef(0);
   const frameRef = useRef(0);
   const [restoring, setRestoring] = useState(false);
@@ -67,9 +68,11 @@ export function useLanguageVerseAnchor(options: LanguageVerseAnchorOptions) {
       commit({ book: targetBook.name, chapter: targetChapter, verses });
       pendingRef.current = null;
       setRestoring(false);
+      const targetId = verseElementId(targetChapter, targetVerse);
+      postOverlayAnchorRef.current = targetId;
       frameRef.current = requestAnimationFrame(() => {
         frameRef.current = requestAnimationFrame(() => {
-          document.getElementById(verseElementId(targetChapter, targetVerse))?.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+          document.getElementById(targetId)?.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
         });
       });
     }).catch(() => {
@@ -86,5 +89,17 @@ export function useLanguageVerseAnchor(options: LanguageVerseAnchorOptions) {
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
   }, []);
 
-  return { changeLanguage, restoring } as const;
+  const restoreAfterOverlayClose = useCallback(() => {
+    const targetId = postOverlayAnchorRef.current;
+    postOverlayAnchorRef.current = null;
+    if (!targetId) return;
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = requestAnimationFrame(() => {
+        document.getElementById(targetId)?.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+      });
+    });
+  }, []);
+
+  return { changeLanguage, restoreAfterOverlayClose, restoring } as const;
 }

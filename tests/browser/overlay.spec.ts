@@ -57,10 +57,12 @@ test("switches between the local English and Korean datasets", async ({ page }) 
     return box ? Math.abs(box.y + box.height / 2 - (await page.evaluate(() => innerHeight / 2))) : 999;
   }).toBeLessThan(6);
   await waitForScrollIdle(page);
-  const anchoredScroll = await page.evaluate(() => scrollY);
   await page.locator(".overlay-close").click();
   await expect(page.getByRole("dialog")).toBeHidden();
-  expect(await page.evaluate(() => scrollY)).toBe(anchoredScroll);
+  await expect.poll(async () => {
+    const box = await koreanTarget.boundingBox();
+    return box ? Math.abs(box.y + box.height / 2 - (await page.evaluate(() => innerHeight / 2))) : 999;
+  }).toBeLessThan(6);
 
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   await language.selectOption("en");

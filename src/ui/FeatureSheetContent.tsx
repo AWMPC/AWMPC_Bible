@@ -38,6 +38,7 @@ type FeatureSheetContentProps = {
   history: {
     entries: HistoryEntry[];
     loading: boolean;
+    bibleLanguageOptions: ReadonlyArray<BibleLanguageOption>;
     onSelect: (entry: HistoryEntry) => void;
     onRemove: (id: string) => void;
     onClear: () => void;
@@ -47,6 +48,7 @@ type FeatureSheetContentProps = {
     status: BibleSearchStatus;
     results: LocalizedSearchResult[];
     inputRef: RefObject<HTMLInputElement | null>;
+    bibleLanguageOptions: ReadonlyArray<BibleLanguageOption>;
     onQueryChange: (query: string) => void;
     onSelect: (result: LocalizedSearchResult) => void;
     history: string[];
@@ -78,10 +80,10 @@ export function FeatureSheetContent({ activeFeature, navigation, history, search
     return <NavigationPanel books={navigation.books} secondaryBooks={navigation.secondaryBooks} secondaryLanguage={navigation.secondaryLanguage} book={navigation.book} chapters={navigation.chapters} chapter={navigation.chapter} verses={navigation.verses} initialLoading={navigation.initialLoading} versesLoading={navigation.versesLoading} error={navigation.error} sectionRequest={navigation.sectionRequest} scrollContainerRef={navigation.scrollContainerRef} onBook={navigation.onBook} onChapter={navigation.onChapter} onVerse={navigation.onVerse} />;
   }
   if (activeFeature === "history") {
-    return history.loading ? <Skeleton rows={5} text /> : <HistoryPanel entries={history.entries} onSelect={history.onSelect} onRemove={history.onRemove} onClear={history.onClear} />;
+    return history.loading ? <Skeleton rows={5} text /> : <HistoryPanel entries={history.entries} bibleLanguageOptions={history.bibleLanguageOptions} onSelect={history.onSelect} onRemove={history.onRemove} onClear={history.onClear} />;
   }
   if (activeFeature === "search") {
-    return <SearchPanel query={search.query} status={search.status} results={search.results} inputRef={search.inputRef} onQueryChange={search.onQueryChange} onSelect={search.onSelect} history={search.history} historyLoading={search.historyLoading} onRecord={search.onRecord} onRemoveHistory={search.onRemoveHistory} onClearHistory={search.onClearHistory} />;
+    return <SearchPanel query={search.query} status={search.status} results={search.results} inputRef={search.inputRef} onQueryChange={search.onQueryChange} onSelect={search.onSelect} bibleLanguageOptions={search.bibleLanguageOptions} history={search.history} historyLoading={search.historyLoading} onRecord={search.onRecord} onRemoveHistory={search.onRemoveHistory} onClearHistory={search.onClearHistory} />;
   }
   if (activeFeature === "profile") {
     return <ProfilePanel {...profile} />;
