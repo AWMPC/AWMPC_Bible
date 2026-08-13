@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.24 - 2026-08-13
+
+- Preserve the selected language’s centered verse after closing Profile and show dynamic language labels consistently in Search, History, and verse actions.
+
 ## 0.31.23 - 2026-08-13
 
 - Discover local `bible-*.json` files as selectable Bible languages and publish their generated catalog alongside staged datasets.
