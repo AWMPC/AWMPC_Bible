@@ -24,10 +24,10 @@ icons, and same-origin service worker.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
 - The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
 - One shared reader-chrome visibility controller keeps the top reading controls and bottom dock coordinated through reader interactions and verse changes.
-- A selected verse receives temporary left-edge accent-pill feedback.
+- A selected verse receives temporary accent-pill feedback outside both verse edges.
 - Profile selects among privacy-safe local Sans, Serif, and Mono verse fonts.
 - Appearance supports explicit Day or Night modes and an Auto mode that follows the system.
-- Profile keeps one primary language and optionally stacks a distinct secondary language beneath each verse.
+- Profile discovers local Bible datasets, keeps one primary language, and optionally stacks a distinct secondary language beneath each verse.
 - Book controls and Navigation show secondary-language book names as subordinate text when parallel text is active.
 - Language changes preserve the verse crossing the viewport midpoint and recenter its translated counterpart.
 - Reader swipes move through adjacent chapters: left advances, right returns, and trackpad momentum is limited to one chapter per gesture.
@@ -112,12 +112,13 @@ The Firebase deployment configuration in this repository is limited to
 `firestore.rules`; deploying those rules is still a separate destructive-adjacent
 operation that requires explicit human review.
 
-Keep the ignored `bible-en.json` and `bible-ko.json` files at the repository
-root. During `npm run dev`, Vite serves those root files directly with caching
-disabled, so a newly placed or replaced file is picked up on browser reload.
-`npm run build` validates and stages local copies under `public/data/`, then Vite
-packages them as `dist/data/bible-en.json` and `dist/data/bible-ko.json`. Deploy
-the complete `dist/` directory without moving either dataset relative to
+Keep ignored `bible-*.json` files at the repository root. The text between
+`bible-` and `.json` becomes the selectable Bible ID and display label; for
+example, `bible-English-1984.json` appears as `English 1984`. During
+`npm run dev`, Vite discovers and serves those root files directly with caching
+disabled. `npm run build` validates and stages every matching file under
+`public/data/` and writes a generated `bibles.json` catalog. Deploy the complete
+`dist/` directory without moving either the catalog or datasets relative to
 `index.html`. The source and staged JSON files remain ignored and must never be
 committed.
 

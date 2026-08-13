@@ -1,10 +1,21 @@
 # Changelog
 
+## 0.31.23 - 2026-08-13
+
+- Discover local `bible-*.json` files as selectable Bible languages and publish their generated catalog alongside staged datasets.
+- Keep top and bottom reader controls hidden after a sheet closes and the user resumes scrolling, even when focus returns to its triggering control.
+- Show temporary selected-verse accent pills outside both verse edges, clear of the verse-number button.
+
 ## 0.31.22 - 2026-08-12
 
 - Dismiss an open feature sheet before normal browser Back navigation continues.
 - Keep the top reading controls and bottom dock coordinated through one shared reader-chrome visibility controller.
 - Mark the selected verse with temporary left-edge accent-pill feedback.
+
+## 0.31.21
+
+- Support long verse entries in discovered Bible datasets.
+- Keep dynamically selected primary and secondary Bible languages distinct.
 
 ## 0.31.3 - 2026-07-14
 
