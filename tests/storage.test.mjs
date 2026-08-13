@@ -154,8 +154,8 @@ test("settings validate, round-trip, and migrate independently", () => {
   assert.equal(roundedStore.load().verseFont, "system-sans");
 });
 
-test("settings reject unsupported Bible languages", () => {
-  const storage = { getItem: () => '{"bibleLanguage":"remote"}', setItem: () => {} };
+test("settings reject malformed Bible language IDs", () => {
+  const storage = { getItem: () => '{"bibleLanguage":"remote!"}', setItem: () => {} };
   assert.deepEqual(new LocalSettingsStore(storage).load(), defaultSettings);
   assert.deepEqual(normalizeBibleSettings({ primaryBibleLanguage: "en", secondaryBibleLanguage: "en" }), defaultSettings);
 });

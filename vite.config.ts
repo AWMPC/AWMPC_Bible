@@ -1,14 +1,10 @@
 import react from "@vitejs/plugin-react";
-import { readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import packageMetadata from "./package.json" with { type: "json" };
 
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
-const LOCAL_DATASETS = new Map([
-  ["/data/bible-en.json", "bible-en.json"],
-  ["/data/bible-ko.json", "bible-ko.json"],
-]);
 
 function localDatasetPlugin(): Plugin {
   return {
@@ -18,7 +14,14 @@ function localDatasetPlugin(): Plugin {
       server.middlewares.use(async (request, response, next) => {
         if (request.method !== "GET" && request.method !== "HEAD") return next();
         const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
-        const filename = LOCAL_DATASETS.get(pathname);
+        const filename = pathname.match(/^\/data\/(bible-.+\.json)$/i)?.[1];
+        if (pathname === "/data/bibles.json") {
+          const files = (await readdir(import.meta.dirname)).filter((file) => /^bible-.+\.json$/i.test(file)).sort();
+          response.statusCode = 200;
+          response.setHeader("Content-Type", "application/json; charset=utf-8");
+          response.end(JSON.stringify(files.map((file) => ({ id: file.slice(6, -5), label: file.slice(6, -5).replace(/[._-]+/g, " ") }))));
+          return;
+        }
         if (!filename) return next();
 
         try {

@@ -11,7 +11,7 @@ export const LIMITS = Object.freeze({
   chapters: 2000,
   verses: 50000,
   key: 120,
-  text: 4000,
+  text: 32000,
   footnotesPerVerse: 50,
   segmentsPerVerse: 200,
   footnoteText: 2000,

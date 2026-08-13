@@ -2,7 +2,4 @@ import { DEFAULT_BIBLE_LANGUAGE, isBibleLanguage, type BibleLanguage } from "../
 
 export { DEFAULT_BIBLE_LANGUAGE, isBibleLanguage, type BibleLanguage };
 
-export const BIBLE_LANGUAGE_OPTIONS = [
-  { id: "en", label: "English" },
-  { id: "ko", label: "Korean" },
-] as const satisfies ReadonlyArray<Readonly<{ id: BibleLanguage; label: string }>>;
+export const BIBLE_LANGUAGE_OPTIONS: ReadonlyArray<Readonly<{ id: BibleLanguage; label: string }>> = [];

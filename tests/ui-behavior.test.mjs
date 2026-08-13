@@ -99,7 +99,7 @@ test("dual-language books and verses pair by stable identity", () => {
   assert.equal(pairedVerses.has("3"), false);
 });
 
-test("settings allowlists and scale snapping remain exact", () => {
+test("settings validation and scale snapping remain exact", () => {
   assert.equal(TEXT_SCALES.length, 5);
   assert.equal(textScaleAt(-1), "compact");
   assert.equal(textScaleAt(99), "extra-large");
@@ -113,9 +113,10 @@ test("settings allowlists and scale snapping remain exact", () => {
   assert.equal(isVerseFont("rounded"), false);
   assert.equal(normalizeVerseFont("rounded"), "system-sans");
   assert.equal(isVerseFont("remote-font"), false);
-  assert.deepEqual(BIBLE_LANGUAGE_OPTIONS.map(({ id }) => id), ["en", "ko"]);
+  assert.deepEqual(BIBLE_LANGUAGE_OPTIONS, []);
   assert.equal(isBibleLanguage("ko"), true);
-  assert.equal(isBibleLanguage("jp"), false);
+  assert.equal(isBibleLanguage("English-1984"), true);
+  assert.equal(isBibleLanguage("jp!"), false);
 });
 
 test("overlay origin stops above the dock", () => {

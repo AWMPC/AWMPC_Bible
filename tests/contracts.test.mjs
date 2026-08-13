@@ -176,9 +176,12 @@ test("AWMPC Bible identity and plain Vite packaging are exact", async () => {
   assert.doesNotMatch(`${page}\n${readme}`, /Quiet Reader|awmpc-reader/i);
   assert.equal(JSON.parse(manifest).scripts.prebuild, "npm run stage:data");
   assert.equal(JSON.parse(manifest).scripts.predev, undefined);
-  assert.match(datasetStaging, /\["bible-en\.json", "bible-ko\.json"\]/);
+  assert.match(datasetStaging, /readdir\(root\)/);
+  assert.ok(datasetStaging.includes("/^bible-.+\\.json$/i"));
+  assert.match(datasetStaging, /bibles\.json/);
   assert.match(datasetStaging, /TextDecoder\("utf-8", \{ fatal: true \}\)/);
-  assert.match(viteConfig, /\["\/data\/bible-ko\.json", "bible-ko\.json"\]/);
+  assert.ok(viteConfig.includes("pathname.match(/^\\/data\\/(bible-.+\\.json)$/i)"));
+  assert.match(viteConfig, /pathname === "\/data\/bibles\.json"/);
   assert.match(viteConfig, /Cache-Control", "no-store"/);
   assert.match(viteConfig, /import packageMetadata from "\.\/package\.json" with \{ type: "json" \}/);
   assert.match(viteConfig, /__APP_VERSION__:\s*JSON\.stringify\(packageMetadata\.version\)/);
