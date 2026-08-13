@@ -20,6 +20,7 @@ import { verseElementId } from "./ui/transitionVerseView";
 import { useUserScrollChromeVisibility } from "./ui/useUserScrollChromeVisibility";
 import { useChapterScrollProgress } from "./ui/useChapterScrollProgress";
 import { useChapterSwipe } from "./ui/useChapterSwipe";
+import { useOverlayHistory } from "./ui/useOverlayHistory";
 import { middleVerseNumber } from "./ui/middleVerse";
 import { VerseActionsMenu, type VerseActionTarget } from "./ui/VerseActionsMenu";
 import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
@@ -70,6 +71,10 @@ export function AwmpcBibleApp() {
   const [navigationSectionRequest, setNavigationSectionRequest] = useState<NavigationSectionRequest | null>(null);
   const [verseActionTarget, setVerseActionTarget] = useState<VerseActionTarget | null>(null);
   const [readerStatus, setReaderStatus] = useState("");
+  const requestOverlayClose = useCallback(() => {
+    void overlayRef.current?.close();
+  }, []);
+  const { dismiss: dismissOverlayHistory } = useOverlayHistory(activeFeature !== null, requestOverlayClose);
   const { entries: history, record: recordHistory, remove: removeHistory, clear: clearHistory } = historyStore;
   const bibleSearch = useBibleSearch({
     enabled: activeFeature === "search",
@@ -293,7 +298,7 @@ export function AwmpcBibleApp() {
       <FloatingDock ref={dockRef} activeFeature={activeFeature} visible={chromeVisible} onOpen={openFeature} />
       <p className="visually-hidden" role="status" aria-live="polite">{readerStatus || (activeFeature ? `${featureTitle(activeFeature)} overlay open` : "")}</p>
       <VerseActionsMenu target={verseActionTarget} onClose={closeVerseActions} onStatus={setReaderStatus} />
-      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} dockRef={dockRef} contentRef={overlayContentRef} initialFocusRef={activeFeature === "search" ? searchInputRef : undefined} onClose={finishOverlayClose}>
+      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} dockRef={dockRef} contentRef={overlayContentRef} initialFocusRef={activeFeature === "search" ? searchInputRef : undefined} onCloseStart={dismissOverlayHistory} onClose={finishOverlayClose}>
         <FeatureSheetContent
           activeFeature={activeFeature}
           navigation={{ books: primaryLibrary.books, secondaryBooks: secondaryLibrary.books, secondaryLanguage: secondaryBibleLanguage, book: navigation.state.book, chapters: navigation.chapters, chapter: navigation.state.chapter, verses: navigation.state.verses, initialLoading: primaryLibrary.status === "loading", versesLoading: navigation.state.status === "loading", error: navigation.state.error || undefined, sectionRequest: navigationSectionRequest, scrollContainerRef: overlayContentRef, onBook: navigation.chooseBook, onChapter: navigation.chooseChapter, onVerse: (verse) => selectVerseReference({ bibleLanguage: primaryBibleLanguage, book: navigation.state.book, chapter: navigation.state.chapter, verse }, { recordHistory: true, prefetchedVerses: navigation.state.verses }) }}

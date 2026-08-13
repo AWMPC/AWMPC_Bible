@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.31.22 - 2026-08-12
+
+- Dismiss an open feature sheet before normal browser Back navigation continues.
+- Keep the top reading controls and bottom dock coordinated through one shared reader-chrome visibility controller.
+- Mark the selected verse with temporary left-edge accent-pill feedback.
+
 ## 0.31.3 - 2026-07-14
 
 - Keep the Search sheet at the full available viewport size so changing results never causes distracting layout snaps.

@@ -119,6 +119,41 @@ test("shows package semver immediately right of the overlay brand", async ({ pag
   }
 });
 
+test("browser Back closes a dock sheet before leaving the reader", async ({ page }) => {
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
+test("browser Back closes a top navigation sheet before leaving the reader", async ({ page }) => {
+  await page.getByRole("button", { name: /Choose book, currently Genesis/ }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
+test("ordinary close restores one switched-sheet entry before normal Back", async ({ page }) => {
+  await page.evaluate(() => {
+    window.history.replaceState({ testStep: "before-reader" }, "", "/?history-step=before-reader");
+    window.history.pushState({ testStep: "reader" }, "", "/");
+  });
+  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Profile and preferences" }).click();
+  await page.locator(".overlay-close").click();
+  await expect.poll(() => page.evaluate(() => ({
+    dialogOpen: document.querySelector("dialog")?.open ?? false,
+    historyStep: (window.history.state as { testStep?: string } | null)?.testStep ?? null,
+  }))).toEqual({ dialogOpen: true, historyStep: "reader" });
+  await expect(page.getByRole("dialog")).toBeHidden();
+
+  await page.goBack();
+  await expect.poll(() => page.evaluate(() => window.history.state?.testStep)).toBe("before-reader");
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+});
+
 test("sizes sheets to the available area on mobile and right half on desktop", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
@@ -609,6 +644,24 @@ test("top reading controls and bottom dock share hide and tap visibility", async
   await expect(dock).toHaveClass(/is-hidden/);
 });
 
+test("top navigation resumes shared auto-hide after selecting a verse", async ({ page }) => {
+  await page.getByRole("button", { name: /Choose book, currently Genesis/ }).click();
+  await page.getByRole("button", { name: "50", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.mouse.wheel(0, 700);
+  await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
+  await expect(page.locator(".floating-dock")).toHaveClass(/is-hidden/);
+});
+
+test("dock navigation resumes shared auto-hide after selecting a verse", async ({ page }) => {
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await page.getByRole("button", { name: "50", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.mouse.wheel(0, 700);
+  await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
+  await expect(page.locator(".floating-dock")).toHaveClass(/is-hidden/);
+});
+
 test("switches and closes overlays without moving the reader", async ({ page }) => {
   await page.evaluate(() => window.scrollTo(0, 500));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500);
@@ -630,6 +683,9 @@ test("selecting a verse centers it and records one removable history entry", asy
   await page.getByRole("button", { name: "50", exact: true }).click();
   const verse = page.locator("#verse-1-50");
   await expect(verse).toBeInViewport({ ratio: 1 });
+  await expect(verse).toHaveClass(/verse-selected-indicator/);
+  await expect(verse).not.toHaveClass(/verse-selected-glow/);
+  expect(Number.parseFloat(await verse.evaluate((element) => getComputedStyle(element, "::before").width))).toBeGreaterThan(0);
 
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^Genesis 1:50/ })).toBeVisible();
