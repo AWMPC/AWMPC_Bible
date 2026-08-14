@@ -449,12 +449,54 @@ test("history remains global and routes an inactive language without duplication
   await page.locator('section[aria-labelledby="verses-title"] button').filter({ hasText: /^40$/ }).click();
 
   await page.getByRole("button", { name: "Reading history" }).click();
-  await expect(page.getByRole("button", { name: /^Genesis 1:50/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /^창세기 1:40/ })).toBeVisible();
-  await page.getByRole("button", { name: /^Genesis 1:50/ }).click();
+  const englishHistory = page.getByRole("button", { name: /^Genesis 1:50/ });
+  const koreanHistory = page.getByRole("button", { name: /^창세기 1:40/ });
+  await expect(englishHistory).toBeVisible();
+  await expect(koreanHistory).toBeVisible();
+  await expect(englishHistory.locator(".history-preview")).toHaveText("Verse 50 text for browser testing.");
+  await expect(koreanHistory.locator(".history-preview")).toContainText("한국어 시험 구절 40");
+  await englishHistory.click();
   await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.locator(".history-list > li")).toHaveCount(2);
+});
+
+test("history keeps a saved location selectable when its preview dataset is unavailable", async ({ page }) => {
+  await page.route("**/data/bible-missing.json", (route) => route.fulfill({ status: 404 }));
+  await page.evaluate(() => localStorage.setItem("awmpc-bible.history.v1", JSON.stringify([{
+    id: "missing-preview",
+    bibleLanguage: "missing",
+    book: "Unavailable",
+    chapter: "1",
+    verse: "1",
+    visitedAt: "2026-08-14T00:00:00.000Z",
+  }])));
+  await page.reload();
+  await page.getByRole("button", { name: "Reading history" }).click();
+  const missingHistory = page.getByRole("button", { name: /^Unavailable 1:1/ });
+  await expect(missingHistory).toBeVisible();
+  await expect(missingHistory.locator(".history-preview")).toHaveCount(0);
+  await expect(missingHistory.locator(".history-preview-skeleton")).toHaveCount(0);
+});
+
+test("history shows a compact placeholder while a preview dataset loads", async ({ page }) => {
+  await page.route("**/data/bible-delayed.json", async (route) => {
+    await new Promise<void>((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({ json: { Delayed: { "1": { "1": "Loaded after the preview placeholder." } } } });
+  });
+  await page.evaluate(() => localStorage.setItem("awmpc-bible.history.v1", JSON.stringify([{
+    id: "delayed-preview",
+    bibleLanguage: "delayed",
+    book: "Delayed",
+    chapter: "1",
+    verse: "1",
+    visitedAt: "2026-08-14T00:00:00.000Z",
+  }])));
+  await page.reload();
+  await page.getByRole("button", { name: "Reading history" }).click();
+  const delayedHistory = page.getByRole("button", { name: /^Delayed 1:1/ });
+  await expect(delayedHistory.locator(".history-preview-skeleton")).toBeVisible();
+  await expect(delayedHistory.locator(".history-preview")).toHaveText("Loaded after the preview placeholder.");
 });
 
 test("repeated trackpad gestures switch adjacent chapters without pointer movement and preserve vertical scrolling", async ({ page }) => {
