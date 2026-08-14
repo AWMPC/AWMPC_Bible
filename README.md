@@ -19,7 +19,7 @@ icons, and same-origin service worker.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
 - Browser Back dismisses an open feature sheet before its normal navigation behavior continues.
-- Verse selections create bounded history entries containing only references and timestamps.
+- Verse selections create bounded history entries containing only references and timestamps; the History sheet resolves a transient local verse preview for each entry without persisting Bible text.
 - Profile offers five meaningful, snapping text scales for every verse and verse number.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
 - The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
