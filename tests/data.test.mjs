@@ -5,6 +5,7 @@ import { LIMITS, parseInlineFootnotes, parseLibrary, readChapter } from "../src/
 import { dispatchChapterRequest } from "../src/data/chapterRequests.ts";
 import { dispatchSearchRequest } from "../src/data/searchRequests.ts";
 import { bibleDatasetUrl, isAllowedBibleDatasetUrl, isBibleLanguage } from "../src/data/languages.ts";
+import { resolveHistoryVersePreview } from "../src/history/useHistoryVersePreviews.ts";
 
 const noWait = async () => {};
 
@@ -145,6 +146,19 @@ test("normalizes legacy inline and structured footnotes without changing plain v
     { number: "1", text: "Legacy  text.", segments: ["Legacy ", { footnote: "1" }, " text."], footnotes: [{ number: "1", text: "note" }] },
     { number: "2", text: "Structured  text.", segments: ["Structured ", { footnote: "1" }, " text."], footnotes: [{ number: "1", text: "Detail" }] },
   ]);
+});
+
+test("history preview resolves visible text for the saved verse", () => {
+  const library = parseLibrary(JSON.stringify({ Genesis: { "1": { "1": "In the beginning {note} God created." } } }));
+  assert.equal(
+    resolveHistoryVersePreview(library, { book: "Genesis", chapter: "1", verse: "1" }),
+    "In the beginning  God created.",
+  );
+});
+
+test("history preview omits unavailable verses", () => {
+  const library = parseLibrary(JSON.stringify({ Genesis: { "1": { "1": "In the beginning." } } }));
+  assert.equal(resolveHistoryVersePreview(library, { book: "Genesis", chapter: "1", verse: "2" }), null);
 });
 
 test("rejects malformed, dangling, duplicate, and unbounded footnotes", () => {
