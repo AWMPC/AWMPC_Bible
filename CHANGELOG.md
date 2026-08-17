@@ -1,8 +1,12 @@
 # Changelog
 
+## 0.31.27 - 2026-08-17
+
+- Run the Quality workflow on Node.js 26 or later so CI uses a current TypeScript-capable runtime.
+
 ## 0.31.26 - 2026-08-17
 
-- Run the Quality workflow on Node.js 26.7.0 so CI uses the same TypeScript-capable runtime as local development.
+- Pin the Quality workflow to Node.js 26.7.0.
 
 ## 0.31.25 - 2026-08-14
 
