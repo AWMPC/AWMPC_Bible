@@ -280,18 +280,22 @@ export function AwmpcBibleApp() {
   }
 
   function finishOverlayClose() {
-    const closedFeature = activeFeature;
     if (!selectionCloseRef.current) cancelVerseSelection();
     navigation.abandon();
     setActiveFeature(null);
     setOverlayOrigin(null);
     setNavigationSectionRequest(null);
     restoreAfterOverlayClose();
-    requestAnimationFrame(() => {
-      const trigger = overlayTriggerRef.current;
-      overlayTriggerRef.current = null;
-      if (closedFeature && trigger?.isConnected) trigger.focus({ preventScroll: true });
-    });
+  }
+
+  function restoreOverlayFocus() {
+    window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        const trigger = overlayTriggerRef.current;
+        overlayTriggerRef.current = null;
+        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      });
+    }, 0);
   }
 
   return (
@@ -306,7 +310,7 @@ export function AwmpcBibleApp() {
       <FloatingDock ref={dockRef} activeFeature={activeFeature} visible={chromeVisible} onOpen={openFeature} />
       <p className="visually-hidden" role="status" aria-live="polite">{readerStatus || (activeFeature ? `${featureTitle(activeFeature)} overlay open` : "")}</p>
       <VerseActionsMenu target={verseActionTarget} onClose={closeVerseActions} onStatus={setReaderStatus} />
-      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} dockRef={dockRef} contentRef={overlayContentRef} initialFocusRef={activeFeature === "search" ? searchInputRef : undefined} onCloseStart={dismissOverlayHistory} onClose={finishOverlayClose}>
+      <FeatureOverlay ref={overlayRef} activeFeature={activeFeature} origin={overlayOrigin} dockRef={dockRef} contentRef={overlayContentRef} initialFocusRef={activeFeature === "search" ? searchInputRef : undefined} onCloseStart={dismissOverlayHistory} onClose={finishOverlayClose} onAfterClose={restoreOverlayFocus}>
         <FeatureSheetContent
           activeFeature={activeFeature}
           navigation={{ books: primaryLibrary.books, secondaryBooks: secondaryLibrary.books, secondaryLanguage: secondaryBibleLanguage, book: navigation.state.book, chapters: navigation.chapters, chapter: navigation.state.chapter, verses: navigation.state.verses, initialLoading: primaryLibrary.status === "loading", versesLoading: navigation.state.status === "loading", error: navigation.state.error || undefined, sectionRequest: navigationSectionRequest, scrollContainerRef: overlayContentRef, onBook: navigation.chooseBook, onChapter: navigation.chooseChapter, onVerse: (verse) => selectVerseReference({ bibleLanguage: primaryBibleLanguage, book: navigation.state.book, chapter: navigation.state.chapter, verse }, { recordHistory: true, prefetchedVerses: navigation.state.verses }) }}

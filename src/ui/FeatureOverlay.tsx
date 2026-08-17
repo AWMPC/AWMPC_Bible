@@ -21,10 +21,11 @@ type FeatureOverlayProps = {
   children: ReactNode;
   onCloseStart: () => void;
   onClose: () => void;
+  onAfterClose: () => void;
 };
 
 export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayProps>(
-  function FeatureOverlay({ activeFeature, origin, dockRef, contentRef, initialFocusRef, children, onCloseStart, onClose }, ref) {
+  function FeatureOverlay({ activeFeature, origin, dockRef, contentRef, initialFocusRef, children, onCloseStart, onClose, onAfterClose }, ref) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const surfaceRef = useRef<HTMLDivElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -41,6 +42,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
       active,
       origin,
       onCloseStart,
+      onClose,
       dialogRef,
       surfaceRef,
       initialFocusRef: focusTargetRef,
@@ -68,7 +70,7 @@ export const FeatureOverlay = forwardRef<FeatureOverlayHandle, FeatureOverlayPro
           data-feature={activeFeature ?? undefined}
           aria-labelledby="feature-overlay-title"
           onCancel={(event) => { event.preventDefault(); void close(); }}
-          onClose={() => { handleDialogClose(); onClose(); }}
+          onClose={() => { handleDialogClose(); onAfterClose(); }}
           onClick={(event) => { if (event.target === event.currentTarget) void close(); }}
         >
           <div ref={surfaceRef} className="overlay-surface">

@@ -9,6 +9,7 @@ type UseOverlayLifecycleOptions = {
   active: boolean;
   origin: OverlayOrigin | null;
   onCloseStart: () => void;
+  onClose: () => void;
   dialogRef: RefObject<HTMLDialogElement | null>;
   surfaceRef: RefObject<HTMLElement | null>;
   initialFocusRef: RefObject<HTMLElement | null>;
@@ -41,7 +42,7 @@ async function waitForAnimations(animations: Animation[]): Promise<void> {
   await Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
 }
 
-export function useOverlayLifecycle({ active, origin, onCloseStart, dialogRef, surfaceRef, initialFocusRef }: UseOverlayLifecycleOptions) {
+export function useOverlayLifecycle({ active, origin, onCloseStart, onClose, dialogRef, surfaceRef, initialFocusRef }: UseOverlayLifecycleOptions) {
   const originRef = useRef<OverlayOrigin | null>(origin);
   const animationsRef = useRef<Animation[]>([]);
   const releaseScrollRef = useRef<(() => void) | null>(null);
@@ -77,11 +78,12 @@ export function useOverlayLifecycle({ active, origin, onCloseStart, dialogRef, s
     animationsRef.current = animations;
     await waitForAnimations(animations);
     if (closeGeneration !== closeGenerationRef.current) return;
+    onClose();
     dialog.close();
     animationsRef.current = [];
     setPhase("closed");
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-  }, [dialogRef, onCloseStart, setPhase, surfaceRef]);
+  }, [dialogRef, onClose, onCloseStart, setPhase, surfaceRef]);
 
   const keepOpen = useCallback(() => {
     closeGenerationRef.current += 1;
