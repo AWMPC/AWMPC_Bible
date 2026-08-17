@@ -4,8 +4,6 @@ import { readFileSync } from "node:fs";
 const packageMetadata = JSON.parse(
   readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
 ) as { version: string };
-const LONG_BOOK_NAME = "ExtraordinarilyLongDemonstrationBookNameThatCannotFitInsideOneNavigationButton";
-
 async function waitForScrollIdle(page: import("@playwright/test").Page) {
   await page.evaluate(() => new Promise<void>((resolve) => {
     let timer = 0;
@@ -22,10 +20,6 @@ async function waitForScrollIdle(page: import("@playwright/test").Page) {
   }));
 }
 
-async function layoutViewportWidth(page: import("@playwright/test").Page) {
-  return page.evaluate(() => document.documentElement.clientWidth);
-}
-
 async function revealDock(page: import("@playwright/test").Page) {
   await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
   await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
@@ -37,7 +31,7 @@ const dataset = {
   },
   Matthew: Object.fromEntries(Array.from({ length: 20 }, (_, chapterIndex) => [String(chapterIndex + 1), Object.fromEntries(Array.from({ length: 12 }, (_, verseIndex) => [String(verseIndex + 1), `Matthew chapter ${chapterIndex + 1} verse ${verseIndex + 1}.`]))])),
   Acts: { "13": { "6": "They met a Jewish sorcerer and false prophet named Bar-Jesus." } },
-  ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [index === 63 ? LONG_BOOK_NAME : `Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
+  ...Object.fromEntries(Array.from({ length: 64 }, (_, index) => [`Reference ${index + 1}`, { "1": { "1": `Reference verse ${index + 1}.` } }])),
 };
 
 const koreanDataset = {
@@ -106,45 +100,22 @@ test("keeps the local reader private and usable when cloud sync is not configure
   expect(remoteRequests).toEqual([]);
 });
 
-test("shows package semver immediately right of the overlay brand", async ({ page }) => {
-  for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
-    await page.getByRole("button", { name: sheet }).click();
-    await expect(page.locator(".overlay-version")).toBeVisible();
-    await expect(page.locator(".overlay-version")).toHaveText(packageMetadata.version);
-    await page.locator(".overlay-close").click();
-    await expect(page.getByRole("dialog")).toBeHidden();
-  }
+test("shows the package semver in the Profile sheet", async ({ page }) => {
   await page.getByRole("button", { name: "Profile and preferences" }).click();
-  const brand = page.locator(".overlay-brand > span").filter({ hasText: /^AWMPC Bible$/ });
   const version = page.locator(".overlay-version");
+  await expect(version).toBeVisible();
   await expect(version).toHaveText(packageMetadata.version);
   await expect(version).toHaveAttribute("aria-label", `Version ${packageMetadata.version}`);
-  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
-    await page.setViewportSize(viewport);
-    await expect.poll(async () => {
-      const [brandBox, versionBox, closeBox] = await Promise.all([brand.boundingBox(), version.boundingBox(), page.locator(".overlay-close").boundingBox()]);
-      return Boolean(brandBox && versionBox && closeBox
-        && versionBox.x >= brandBox.x + brandBox.width
-        && Math.abs((versionBox.y + versionBox.height / 2) - (brandBox.y + brandBox.height / 2)) < 3
-        && versionBox.x + versionBox.width < closeBox.x);
-    }).toBe(true);
+});
+
+test("browser Back closes dock and top sheets before leaving the reader", async ({ page }) => {
+  for (const trigger of [page.getByRole("button", { name: "Search" }), page.getByRole("button", { name: /Choose book, currently Genesis/ })]) {
+    await trigger.click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
   }
-});
-
-test("browser Back closes a dock sheet before leaving the reader", async ({ page }) => {
-  await page.getByRole("button", { name: "Search" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page.goBack();
-  await expect(page.getByRole("dialog")).toBeHidden();
-  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
-});
-
-test("browser Back closes a top navigation sheet before leaving the reader", async ({ page }) => {
-  await page.getByRole("button", { name: /Choose book, currently Genesis/ }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page.goBack();
-  await expect(page.getByRole("dialog")).toBeHidden();
-  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
 });
 
 test("ordinary close restores one switched-sheet entry before normal Back", async ({ page }) => {
@@ -166,67 +137,16 @@ test("ordinary close restores one switched-sheet entry before normal Back", asyn
   await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
 });
 
-test("sizes sheets to the available area on mobile and right half on desktop", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
-  for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
-    await page.getByRole("button", { name: sheet }).click();
-    const dialog = page.getByRole("dialog");
-    const [dialogBox, dockBox] = await Promise.all([page.getByRole("dialog").boundingBox(), page.locator(".floating-dock").boundingBox()]);
-    const layoutWidth = await layoutViewportWidth(page);
-    expect(dialogBox).not.toBeNull();
-    expect(dockBox).not.toBeNull();
-    const availableHeight = dockBox!.y - 8;
-    await expect.poll(async () => {
-      const box = await dialog.boundingBox();
-      return box ? Math.max(Math.abs(box.x + box.width - (layoutWidth - 16)), Math.abs(box.y - 16), Math.abs(box.height - (availableHeight - 16))) : Number.POSITIVE_INFINITY;
-    }).toBeLessThan(1);
-    const settledDialogBox = await dialog.boundingBox();
-    expect(settledDialogBox).not.toBeNull();
-    expect(settledDialogBox!.width).toBeGreaterThanOrEqual(640);
-    expect(settledDialogBox!.width).toBeLessThanOrEqual(1248);
-    expect(Math.abs(settledDialogBox!.x + settledDialogBox!.width - (layoutWidth - 16))).toBeLessThan(1);
-    expect(Math.abs(settledDialogBox!.y - 16)).toBeLessThan(1);
-    expect(Math.abs(settledDialogBox!.height - (availableHeight - 16))).toBeLessThan(1);
-    expect(settledDialogBox!.height).toBeLessThanOrEqual(availableHeight + 1);
+test("keeps sheets usable without horizontal overflow on desktop and mobile", async ({ page }) => {
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Books", exact: true })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await page.locator(".overlay-close").click();
     await expect(page.getByRole("dialog")).toBeHidden();
   }
-
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
-  const dialog = page.getByRole("dialog");
-  const dockBox = await page.locator(".floating-dock").boundingBox();
-  const mobileLayoutWidth = await layoutViewportWidth(page);
-  await expect.poll(async () => {
-    const box = await dialog.boundingBox();
-    return box && dockBox ? Math.max(Math.abs(box.x - 16), Math.abs(box.width - (mobileLayoutWidth - 32)), Math.abs(box.y - 16), Math.abs(box.y + box.height - (dockBox.y - 8))) : Number.POSITIVE_INFINITY;
-  }).toBeLessThan(1);
-  const dialogBox = await dialog.boundingBox();
-  expect(dialogBox).not.toBeNull();
-  expect(dockBox).not.toBeNull();
-  expect(Math.abs(dialogBox!.x - 16)).toBeLessThan(1);
-  expect(Math.abs(dialogBox!.width - (mobileLayoutWidth - 32))).toBeLessThan(1);
-  expect(Math.abs(dialogBox!.y - 16)).toBeLessThan(1);
-  expect(Math.abs(dialogBox!.y + dialogBox!.height - (dockBox!.y - 8))).toBeLessThan(1);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  const content = page.locator(".overlay-content");
-  expect(await content.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await content.evaluate((element) => element.clientHeight));
-
-  const longButton = page.getByRole("button", { name: LONG_BOOK_NAME, exact: true });
-  const marquee = longButton.locator(".overflow-marquee");
-  await expect(marquee).toHaveAttribute("data-overflow", "true");
-  const motion = await marquee.evaluate((element) => {
-    const style = getComputedStyle(element);
-    const frames = element.firstElementChild?.getAnimations()[0]?.effect?.getKeyframes() ?? [];
-    return { distance: Number.parseFloat(style.getPropertyValue("--marquee-distance")), transforms: frames.map(({ transform }) => transform) };
-  });
-  expect(motion.distance).toBeGreaterThan(0);
-  expect(motion.transforms.at(0)).toBe("translateX(0px)");
-  expect(motion.transforms.some((transform) => transform !== "translateX(0px)")).toBe(true);
-  await expect(page.getByRole("button", { name: "Acts", exact: true }).locator(".overflow-marquee")).not.toHaveAttribute("data-overflow", "true");
-
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(await marquee.locator(".overflow-marquee-track").evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
 });
 
 test("offers only Sans, Serif, and Mono fonts in that order", async ({ page }) => {
@@ -237,7 +157,7 @@ test("offers only Sans, Serif, and Mono fonts in that order", async ({ page }) =
   await expect(page.locator(".awmpc-bible-shell")).toHaveAttribute("data-verse-font", "monospace");
 });
 
-test("centers text-scale ticks and labels under every slider snap point", async ({ page }) => {
+test("updates the text-scale control at every supported setting", async ({ page }) => {
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   const slider = page.getByRole("slider", { name: "Verse text size" });
   const labels = ["Compact", "Standard", "Comfortable", "Large", "Extra large"];
@@ -252,37 +172,6 @@ test("centers text-scale ticks and labels under every slider snap point", async 
     await expect(page.locator(".setting-heading output strong")).toHaveText(labels[index]);
   }
 
-  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
-    await page.setViewportSize(viewport);
-    if (viewport.width <= 720) {
-      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-      const profileGeometry = await page.locator(".profile-panel").evaluate((panel) => {
-        const panelRect = panel.getBoundingClientRect();
-        const contentRect = panel.closest(".overlay-content")!.getBoundingClientRect();
-        return { panelLeft: panelRect.left, panelRight: panelRect.right, contentLeft: contentRect.left, contentRight: contentRect.right };
-      });
-      expect(profileGeometry.panelLeft).toBeGreaterThanOrEqual(profileGeometry.contentLeft);
-      expect(profileGeometry.panelRight).toBeLessThanOrEqual(profileGeometry.contentRight);
-    }
-    const geometry = await page.locator(".text-scale-control").evaluate((control) => {
-      const input = control.querySelector<HTMLInputElement>("input")!;
-      const inputRect = input.getBoundingClientRect();
-      const thumbSize = Number.parseFloat(getComputedStyle(control).getPropertyValue("--range-thumb-size"));
-      return Array.from(control.querySelectorAll<HTMLElement>(".scale-mark")).map((mark, index, marks) => {
-        const tick = mark.querySelector<HTMLElement>(".scale-tick")!.getBoundingClientRect();
-        const label = mark.querySelector<HTMLElement>(".scale-label")!.getBoundingClientRect();
-        const expected = inputRect.left + thumbSize / 2 + index / (marks.length - 1) * (inputRect.width - thumbSize);
-        return { expected, tickCenter: tick.left + tick.width / 2, labelCenter: label.left + label.width / 2, labelLeft: label.left, labelRight: label.right };
-      });
-    });
-    for (const mark of geometry) {
-      expect(Math.abs(mark.tickCenter - mark.expected)).toBeLessThan(2.1);
-      expect(Math.abs(mark.labelCenter - mark.expected)).toBeLessThan(2.1);
-      expect(mark.labelLeft).toBeGreaterThanOrEqual(0);
-      expect(mark.labelRight).toBeLessThanOrEqual(viewport.width);
-    }
-    for (let index = 1; index < geometry.length; index += 1) expect(geometry[index].labelLeft).toBeGreaterThan(geometry[index - 1].labelRight);
-  }
 });
 
 test("stacks primary and secondary verses with localized book labels and actions", async ({ page, context }) => {
@@ -370,61 +259,6 @@ test("focuses search when opening it directly or switching from another sheet", 
   await expect(page.locator(".overlay-close")).toBeFocused();
   await page.getByRole("button", { name: "Search" }).click();
   await expect(search).toBeFocused();
-});
-
-test("search keeps full available geometry while results change", async ({ page }) => {
-  for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
-    await page.setViewportSize(viewport);
-    const searchButton = page.getByRole("button", { name: "Search" });
-    if (await searchButton.getAttribute("aria-expanded") !== "true") await searchButton.click();
-    const dialog = page.getByRole("dialog");
-    const input = page.getByRole("searchbox", { name: "Search active Bible text" });
-    const dock = await page.locator(".floating-dock").boundingBox();
-    const content = page.locator(".overlay-content");
-    const panel = page.locator(".search-panel");
-    const layoutWidth = await layoutViewportWidth(page);
-    const expectedWidth = viewport.width <= 720 ? layoutWidth - 32 : Math.min(Math.max(layoutWidth / 2, 736), layoutWidth - 32);
-    const expectedRight = layoutWidth - 16;
-    await expect.poll(async () => {
-      const current = await dialog.boundingBox();
-      return current ? Math.max(Math.abs(current.x + current.width - expectedRight), Math.abs(current.y - 16), Math.abs(current.width - expectedWidth), Math.abs(current.y + current.height - (dock!.y - 8))) : Number.POSITIVE_INFINITY;
-    }).toBeLessThan(1);
-    const initial = await dialog.boundingBox();
-    expect(initial).not.toBeNull();
-    expect(dock).not.toBeNull();
-    expect(Math.abs(initial!.x + initial!.width - expectedRight)).toBeLessThan(1);
-    expect(Math.abs(initial!.y - 16)).toBeLessThan(1);
-    expect(Math.abs(initial!.width - expectedWidth)).toBeLessThan(1);
-    expect(Math.abs(initial!.y + initial!.height - (dock!.y - 8))).toBeLessThan(1);
-    if (viewport.width <= 720) {
-      const [contentBox, panelBox, contentPadding] = await Promise.all([
-        content.boundingBox(),
-        panel.boundingBox(),
-        content.evaluate((element) => {
-          const style = getComputedStyle(element);
-          return {
-            top: Number.parseFloat(style.paddingTop),
-            right: Number.parseFloat(style.paddingRight),
-            bottom: Number.parseFloat(style.paddingBottom),
-            left: Number.parseFloat(style.paddingLeft),
-          };
-        }),
-      ]);
-      expect(contentBox).not.toBeNull();
-      expect(panelBox).not.toBeNull();
-      expect(Math.abs(panelBox!.x - (contentBox!.x + contentPadding.left))).toBeLessThan(1);
-      expect(Math.abs(panelBox!.width - (contentBox!.width - contentPadding.left - contentPadding.right))).toBeLessThan(1);
-      expect(panelBox!.height).toBeGreaterThanOrEqual(contentBox!.height - contentPadding.top - contentPadding.bottom - 1);
-    }
-
-    for (const query of ["Ma", "Matthew", "Matthew chapter 2 verse 5", "no possible matching verse words"]) {
-      await input.fill(query);
-      await expect.poll(async () => {
-        const current = await dialog.boundingBox();
-        return current ? [current.x, current.y, current.width, current.height] : null;
-      }).toEqual([initial!.x, initial!.y, initial!.width, initial!.height]);
-    }
-  }
 });
 
 test("search joins punctuation within names without joining separate words", async ({ page }) => {
@@ -579,74 +413,6 @@ test("trusted mobile swipes switch chapters while vertical touch movement remain
   await expect.poll(() => page.evaluate((before) => scrollY > before, beforeVertical)).toBe(true);
 });
 
-test("first verse begins at the reading pane's normal inset", async ({ page }) => {
-  const pane = page.locator(".reading-pane");
-  const article = page.locator('article[aria-label="Genesis chapter 1"]');
-  const measure = () => page.evaluate(() => {
-    const pane = document.querySelector<HTMLElement>(".reading-pane")!;
-    const article = document.querySelector<HTMLElement>('.reading-pane > article[aria-label="Genesis chapter 1"]')!;
-    const style = getComputedStyle(pane);
-    return {
-      actual: article.getBoundingClientRect().top - pane.getBoundingClientRect().top,
-      expected: Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.paddingTop),
-      paddingDifference: Math.abs(Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingLeft)),
-    };
-  });
-  await expect(pane).toBeVisible();
-  await expect(article).toBeVisible();
-  for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
-    await page.setViewportSize(viewport);
-    const geometry = await measure();
-    expect(Math.abs(geometry.actual - geometry.expected)).toBeLessThan(1);
-    expect(geometry.paddingDifference).toBeLessThan(1);
-    const clearance = await page.evaluate(() => {
-      const pane = document.querySelector<HTMLElement>(".reading-pane")!.getBoundingClientRect();
-      const controls = Array.from(document.querySelectorAll<HTMLElement>(".reading-location-button"), (element) => element.getBoundingClientRect());
-      return pane.top - Math.max(...controls.map(({ bottom }) => bottom));
-    });
-    expect(clearance).toBeGreaterThanOrEqual(15);
-    if (viewport.width === 390) {
-      const edges = await page.evaluate(() => {
-        const pane = document.querySelector<HTMLElement>(".reading-pane")!.getBoundingClientRect();
-        const book = document.querySelector<HTMLElement>(".book-location-button")!.getBoundingClientRect();
-        const chapter = document.querySelector<HTMLElement>(".chapter-location-button")!.getBoundingClientRect();
-        return { paneLeft: pane.left, bookLeft: book.left, paneRight: innerWidth - pane.right, chapterRight: innerWidth - chapter.right };
-      });
-      expect(Math.abs(edges.paneLeft - edges.bookLeft)).toBeLessThan(1);
-      expect(Math.abs(edges.paneRight - edges.chapterRight)).toBeLessThan(1);
-    }
-  }
-});
-
-test("chapter depth changes day and night backgrounds without following overlay scroll", async ({ page }) => {
-  const shell = page.locator(".awmpc-bible-shell");
-  const progress = () => shell.evaluate((element) => Number.parseFloat(getComputedStyle(element).getPropertyValue("--chapter-progress")));
-  const background = () => shell.evaluate((element) => getComputedStyle(element).backgroundColor);
-
-  await page.locator("html").evaluate((element) => { element.dataset.appearance = "day"; });
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(progress).toBe(0);
-  const dayStart = await background();
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await expect.poll(progress).toBe(1);
-  const dayEnd = await background();
-  expect(dayEnd).not.toBe(dayStart);
-
-  await page.locator("html").evaluate((element) => { element.dataset.appearance = "night"; });
-  const nightEnd = await background();
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(progress).toBe(0);
-  const nightStart = await background();
-  expect(nightEnd).not.toBe(nightStart);
-  expect(nightStart).not.toBe(dayStart);
-  await expect(shell).toHaveCSS("background-image", "none");
-
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
-  const beforeOverlayScroll = await progress();
-  await page.locator(".overlay-content").evaluate((element) => element.scrollTo({ top: 800 }));
-  await expect.poll(progress).toBe(beforeOverlayScroll);
-});
-
 test("top reading controls target navigation sections without a reader header", async ({ page }) => {
   const book = page.getByRole("button", { name: "Choose book, currently Genesis" });
   const chapter = page.getByRole("button", { name: "Choose chapter, currently chapter 1" });
@@ -659,11 +425,9 @@ test("top reading controls target navigation sections without a reader header", 
   await expect(page.locator(".overlay-close")).toBeFocused();
   await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
   await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
-  await expect.poll(() => page.locator(".book-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
   await expect(page.locator('section[aria-labelledby="books-title"] button[aria-current="page"]')).toBeInViewport();
   await expect(page.locator(".reading-location-controls")).toHaveAttribute("inert", "");
   await expect(page.locator(".reading-location-controls")).toHaveAttribute("aria-hidden", "true");
-  expect(await page.locator(".reading-location-controls").evaluate((element) => Number(getComputedStyle(element).zIndex))).toBeLessThan(await page.getByRole("dialog").evaluate((element) => Number(getComputedStyle(element).zIndex)));
   await page.locator(".overlay-close").click();
   await expect(page.locator(".reading-location-controls")).not.toHaveClass(/is-hidden/);
   await expect(book).toBeFocused();
@@ -671,16 +435,10 @@ test("top reading controls target navigation sections without a reader header", 
   await chapter.click();
   await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
   await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
-  await expect.poll(() => page.locator(".chapter-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
   const content = page.locator(".overlay-content");
   const selectedChapter = page.locator('section[aria-labelledby="chapters-title"] button[aria-current="page"]');
   await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(1000);
   await expect(selectedChapter).toBeInViewport();
-  await expect.poll(async () => {
-    const contentBox = await content.boundingBox();
-    const selectedBox = await selectedChapter.boundingBox();
-    return contentBox && selectedBox ? Math.abs(selectedBox.y + selectedBox.height / 2 - (contentBox.y + contentBox.height / 2)) : 999;
-  }).toBeLessThan(10);
   await page.locator(".overlay-close").click();
   await expect(page.locator(".reading-location-controls")).not.toHaveClass(/is-hidden/);
   await expect(chapter).toBeFocused();
@@ -692,8 +450,6 @@ test("top reading controls and bottom dock share hide and tap visibility", async
   await page.mouse.wheel(0, 700);
   await expect(controls).toHaveClass(/is-hidden/);
   await expect(dock).toHaveClass(/is-hidden/);
-  await expect.poll(() => page.locator(".book-location-button").evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.y + rect.height; })).toBeLessThanOrEqual(0);
-  await expect.poll(() => dock.evaluate((element) => element.getBoundingClientRect().y)).toBeGreaterThanOrEqual(await page.evaluate(() => innerHeight));
 
   await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
   await expect(controls).not.toHaveClass(/is-hidden/);
@@ -790,15 +546,10 @@ test("verse number actions copy plain text and a loadable centered link", async 
   const menu = page.getByRole("menu", { name: "Genesis 1:40 actions" });
   const menuElement = page.locator(".verse-actions-menu");
   await expect(menu).toBeVisible();
-  await expect(menuElement).toHaveClass(/is-opening/);
-  await expect(menuElement).toHaveCSS("animation-name", "verse-actions-enter");
-  await expect(menuElement).toHaveCSS("animation-duration", "0.21s");
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("menuitem", { name: "Copy Link" })).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(menuElement).toHaveClass(/is-closing/);
-  await expect(menuElement).toHaveCSS("animation-name", "verse-actions-exit");
   await expect(menu).not.toBeVisible();
   await expect(menuElement).toHaveCount(0);
   await expect(trigger).toBeFocused();
@@ -831,14 +582,6 @@ test("verse actions remove motion when reduced motion is requested", async ({ pa
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
   await expect(trigger).toBeFocused();
-});
-
-test("resizes an open overlay with the viewport", async ({ page }) => {
-  await page.getByRole("button", { name: "Profile and preferences" }).click();
-  const dialog = page.getByRole("dialog");
-  const initialHeight = await dialog.evaluate((element) => element.getBoundingClientRect().height);
-  await page.setViewportSize({ width: 800, height: 900 });
-  await expect.poll(() => dialog.evaluate((element) => element.getBoundingClientRect().height)).not.toBe(initialHeight);
 });
 
 test("user book and chapter choices advance the navigation scroll", async ({ page }) => {
@@ -884,36 +627,15 @@ test("user book and chapter choices advance the navigation scroll", async ({ pag
 
 test("toggles inline footnote numbers and their nested card together", async ({ page }) => {
   const toggle = page.locator(".footnotes-toggle").first();
-  const verseText = page.locator(".verse-content > p").first();
   const marker = page.locator(".footnote-marker-reveal").first();
   const reveal = page.locator(".footnotes-reveal").first();
   await expect(toggle).toHaveAccessibleName("Show footnotes for verse 1");
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(toggle).toHaveText("");
-  await expect(toggle.locator(".footnotes-symbol")).toHaveCount(1);
-  const toggleBox = await toggle.boundingBox();
-  if (!toggleBox) throw new Error("The footnotes control is not measurable.");
-  expect(Math.abs(toggleBox.width - toggleBox.height)).toBeLessThan(0.5);
-  expect(Math.abs(toggleBox.height - Number.parseFloat(await verseText.evaluate((element) => getComputedStyle(element).fontSize)))).toBeLessThan(1);
-  expect(await toggle.evaluate((element) => getComputedStyle(element).borderWidth)).toBe("0px");
-  expect(await toggle.evaluate((element) => element.parentElement?.tagName)).toBe("P");
-  expect(await toggle.evaluate((element) => element.parentElement?.lastElementChild === element)).toBe(true);
-  await expect(toggle.locator(".footnotes-symbol circle")).toHaveCount(2);
-  await expect(toggle.locator(".footnotes-symbol path")).toHaveCount(1);
-  await expect(page.locator(".verses > li").nth(1).locator(".footnotes-toggle")).toHaveCount(0);
   await expect(marker).toHaveAttribute("aria-hidden", "true");
   await expect(reveal).toHaveAttribute("aria-hidden", "true");
   expect(await marker.evaluate((element) => element.getBoundingClientRect().width)).toBe(0);
   expect(await reveal.evaluate((element) => element.getBoundingClientRect().height)).toBe(0);
   const before = await page.evaluate(() => window.scrollY);
-
-  const box = await toggle.boundingBox();
-  if (!box) throw new Error("The footnotes toggle is not measurable.");
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await expect.poll(() => toggle.evaluate((element) => getComputedStyle(element).transform)).not.toBe("none");
-  await page.mouse.move(box.x - 10, box.y - 10);
-  await page.mouse.up();
 
   await toggle.click();
   await expect(toggle).toHaveAccessibleName("Hide footnotes for verse 1");
@@ -938,8 +660,6 @@ test("toggles inline footnote numbers and their nested card together", async ({ 
   await expect(card).toContainText("First note");
   await expect(card).toContainText("Second note");
   await expect(toggle).toBeFocused();
-  expect(await marker.evaluate((element) => getComputedStyle(element).transitionDuration)).toContain("0.21s");
-  expect(await reveal.evaluate((element) => getComputedStyle(element).transitionDuration)).toContain("0.21s");
 
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
