@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.29 - 2026-08-17
+
+- Verify fixed overlay geometry against the full viewport while checking mobile overflow against the scrollbar-aware layout width.
+
 ## 0.31.28 - 2026-08-17
 
 - Make browser geometry and floating-control tests portable across scrollbar layouts, and log the Node runtime used by the Quality workflow.
