@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.31 - 2026-08-17
+
+- Focus browser Quality checks on user-visible behavior and release reader state before a closing overlay becomes hidden.
+
 ## 0.31.30 - 2026-08-17
 
 - Keep reader-chrome input listeners active across overlay close and use scrollbar-aware sheet geometry checks in Quality.
