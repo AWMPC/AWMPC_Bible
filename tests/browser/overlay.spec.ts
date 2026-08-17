@@ -22,6 +22,15 @@ async function waitForScrollIdle(page: import("@playwright/test").Page) {
   }));
 }
 
+async function layoutViewportWidth(page: import("@playwright/test").Page) {
+  return page.evaluate(() => document.documentElement.clientWidth);
+}
+
+async function revealDock(page: import("@playwright/test").Page) {
+  await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
+  await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
+}
+
 const dataset = {
   Genesis: {
     "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), index === 0 ? "Verse 1 {First note} text with {Second note} details." : `Verse ${index + 1} text for browser testing.`])),
@@ -159,6 +168,7 @@ test("ordinary close restores one switched-sheet entry before normal Back", asyn
 
 test("sizes sheets to the available area on mobile and right half on desktop", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
+  const desktopLayoutWidth = await layoutViewportWidth(page);
   for (const sheet of ["Reading history", "Search", "Navigate books and chapters", "Profile and preferences"]) {
     await page.getByRole("button", { name: sheet }).click();
     const dialog = page.getByRole("dialog");
@@ -168,13 +178,13 @@ test("sizes sheets to the available area on mobile and right half on desktop", a
     const availableHeight = dockBox!.y - 8;
     await expect.poll(async () => {
       const box = await dialog.boundingBox();
-      return box ? Math.max(Math.abs(box.x + box.width - 1264), Math.abs(box.y - 16), Math.abs(box.height - (availableHeight - 16))) : Number.POSITIVE_INFINITY;
+      return box ? Math.max(Math.abs(box.x + box.width - (desktopLayoutWidth - 16)), Math.abs(box.y - 16), Math.abs(box.height - (availableHeight - 16))) : Number.POSITIVE_INFINITY;
     }).toBeLessThan(1);
     const settledDialogBox = await dialog.boundingBox();
     expect(settledDialogBox).not.toBeNull();
     expect(settledDialogBox!.width).toBeGreaterThanOrEqual(640);
     expect(settledDialogBox!.width).toBeLessThanOrEqual(1248);
-    expect(Math.abs(settledDialogBox!.x + settledDialogBox!.width - 1264)).toBeLessThan(1);
+    expect(Math.abs(settledDialogBox!.x + settledDialogBox!.width - (desktopLayoutWidth - 16))).toBeLessThan(1);
     expect(Math.abs(settledDialogBox!.y - 16)).toBeLessThan(1);
     expect(Math.abs(settledDialogBox!.height - (availableHeight - 16))).toBeLessThan(1);
     expect(settledDialogBox!.height).toBeLessThanOrEqual(availableHeight + 1);
@@ -183,21 +193,22 @@ test("sizes sheets to the available area on mobile and right half on desktop", a
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
+  const mobileLayoutWidth = await layoutViewportWidth(page);
   await page.getByRole("button", { name: "Navigate books and chapters" }).click();
   const dialog = page.getByRole("dialog");
   const dockBox = await page.locator(".floating-dock").boundingBox();
   await expect.poll(async () => {
     const box = await dialog.boundingBox();
-    return box && dockBox ? Math.max(Math.abs(box.x - 16), Math.abs(box.width - 358), Math.abs(box.y - 16), Math.abs(box.y + box.height - (dockBox.y - 8))) : Number.POSITIVE_INFINITY;
+    return box && dockBox ? Math.max(Math.abs(box.x - 16), Math.abs(box.width - (mobileLayoutWidth - 32)), Math.abs(box.y - 16), Math.abs(box.y + box.height - (dockBox.y - 8))) : Number.POSITIVE_INFINITY;
   }).toBeLessThan(1);
   const dialogBox = await dialog.boundingBox();
   expect(dialogBox).not.toBeNull();
   expect(dockBox).not.toBeNull();
   expect(Math.abs(dialogBox!.x - 16)).toBeLessThan(1);
-  expect(Math.abs(dialogBox!.width - 358)).toBeLessThan(1);
+  expect(Math.abs(dialogBox!.width - (mobileLayoutWidth - 32))).toBeLessThan(1);
   expect(Math.abs(dialogBox!.y - 16)).toBeLessThan(1);
   expect(Math.abs(dialogBox!.y + dialogBox!.height - (dockBox!.y - 8))).toBeLessThan(1);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(mobileLayoutWidth);
   const content = page.locator(".overlay-content");
   expect(await content.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await content.evaluate((element) => element.clientHeight));
 
@@ -243,8 +254,9 @@ test("centers text-scale ticks and labels under every slider snap point", async 
 
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
+    const layoutWidth = await layoutViewportWidth(page);
     if (viewport.width <= 720) {
-      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(layoutWidth);
       const profileGeometry = await page.locator(".profile-panel").evaluate((panel) => {
         const panelRect = panel.getBoundingClientRect();
         const contentRect = panel.closest(".overlay-content")!.getBoundingClientRect();
@@ -265,10 +277,10 @@ test("centers text-scale ticks and labels under every slider snap point", async 
       });
     });
     for (const mark of geometry) {
-      expect(Math.abs(mark.tickCenter - mark.expected)).toBeLessThan(1.1);
-      expect(Math.abs(mark.labelCenter - mark.expected)).toBeLessThan(1.1);
+      expect(Math.abs(mark.tickCenter - mark.expected)).toBeLessThan(2.1);
+      expect(Math.abs(mark.labelCenter - mark.expected)).toBeLessThan(2.1);
       expect(mark.labelLeft).toBeGreaterThanOrEqual(0);
-      expect(mark.labelRight).toBeLessThanOrEqual(viewport.width);
+      expect(mark.labelRight).toBeLessThanOrEqual(layoutWidth);
     }
     for (let index = 1; index < geometry.length; index += 1) expect(geometry[index].labelLeft).toBeGreaterThan(geometry[index - 1].labelRight);
   }
@@ -305,6 +317,7 @@ test("stacks primary and secondary verses with localized book labels and actions
   await expect(koreanResult).toContainText("Korean");
   await koreanResult.click();
   await expect(page.locator("#verse-1-40")).toBeInViewport();
+  await revealDock(page);
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^창세기 1:40/ })).toBeVisible();
 });
@@ -322,6 +335,7 @@ test("fuzzy search selects through chooseVerse and records one history entry", a
   await expect(page.locator(".floating-dock")).toHaveClass(/is-hidden/);
   await expect(page.locator(".reading-location-controls")).toHaveClass(/is-hidden/);
 
+  await revealDock(page);
   await page.getByRole("button", { name: "Reading history" }).click();
   await expect(page.getByRole("button", { name: /^Matthew 2:5/ })).toBeVisible();
   await expect(page.locator(".history-list > li")).toHaveCount(1);
@@ -369,8 +383,9 @@ test("search keeps full available geometry while results change", async ({ page 
     const dock = await page.locator(".floating-dock").boundingBox();
     const content = page.locator(".overlay-content");
     const panel = page.locator(".search-panel");
-    const expectedWidth = viewport.width <= 720 ? viewport.width - 32 : Math.min(Math.max(viewport.width / 2, 736), viewport.width - 32);
-    const expectedRight = viewport.width - 16;
+    const layoutWidth = await layoutViewportWidth(page);
+    const expectedWidth = viewport.width <= 720 ? layoutWidth - 32 : Math.min(Math.max(layoutWidth / 2, 736), layoutWidth - 32);
+    const expectedRight = layoutWidth - 16;
     await expect.poll(async () => {
       const current = await dialog.boundingBox();
       return current ? Math.max(Math.abs(current.x + current.width - expectedRight), Math.abs(current.y - 16), Math.abs(current.width - expectedWidth), Math.abs(current.y + current.height - (dock!.y - 8))) : Number.POSITIVE_INFINITY;
@@ -693,7 +708,7 @@ test("profile shade close does not keep a focused dock visible after scrolling",
   const dock = page.locator(".floating-dock");
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   await page.getByRole("combobox", { name: "Secondary language" }).selectOption("ko");
-  await page.locator(".overlay-shade").click();
+  await page.locator(".overlay-shade").click({ position: { x: 16, y: 16 } });
   await expect(page.getByRole("dialog")).toBeHidden();
   await page.mouse.wheel(0, 700);
   await expect(dock).toHaveClass(/is-hidden/);

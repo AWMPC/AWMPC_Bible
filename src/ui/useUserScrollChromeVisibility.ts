@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   nextReaderChromeVisibility,
   toggleReaderChromeVisibility,
@@ -39,7 +39,7 @@ export function useUserScrollChromeVisibility(active: boolean): ChromeVisibility
     visibilityRef.current = visibility;
   }, [visibility]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     previousY.current = window.scrollY;
     if (!active) {
       touchY.current = null;
