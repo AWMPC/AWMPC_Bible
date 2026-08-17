@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.31.26 - 2026-08-17
+
+- Run the Quality workflow on Node.js 26.7.0 so CI uses the same TypeScript-capable runtime as local development.
+
+## 0.31.25 - 2026-08-14
+
+- Show a transient, local verse preview beneath each History reference without persisting Bible text.
+
 ## 0.31.24 - 2026-08-13
 
 - Preserve the selected language’s centered verse after closing Profile and show dynamic language labels consistently in Search, History, and verse actions.
