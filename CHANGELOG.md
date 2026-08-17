@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.28 - 2026-08-17
+
+- Make browser geometry and floating-control tests portable across scrollbar layouts, and log the Node runtime used by the Quality workflow.
+
 ## 0.31.27 - 2026-08-17
 
 - Run the Quality workflow on Node.js 26 or later so CI uses a current TypeScript-capable runtime.
