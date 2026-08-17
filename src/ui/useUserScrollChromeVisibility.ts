@@ -34,45 +34,50 @@ export function useUserScrollChromeVisibility(active: boolean): ChromeVisibility
   const previousY = useRef(0);
   const touchY = useRef<number | null>(null);
   const intent = useRef<ScrollIntent | null>(null);
+  const activeRef = useRef(active);
 
   useEffect(() => {
     visibilityRef.current = visibility;
   }, [visibility]);
 
   useLayoutEffect(() => {
+    activeRef.current = active;
     previousY.current = window.scrollY;
     if (!active) {
       touchY.current = null;
       intent.current = null;
-      return;
     }
+  }, [active]);
 
+  useLayoutEffect(() => {
     const recordIntent = (direction: -1 | 1) => {
+      if (!activeRef.current) return;
       intent.current = { direction, recordedAt: performance.now() };
     };
     const onWheel = (event: WheelEvent) => {
-      if (!event.isTrusted || isIgnoredTarget(event.target) || Math.abs(event.deltaY) < 2) return;
+      if (!activeRef.current || !event.isTrusted || isIgnoredTarget(event.target) || Math.abs(event.deltaY) < 2) return;
       recordIntent(event.deltaY > 0 ? 1 : -1);
     };
     const onTouchStart = (event: TouchEvent) => {
-      if (!event.isTrusted || isIgnoredTarget(event.target)) return;
+      if (!activeRef.current || !event.isTrusted || isIgnoredTarget(event.target)) return;
       touchY.current = event.touches[0]?.clientY ?? null;
     };
     const onTouchMove = (event: TouchEvent) => {
       const current = event.touches[0]?.clientY;
-      if (!event.isTrusted || current === undefined || touchY.current === null || isIgnoredTarget(event.target)) return;
+      if (!activeRef.current || !event.isTrusted || current === undefined || touchY.current === null || isIgnoredTarget(event.target)) return;
       const delta = touchY.current - current;
       touchY.current = current;
       if (Math.abs(delta) >= 3) recordIntent(delta > 0 ? 1 : -1);
     };
     const clearTouch = () => { touchY.current = null; };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!event.isTrusted || event.altKey || event.ctrlKey || event.metaKey || isInteractiveTarget(event.target)) return;
+      if (!activeRef.current || !event.isTrusted || event.altKey || event.ctrlKey || event.metaKey || isInteractiveTarget(event.target)) return;
       const down = ["ArrowDown", "PageDown", "End"].includes(event.key) || (event.key === " " && !event.shiftKey);
       const up = ["ArrowUp", "PageUp", "Home"].includes(event.key) || (event.key === " " && event.shiftKey);
       if (down || up) recordIntent(down ? 1 : -1);
     };
     const onScroll = () => {
+      if (!activeRef.current) return;
       const currentY = window.scrollY;
       const next = nextReaderChromeVisibility(visibilityRef.current, previousY.current, currentY, intent.current, performance.now());
       previousY.current = currentY;
@@ -98,7 +103,7 @@ export function useUserScrollChromeVisibility(active: boolean): ChromeVisibility
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [active]);
+  }, []);
 
   const toggle = useCallback(() => {
     setVisibility((current) => {
