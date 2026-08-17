@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.30 - 2026-08-17
+
+- Keep reader-chrome input listeners active across overlay close and use scrollbar-aware sheet geometry checks in Quality.
+
 ## 0.31.29 - 2026-08-17
 
 - Verify fixed overlay geometry against the full viewport while checking mobile overflow against the scrollbar-aware layout width.
