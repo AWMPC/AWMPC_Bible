@@ -22,6 +22,10 @@ async function waitForScrollIdle(page: import("@playwright/test").Page) {
   }));
 }
 
+async function layoutViewportWidth(page: import("@playwright/test").Page) {
+  return page.evaluate(() => document.documentElement.clientWidth);
+}
+
 async function revealDock(page: import("@playwright/test").Page) {
   await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
   await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
@@ -117,13 +121,13 @@ test("shows package semver immediately right of the overlay brand", async ({ pag
   await expect(version).toHaveAttribute("aria-label", `Version ${packageMetadata.version}`);
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
-    const [brandBox, versionBox, closeBox] = await Promise.all([brand.boundingBox(), version.boundingBox(), page.locator(".overlay-close").boundingBox()]);
-    expect(brandBox).not.toBeNull();
-    expect(versionBox).not.toBeNull();
-    expect(closeBox).not.toBeNull();
-    expect(versionBox!.x).toBeGreaterThanOrEqual(brandBox!.x + brandBox!.width);
-    expect(Math.abs((versionBox!.y + versionBox!.height / 2) - (brandBox!.y + brandBox!.height / 2))).toBeLessThan(3);
-    expect(versionBox!.x + versionBox!.width).toBeLessThan(closeBox!.x);
+    await expect.poll(async () => {
+      const [brandBox, versionBox, closeBox] = await Promise.all([brand.boundingBox(), version.boundingBox(), page.locator(".overlay-close").boundingBox()]);
+      return Boolean(brandBox && versionBox && closeBox
+        && versionBox.x >= brandBox.x + brandBox.width
+        && Math.abs((versionBox.y + versionBox.height / 2) - (brandBox.y + brandBox.height / 2)) < 3
+        && versionBox.x + versionBox.width < closeBox.x);
+    }).toBe(true);
   }
 });
 
@@ -168,18 +172,19 @@ test("sizes sheets to the available area on mobile and right half on desktop", a
     await page.getByRole("button", { name: sheet }).click();
     const dialog = page.getByRole("dialog");
     const [dialogBox, dockBox] = await Promise.all([page.getByRole("dialog").boundingBox(), page.locator(".floating-dock").boundingBox()]);
+    const layoutWidth = await layoutViewportWidth(page);
     expect(dialogBox).not.toBeNull();
     expect(dockBox).not.toBeNull();
     const availableHeight = dockBox!.y - 8;
     await expect.poll(async () => {
       const box = await dialog.boundingBox();
-      return box ? Math.max(Math.abs(box.x + box.width - 1264), Math.abs(box.y - 16), Math.abs(box.height - (availableHeight - 16))) : Number.POSITIVE_INFINITY;
+      return box ? Math.max(Math.abs(box.x + box.width - (layoutWidth - 16)), Math.abs(box.y - 16), Math.abs(box.height - (availableHeight - 16))) : Number.POSITIVE_INFINITY;
     }).toBeLessThan(1);
     const settledDialogBox = await dialog.boundingBox();
     expect(settledDialogBox).not.toBeNull();
     expect(settledDialogBox!.width).toBeGreaterThanOrEqual(640);
     expect(settledDialogBox!.width).toBeLessThanOrEqual(1248);
-    expect(Math.abs(settledDialogBox!.x + settledDialogBox!.width - 1264)).toBeLessThan(1);
+    expect(Math.abs(settledDialogBox!.x + settledDialogBox!.width - (layoutWidth - 16))).toBeLessThan(1);
     expect(Math.abs(settledDialogBox!.y - 16)).toBeLessThan(1);
     expect(Math.abs(settledDialogBox!.height - (availableHeight - 16))).toBeLessThan(1);
     expect(settledDialogBox!.height).toBeLessThanOrEqual(availableHeight + 1);
@@ -191,18 +196,19 @@ test("sizes sheets to the available area on mobile and right half on desktop", a
   await page.getByRole("button", { name: "Navigate books and chapters" }).click();
   const dialog = page.getByRole("dialog");
   const dockBox = await page.locator(".floating-dock").boundingBox();
+  const mobileLayoutWidth = await layoutViewportWidth(page);
   await expect.poll(async () => {
     const box = await dialog.boundingBox();
-    return box && dockBox ? Math.max(Math.abs(box.x - 16), Math.abs(box.width - 358), Math.abs(box.y - 16), Math.abs(box.y + box.height - (dockBox.y - 8))) : Number.POSITIVE_INFINITY;
+    return box && dockBox ? Math.max(Math.abs(box.x - 16), Math.abs(box.width - (mobileLayoutWidth - 32)), Math.abs(box.y - 16), Math.abs(box.y + box.height - (dockBox.y - 8))) : Number.POSITIVE_INFINITY;
   }).toBeLessThan(1);
   const dialogBox = await dialog.boundingBox();
   expect(dialogBox).not.toBeNull();
   expect(dockBox).not.toBeNull();
   expect(Math.abs(dialogBox!.x - 16)).toBeLessThan(1);
-  expect(Math.abs(dialogBox!.width - 358)).toBeLessThan(1);
+  expect(Math.abs(dialogBox!.width - (mobileLayoutWidth - 32))).toBeLessThan(1);
   expect(Math.abs(dialogBox!.y - 16)).toBeLessThan(1);
   expect(Math.abs(dialogBox!.y + dialogBox!.height - (dockBox!.y - 8))).toBeLessThan(1);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth === document.documentElement.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   const content = page.locator(".overlay-content");
   expect(await content.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await content.evaluate((element) => element.clientHeight));
 
@@ -249,7 +255,7 @@ test("centers text-scale ticks and labels under every slider snap point", async 
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     if (viewport.width <= 720) {
-      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth === document.documentElement.clientWidth)).toBe(true);
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       const profileGeometry = await page.locator(".profile-panel").evaluate((panel) => {
         const panelRect = panel.getBoundingClientRect();
         const contentRect = panel.closest(".overlay-content")!.getBoundingClientRect();
@@ -376,8 +382,9 @@ test("search keeps full available geometry while results change", async ({ page 
     const dock = await page.locator(".floating-dock").boundingBox();
     const content = page.locator(".overlay-content");
     const panel = page.locator(".search-panel");
-    const expectedWidth = viewport.width <= 720 ? viewport.width - 32 : Math.min(Math.max(viewport.width / 2, 736), viewport.width - 32);
-    const expectedRight = viewport.width - 16;
+    const layoutWidth = await layoutViewportWidth(page);
+    const expectedWidth = viewport.width <= 720 ? layoutWidth - 32 : Math.min(Math.max(layoutWidth / 2, 736), layoutWidth - 32);
+    const expectedRight = layoutWidth - 16;
     await expect.poll(async () => {
       const current = await dialog.boundingBox();
       return current ? Math.max(Math.abs(current.x + current.width - expectedRight), Math.abs(current.y - 16), Math.abs(current.width - expectedWidth), Math.abs(current.y + current.height - (dock!.y - 8))) : Number.POSITIVE_INFINITY;
