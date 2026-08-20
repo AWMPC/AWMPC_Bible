@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.31.46 - 2026-08-19
+
+- Replace standalone chapter control with a three-part floater for whole-Bible previous/next chapter navigation, including held-key and repeated-press queuing.
+- Keep ArrowLeft and ArrowRight chapter navigation available regardless of focused reader chrome, without restoring obsolete verse focus borders.
+- Restore the last validated reading chapter per Bible language after refresh; use the first chapter only as a fallback.
+- Refine reader chrome with vertically aligned floater labels, lined arrow icons, separators, a hidden-chrome embossed location header, and touch-safe active states.
+- Use static low-contrast day and night backgrounds, a stronger left-edge chapter-progress rail, quicker marquee labels, and the selected verse font across all reader controls and feature sheets.
+- Stabilize trackpad chapter gestures so momentum advances at most one chapter and subsequent swipes remain available.
+
 ## 0.31.31 - 2026-08-17
 
 - Focus browser Quality checks on user-visible behavior and release reader state before a closing overlay becomes hidden.
