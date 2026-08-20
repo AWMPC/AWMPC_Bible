@@ -15,7 +15,7 @@ icons, and same-origin service worker.
 - The main thread receives only navigation metadata and the selected chapter.
 - A focused Liquid Glass interface uses native CSS effects with graceful fallbacks.
 - A data-driven bottom dock scales to additional AWMPC Bible tools without duplicating overlay infrastructure.
-- Separate floating Book and Chapter controls open Navigation directly at the corresponding selection list.
+- A floating Book control opens Navigation at Books, while a three-part Chapter floater provides whole-Bible previous/next navigation and opens Navigation at Chapters from its center.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
 - Browser Back dismisses an open feature sheet before its normal navigation behavior continues.
@@ -23,14 +23,23 @@ icons, and same-origin service worker.
 - Profile offers five meaningful, snapping text scales for every verse and verse number.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
 - The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
+- Touch actions on reading controls and the dock clear their temporary highlight after the action; only open menus remain highlighted.
+- Overflowing floater labels use a brisk, short-pause marquee while retaining the reduced-motion fallback.
 - One shared reader-chrome visibility controller keeps the top reading controls and bottom dock coordinated through reader interactions and verse changes.
 - A selected verse receives temporary accent-pill feedback outside both verse edges.
 - Profile selects among privacy-safe local Sans, Serif, and Mono verse fonts.
+- The selected verse font applies consistently to reader text, floaters, dock controls, and feature sheets.
+- Refresh restores the last validated chapter for each Bible language; a first chapter is used only when no saved location is available.
 - Appearance supports explicit Day or Night modes and an Auto mode that follows the system.
+- Day and Night reading backgrounds use a single, low-contrast static tint throughout each chapter.
+- A clear 3px page-edge rail fills with the current chapter’s reading progress without covering verse content or reader controls.
 - Profile discovers local Bible datasets, keeps one primary language, and optionally stacks a distinct secondary language beneath each verse.
 - Book controls and Navigation show secondary-language book names as subordinate text when parallel text is active.
+- Book and chapter floaters vertically center their labels within their matching control heights.
 - Language changes preserve the verse crossing the viewport midpoint and recenter its translated counterpart.
 - Reader swipes move through adjacent chapters: left advances, right returns, and trackpad momentum is limited to one chapter per gesture.
+- Reader ArrowLeft and ArrowRight keys use queued whole-Bible chapter navigation regardless of reader focus, allowing held keys and repeated floater presses to continue through loaded chapters.
+- When reader chrome is hidden, a larger embossed location header keeps the current primary and optional secondary book names with chapter context visible.
 - Horizontal chapter gestures preserve native vertical scrolling, pinch zoom, interactive controls, overlays, and global book boundaries.
 - History and search history remain global across languages; Search is intentionally scoped to only the currently active language texts.
 - Search lazily builds a bounded fuzzy index inside each active language worker, keeping indexing and typo-tolerant scoring off the reading thread.
