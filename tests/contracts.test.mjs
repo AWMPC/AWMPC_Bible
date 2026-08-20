@@ -61,17 +61,48 @@ test("floating glass chrome keeps an adaptive gleam with forced-color restraint"
   assert.match(styles, /@media \(forced-colors: active\)[\s\S]*?\.overlay-close\s*\{[^}]*box-shadow:\s*none/);
 });
 
-test("chapter progress drives day and night water palettes", async () => {
+test("reader backgrounds use a static subtle tint in day and night modes", async () => {
   const styles = await read("../src/styles.css");
-  assert.match(styles, /--chapter-progress:\s*0/);
-  assert.match(styles, /--day-bg-start:\s*#eef3f6/);
-  assert.match(styles, /--day-bg-end:\s*#77a9c2/);
-  assert.match(styles, /--night-bg-start:\s*#171326/);
-  assert.match(styles, /--night-bg-end:\s*#073b42/);
-  assert.match(styles, /\.awmpc-bible-shell\s*\{[^}]*--day-bg-current:\s*color-mix\(in oklab,[^;]*calc\(var\(--chapter-progress\) \* 100%\)\)/);
-  assert.match(styles, /\.awmpc-bible-shell\s*\{[^}]*--night-bg-current:\s*color-mix\(in oklab,[^;]*calc\(var\(--chapter-progress\) \* 100%\)\)/);
-  assert.match(styles, /--bg:\s*light-dark\(var\(--day-bg-current\), var\(--night-bg-current\)\)/);
+  assert.match(styles, /--day-bg:\s*#f1f5f7/);
+  assert.match(styles, /--night-bg:\s*#151f24/);
+  assert.match(styles, /--bg:\s*light-dark\(var\(--day-bg\), var\(--night-bg\)\)/);
+  assert.doesNotMatch(styles, /--(?:day|night)-bg-current/);
+  assert.doesNotMatch(styles, /calc\(var\(--chapter-progress\) \* 100%\)/);
   assert.match(styles, /@media \(forced-colors: active\)[\s\S]*?\.awmpc-bible-shell\s*\{\s*background:\s*Canvas/);
+});
+
+test("page edge exposes chapter progress through a quiet rail", async () => {
+  const styles = await read("../src/styles.css");
+  assert.match(styles, /body::before\s*\{[^}]*position:\s*fixed[^}]*left:\s*0[^}]*width:\s*3px/);
+  assert.match(styles, /body::before\s*\{[^}]*background:\s*var\(--accent\)/);
+  assert.match(styles, /body::before\s*\{[^}]*pointer-events:\s*none/);
+  assert.match(styles, /body::before\s*\{[^}]*transform:\s*scaleY\(var\(--chapter-progress\)\)/);
+  assert.match(styles, /body::before\s*\{[^}]*opacity:\s*\.55/);
+  assert.doesNotMatch(styles, /\.reading-pane::before/);
+});
+
+test("touch reader controls do not retain desktop hover highlights", async () => {
+  const styles = await read("../src/styles.css");
+  assert.match(styles, /@media \(hover: hover\)\s*\{[\s\S]*?\.chapter-floater-arrow:hover:not\(:disabled\)/);
+  assert.match(styles, /@media \(hover: hover\)\s*\{[\s\S]*?\.reading-location-button:hover/);
+  assert.match(styles, /@media \(hover: hover\)\s*\{[\s\S]*?\.dock-button:hover/);
+  assert.match(styles, /\.chapter-floater-current\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
+  assert.match(styles, /\.reading-location-button\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
+  assert.match(styles, /\.dock-button\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
+});
+
+test("book floater centers its labels like the chapter floater", async () => {
+  const styles = await read("../src/styles.css");
+  assert.match(styles, /\.book-location-button\s*\{[^}]*display:\s*grid[^}]*align-content:\s*center[^}]*justify-items:\s*start/);
+});
+
+test("selected verse font inherits across reader controls and feature sheets", async () => {
+  const styles = await read("../src/styles.css");
+  assert.match(styles, /\.awmpc-bible-shell\s*\{[^}]*font-family:\s*var\(--verse-font-family\)/);
+  assert.doesNotMatch(styles, /\.book-location-button\s*\{[^}]*font-family:\s*ui-serif/);
+  for (const selector of ["overlay-header h2", "empty-feature h3", "account-avatar", "account-card h3", "setting-heading h3", "font-setting label"]) {
+    assert.doesNotMatch(styles, new RegExp(`\\.${selector.replace(" ", "\\s+")}\\s*\\{[^}]*ui-serif`));
+  }
 });
 
 test("panels retain semantic native controls", async () => {
