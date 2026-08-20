@@ -1,10 +1,10 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import type { ChapterDirection } from "../navigation/adjacentChapter";
 
 const TOUCH_THRESHOLD_PX = 52;
 const WHEEL_THRESHOLD_PX = 72;
 const AXIS_DOMINANCE = 1.25;
-const WHEEL_END_DELAY_MS = 180;
+const WHEEL_END_DELAY_MS = 500;
 const TOUCH_MAX_DURATION_MS = 900;
 
 type Point = Readonly<{ x: number; y: number }>;
@@ -42,6 +42,11 @@ function wheelPixels(event: WheelEvent, pageWidth: number): Point {
 }
 
 export function useChapterSwipe(targetRef: RefObject<HTMLElement | null>, enabled: boolean, canNavigate: (direction: ChapterDirection) => boolean, onNavigate: (direction: ChapterDirection) => void): void {
+  const canNavigateRef = useRef(canNavigate);
+  const onNavigateRef = useRef(onNavigate);
+  canNavigateRef.current = canNavigate;
+  onNavigateRef.current = onNavigate;
+
   useEffect(() => {
     const target = targetRef.current;
     if (!enabled || !target) return;
@@ -85,7 +90,7 @@ export function useChapterSwipe(targetRef: RefObject<HTMLElement | null>, enable
       const horizontal = Math.abs(touch.clientX - touchStart.x);
       const vertical = Math.abs(touch.clientY - touchStart.y);
       const direction: ChapterDirection = touch.clientX < touchStart.x ? 1 : -1;
-      if (horizontal > 10 && horizontal > vertical * AXIS_DOMINANCE && canNavigate(direction)) event.preventDefault();
+      if (horizontal > 10 && horizontal > vertical * AXIS_DOMINANCE && canNavigateRef.current(direction)) event.preventDefault();
     };
     const finishTouch = (event: TouchEvent) => {
       if (!event.isTrusted || touchStart === null || touchIdentifier === null) {
@@ -99,7 +104,7 @@ export function useChapterSwipe(targetRef: RefObject<HTMLElement | null>, enable
       touchIdentifier = null;
       if (!touch) return;
       const direction = horizontalSwipeDirection(start, { x: touch.clientX, y: touch.clientY }, performance.now() - touchStartedAt);
-      if (direction && canNavigate(direction)) onNavigate(direction);
+      if (direction && canNavigateRef.current(direction)) onNavigateRef.current(direction);
     };
     const cancelTouch = () => {
       touchStart = null;
@@ -107,19 +112,21 @@ export function useChapterSwipe(targetRef: RefObject<HTMLElement | null>, enable
     };
     const onWheel = (event: WheelEvent) => {
       if (!event.isTrusted || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || isInteractiveTarget(event.target)) return;
+      const delta = wheelPixels(event, window.innerWidth);
+      const horizontalInput = Math.abs(delta.x) > 10 && Math.abs(delta.x) > Math.abs(delta.y) * AXIS_DOMINANCE;
+      if (!horizontalInput) return;
+      if (wheelLocked) return;
       if (wheelSequenceHasEnded(lastWheelAt, event.timeStamp)) clearWheel();
       lastWheelAt = event.timeStamp;
-      const delta = wheelPixels(event, window.innerWidth);
       wheelX += delta.x;
       wheelY += delta.y;
       scheduleWheelEnd();
       const tentativeDirection: ChapterDirection = wheelX > 0 ? 1 : -1;
-      if (Math.abs(wheelX) > 10 && Math.abs(wheelX) > Math.abs(wheelY) * AXIS_DOMINANCE && canNavigate(tentativeDirection)) event.preventDefault();
-      if (wheelLocked) return;
+      if (Math.abs(wheelX) > 10 && Math.abs(wheelX) > Math.abs(wheelY) * AXIS_DOMINANCE && canNavigateRef.current(tentativeDirection)) event.preventDefault();
       const direction = horizontalWheelDirection(wheelX, wheelY);
       if (!direction) return;
       wheelLocked = true;
-      if (canNavigate(direction)) onNavigate(direction);
+      if (canNavigateRef.current(direction)) onNavigateRef.current(direction);
     };
 
     target.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -135,5 +142,5 @@ export function useChapterSwipe(targetRef: RefObject<HTMLElement | null>, enable
       target.removeEventListener("touchcancel", cancelTouch);
       target.removeEventListener("wheel", onWheel);
     };
-  }, [canNavigate, enabled, onNavigate, targetRef]);
+  }, [enabled, targetRef]);
 }

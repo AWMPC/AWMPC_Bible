@@ -18,19 +18,27 @@ type AdjacentChapterNavigationOptions = {
 export function useAdjacentChapterNavigation(options: AdjacentChapterNavigationOptions) {
   const { enabled, books, passage, readingPaneRef, requestChapter, invalidate, commit, onStatus } = options;
   const generationRef = useRef(0);
-  const navigatingRef = useRef(false);
+  const processingRef = useRef(false);
+  const queuedTargetsRef = useRef<Array<Pick<Passage, "book" | "chapter">>>([]);
+  const queuedTailRef = useRef<Pick<Passage, "book" | "chapter"> | null>(null);
   const transitionAbortRef = useRef<AbortController | null>(null);
   const [loading, setLoading] = useState(false);
+  const [, setQueueVersion] = useState(0);
+
+  const refreshQueue = useCallback(() => setQueueVersion((version) => version + 1), []);
 
   const cancel = useCallback(() => {
-    if (!navigatingRef.current && transitionAbortRef.current === null) return;
+    if (!processingRef.current && transitionAbortRef.current === null) return;
     generationRef.current += 1;
-    navigatingRef.current = false;
+    processingRef.current = false;
+    queuedTargetsRef.current = [];
+    queuedTailRef.current = null;
     transitionAbortRef.current?.abort();
     transitionAbortRef.current = null;
     invalidate("gesture");
     setLoading(false);
-  }, [invalidate]);
+    refreshQueue();
+  }, [invalidate, refreshQueue]);
 
   useEffect(() => {
     if (!enabled) cancel();
@@ -38,53 +46,74 @@ export function useAdjacentChapterNavigation(options: AdjacentChapterNavigationO
 
   useEffect(() => () => {
     generationRef.current += 1;
-    navigatingRef.current = false;
+    processingRef.current = false;
+    queuedTargetsRef.current = [];
+    queuedTailRef.current = null;
     transitionAbortRef.current?.abort();
     transitionAbortRef.current = null;
     invalidate("gesture");
   }, [invalidate]);
 
   const canNavigate = useCallback((direction: ChapterDirection) => (
-    enabled && !navigatingRef.current && adjacentChapter(books, passage, direction) !== null
+    enabled && adjacentChapter(books, queuedTailRef.current ?? passage, direction) !== null
   ), [books, enabled, passage]);
 
-  const navigate = useCallback((direction: ChapterDirection) => {
-    const target = adjacentChapter(books, passage, direction);
-    if (!enabled || navigatingRef.current || !target) return;
-    navigatingRef.current = true;
+  const processQueue = useCallback(() => {
+    if (processingRef.current) return;
+    processingRef.current = true;
     setLoading(true);
-    onStatus(`Loading ${target.book} chapter ${target.chapter}.`);
-    const generation = ++generationRef.current;
-    const transitionAbort = new AbortController();
-    transitionAbortRef.current = transitionAbort;
-
-    void requestChapter("gesture", target.book, target.chapter).then(async (verses) => {
+    const generation = generationRef.current;
+    void (async () => {
+      while (generation === generationRef.current) {
+        const target = queuedTargetsRef.current.shift();
+        if (!target) break;
+        refreshQueue();
+        onStatus(`Loading ${target.book} chapter ${target.chapter}.`);
+        const transitionAbort = new AbortController();
+        transitionAbortRef.current = transitionAbort;
+        try {
+          const verses = await requestChapter("gesture", target.book, target.chapter);
+          if (generation !== generationRef.current) return;
+          if (!verses?.length) {
+            onStatus("That adjacent chapter could not be loaded.");
+            continue;
+          }
+          const nextPassage = { ...target, verses };
+          const pane = readingPaneRef.current;
+          if (pane && queuedTargetsRef.current.length === 0) {
+            await transitionChapterView(pane, () => commit(nextPassage), undefined, transitionAbort.signal);
+          } else {
+            commit(nextPassage);
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+          }
+          if (generation === generationRef.current) onStatus(`${target.book} chapter ${target.chapter}.`);
+        } catch (error: unknown) {
+          if (generation === generationRef.current && !(error instanceof DOMException && error.name === "AbortError")) {
+            onStatus("That adjacent chapter could not be loaded.");
+          }
+        } finally {
+          if (transitionAbortRef.current === transitionAbort) transitionAbortRef.current = null;
+        }
+      }
+    })().finally(() => {
       if (generation !== generationRef.current) return;
-      if (!verses?.length) {
-        onStatus("That adjacent chapter could not be loaded.");
-        return;
-      }
-      const nextPassage = { ...target, verses };
-      const pane = readingPaneRef.current;
-      if (pane) {
-        await transitionChapterView(pane, () => commit(nextPassage), undefined, transitionAbort.signal);
-      } else {
-        commit(nextPassage);
-        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-      }
-      if (generation === generationRef.current) onStatus(`${target.book} chapter ${target.chapter}.`);
-    }).catch((error: unknown) => {
-      if (generation === generationRef.current && !(error instanceof DOMException && error.name === "AbortError")) {
-        onStatus("That adjacent chapter could not be loaded.");
-      }
-    }).finally(() => {
-      if (generation === generationRef.current) {
-        navigatingRef.current = false;
-        transitionAbortRef.current = null;
-        setLoading(false);
-      }
+      processingRef.current = false;
+      queuedTailRef.current = null;
+      transitionAbortRef.current = null;
+      setLoading(false);
+      refreshQueue();
     });
-  }, [books, commit, enabled, onStatus, passage, readingPaneRef, requestChapter]);
+  }, [commit, onStatus, readingPaneRef, refreshQueue, requestChapter]);
+
+  const navigate = useCallback((direction: ChapterDirection) => {
+    if (!enabled) return;
+    const target = adjacentChapter(books, queuedTailRef.current ?? passage, direction);
+    if (!target) return;
+    queuedTargetsRef.current.push(target);
+    queuedTailRef.current = target;
+    refreshQueue();
+    processQueue();
+  }, [books, enabled, passage, processQueue, refreshQueue]);
 
   return { canNavigate, navigate, loading, cancel } as const;
 }

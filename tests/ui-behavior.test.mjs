@@ -64,10 +64,9 @@ test("chapter gestures require a deliberate, horizontally dominant user motion",
   assert.equal(horizontalWheelDirection(Number.NaN, 0), null);
 });
 
-test("a new trackpad gesture synchronously releases an overdue wheel lock", () => {
-  assert.equal(wheelSequenceHasEnded(100, 279), false);
-  assert.equal(wheelSequenceHasEnded(100, 280), true);
-  assert.equal(wheelSequenceHasEnded(100, 500), true);
+test("a new trackpad gesture releases the wheel lock only after its momentum settles", () => {
+  assert.equal(wheelSequenceHasEnded(100, 499), false);
+  assert.equal(wheelSequenceHasEnded(100, 600), true);
   assert.equal(wheelSequenceHasEnded(0, 500), false);
   assert.equal(wheelSequenceHasEnded(Number.NaN, 500), false);
 });
@@ -124,11 +123,11 @@ test("overlay origin stops above the dock", () => {
 });
 
 test("overflow marquee activates only for measured overflow with bounded timing", () => {
-  assert.deepEqual(overflowMarqueeMetrics(120, 120.9), { distance: 0, duration: 6, overflowing: false });
-  assert.deepEqual(overflowMarqueeMetrics(120, 122), { distance: 2, duration: 6, overflowing: true });
-  assert.deepEqual(overflowMarqueeMetrics(100, 250), { distance: 150, duration: 14, overflowing: true });
-  assert.deepEqual(overflowMarqueeMetrics(100, 10_000), { distance: 9900, duration: 18, overflowing: true });
-  assert.deepEqual(overflowMarqueeMetrics(Number.NaN, 200), { distance: 0, duration: 6, overflowing: false });
+  assert.deepEqual(overflowMarqueeMetrics(120, 120.9), { distance: 0, duration: 4, overflowing: false });
+  assert.deepEqual(overflowMarqueeMetrics(120, 122), { distance: 2, duration: 4, overflowing: true });
+  assert.deepEqual(overflowMarqueeMetrics(100, 250), { distance: 150, duration: 8, overflowing: true });
+  assert.deepEqual(overflowMarqueeMetrics(100, 10_000), { distance: 9900, duration: 12, overflowing: true });
+  assert.deepEqual(overflowMarqueeMetrics(Number.NaN, 200), { distance: 0, duration: 4, overflowing: false });
 });
 
 test("navigation progression scrolls only its overlay container and respects reduced motion", () => {

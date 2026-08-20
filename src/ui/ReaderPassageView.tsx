@@ -49,7 +49,7 @@ export function ReaderPassageView({ readingPaneRef, chapterRef, chapterSwipeLoad
             <ol className="verses">{verses.map((verse) => {
               const secondaryVerse = secondaryVerses.get(verse.number);
               return (
-                <li id={verseElementId(chapter, verse.number)} data-verse-number={verse.number} tabIndex={-1} key={`${book}-${chapter}-${verse.number}`}>
+                <li id={verseElementId(chapter, verse.number)} data-verse-number={verse.number} key={`${book}-${chapter}-${verse.number}`}>
                   <VerseWithFootnotes key={`${primaryLanguage}:${verse.number}`} verse={verse} language={primaryLanguage} actionLanguageLabel={dualLanguage ? languageLabels.get(primaryLanguage) : undefined} actionsOpen={verseActionTarget?.bibleLanguage === primaryLanguage && verseActionTarget.verse.number === verse.number} onActions={(targetVerse, trigger) => onVerseActions(targetVerse, trigger, primaryLanguage, book, chapter)} />
                   {secondaryLanguage && secondaryStatus === "loading" && <div className="verse-language-row secondary-verse-skeleton" lang={secondaryLanguage} aria-hidden="true"><div className="verse-rail" /><div className="verse-content" /></div>}
                   {secondaryLanguage && secondaryBook && secondaryChapter && secondaryVerse && <VerseWithFootnotes key={`${secondaryLanguage}:${verse.number}`} verse={secondaryVerse} language={secondaryLanguage} actionLanguageLabel={languageLabels.get(secondaryLanguage)} actionsOpen={verseActionTarget?.bibleLanguage === secondaryLanguage && verseActionTarget.verse.number === secondaryVerse.number} onActions={(targetVerse, trigger) => onVerseActions(targetVerse, trigger, secondaryLanguage, secondaryBook, secondaryChapter)} />}
