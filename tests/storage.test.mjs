@@ -1,9 +1,28 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { LocalHistoryStore, mergeHistoryEntries } from "../src/history/HistoryStore.ts";
+import { LocalReaderLocationStore } from "../src/persistence/ReaderLocationStore.ts";
 import { activeBibleLanguages, LocalSettingsStore, normalizeBibleSettings, withPrimaryBibleLanguage, withSecondaryBibleLanguage } from "../src/settings/SettingsStore.ts";
 
 const defaultSettings = { textScale: "standard", verseFont: "system-serif", appearance: "auto", primaryBibleLanguage: "en", secondaryBibleLanguage: null };
+
+test("reader location persists a validated chapter per Bible language", () => {
+  const values = new Map();
+  const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+  const store = new LocalReaderLocationStore(storage);
+  store.save("en", { book: "Matthew", chapter: "2" });
+  store.save("ko", { book: "마태복음", chapter: "3" });
+
+  assert.deepEqual(store.load("en"), { book: "Matthew", chapter: "2" });
+  assert.deepEqual(store.load("ko"), { book: "마태복음", chapter: "3" });
+
+  values.set("awmpc-bible.reader-location.v1", '{"en":{"book":" Matthew","chapter":"02"}}');
+  assert.equal(store.load("en"), null);
+
+  const unavailable = new LocalReaderLocationStore({ getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } });
+  assert.equal(unavailable.load("en"), null);
+  assert.doesNotThrow(() => unavailable.save("en", { book: "Matthew", chapter: "2" }));
+});
 
 test("history timestamps, bounds, validates, and migrates references", async () => {
   const values = new Map();

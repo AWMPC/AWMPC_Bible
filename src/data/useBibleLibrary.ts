@@ -20,7 +20,6 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
   const [books, setBooks] = useState<Book[]>([]);
   const [status, setStatus] = useState<LibraryStatus>("loading");
   const [error, setError] = useState("");
-  const [initialPassage, setInitialPassage] = useState<Passage | null>(null);
   const [workerLanguage, setWorkerLanguage] = useState<BibleLanguage | null>(language);
 
   requestedLanguageRef.current = language;
@@ -63,7 +62,6 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
     setBooks([]);
     setStatus("loading");
     setError("");
-    setInitialPassage(null);
     setWorkerLanguage(language);
     if (language === null) {
       workerLanguageRef.current = null;
@@ -80,14 +78,6 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
         readyRef.current = true;
         setBooks(data.books);
         setStatus("ready");
-        const first = data.books[0];
-        if (first) {
-          void requestChapter("reader", first.name, first.chapters[0]).then((verses) => {
-            if (loadGeneration === loadGenerationRef.current && verses) {
-              setInitialPassage({ book: first.name, chapter: first.chapters[0], verses });
-            }
-          });
-        }
       } else if (data.type === "chapter") {
         pendingRef.current.get(data.requestId)?.resolve(data.verses);
         pendingRef.current.delete(data.requestId);
@@ -129,7 +119,6 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
     books: languageIsChanging ? [] : books,
     status: languageIsChanging ? "loading" : status,
     error: languageIsChanging ? "" : error,
-    initialPassage: languageIsChanging ? null : initialPassage,
     requestChapter,
     invalidate,
     search,

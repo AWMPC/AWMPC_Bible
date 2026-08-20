@@ -13,7 +13,7 @@ import type { BibleLanguage } from "./settings/bibleLanguage";
 import { FeatureOverlay, type FeatureOverlayHandle } from "./ui/FeatureOverlay";
 import { FeatureSheetContent } from "./ui/FeatureSheetContent";
 import { FloatingDock } from "./ui/FloatingDock";
-import { ReadingLocationControls } from "./ui/ReadingLocationControls";
+import { ReadingLocationControls, ReadingLocationEmboss } from "./ui/ReadingLocationControls";
 import { ReaderPassageView } from "./ui/ReaderPassageView";
 import { createOverlayOrigin, featureTitle, type FeatureId, type OverlayOrigin } from "./ui/features";
 import { verseElementId } from "./ui/transitionVerseView";
@@ -26,6 +26,7 @@ import { VerseActionsMenu, type VerseActionTarget } from "./ui/VerseActionsMenu"
 import type { NavigationSection, NavigationSectionRequest } from "./ui/navigationTarget";
 import { useBibleSearch, type LocalizedSearchResult } from "./search/useBibleSearch";
 import { useReaderPersistence } from "./persistence/useReaderPersistence";
+import { LocalReaderLocationStore } from "./persistence/ReaderLocationStore";
 import { useBibleCatalog } from "./data/useBibleCatalog";
 
 type LocalizedVerseReference = Readonly<{ bibleLanguage: BibleLanguage; book: string; chapter: string; verse: string }>;
@@ -44,6 +45,7 @@ export function AwmpcBibleApp() {
   const overlayContentRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const initialVerseLinkRef = useRef<LinkedVerse | null>(parseVerseLink(window.location.href));
+  const readerLocationStoreRef = useRef(new LocalReaderLocationStore(window.localStorage));
   const [pendingVerseLink, setPendingVerseLink] = useState<LinkedVerse | null>(initialVerseLinkRef.current);
   const bibleLanguageOptions = useBibleCatalog();
   const { settingsStore, historyStore, searchHistoryStore: searchHistory, cloud } = useReaderPersistence(initialVerseLinkRef.current?.bibleLanguage);
@@ -105,6 +107,17 @@ export function AwmpcBibleApp() {
     onStatus: setReaderStatus,
   });
   useChapterSwipe(readingPaneRef, swipeNavigationEnabled, chapterSwipe.canNavigate, chapterSwipe.navigate);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!swipeNavigationEnabled || !event.isTrusted || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const direction = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : null;
+      if (direction === null) return;
+      event.preventDefault();
+      if (chapterSwipe.canNavigate(direction)) chapterSwipe.navigate(direction);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [chapterSwipe.canNavigate, chapterSwipe.navigate, swipeNavigationEnabled]);
   const cancelChapterSwipe = chapterSwipe.cancel;
   const recordHistoryForLanguage = useCallback((selection: HistorySelection) => {
     recordHistory({ ...selection, bibleLanguage: selection.bibleLanguage ?? primaryBibleLanguage });
@@ -200,8 +213,26 @@ export function AwmpcBibleApp() {
   }, [primaryBibleLanguage, chooseVerse, primaryLibrary.books, primaryLibrary.status, pendingVerseLink]);
 
   useEffect(() => {
-    if (primaryLibrary.initialPassage && !passage.book && !pendingVerseLink && !restoringLanguageAnchor) setPassage(primaryLibrary.initialPassage);
-  }, [primaryLibrary.initialPassage, passage.book, pendingVerseLink, restoringLanguageAnchor]);
+    if (primaryLibrary.status !== "ready" || passage.book || pendingVerseLink || restoringLanguageAnchor) return;
+    const saved = readerLocationStoreRef.current.load(primaryBibleLanguage);
+    const savedBook = saved && primaryLibrary.books.find(({ name }) => name === saved.book);
+    const target = saved && savedBook?.chapters.includes(saved.chapter)
+      ? saved
+      : primaryLibrary.books[0] ? { book: primaryLibrary.books[0].name, chapter: primaryLibrary.books[0].chapters[0] } : null;
+    if (!target) return;
+    let cancelled = false;
+    void primaryLibrary.requestChapter("reader", target.book, target.chapter).then((loadedVerses) => {
+      if (!cancelled && loadedVerses) setPassage({ ...target, verses: loadedVerses });
+    });
+    return () => {
+      cancelled = true;
+      primaryLibrary.invalidate("reader");
+    };
+  }, [passage.book, pendingVerseLink, primaryBibleLanguage, primaryLibrary.books, primaryLibrary.invalidate, primaryLibrary.requestChapter, primaryLibrary.status, restoringLanguageAnchor]);
+
+  useEffect(() => {
+    if (book && chapter) readerLocationStoreRef.current.save(primaryBibleLanguage, { book, chapter });
+  }, [book, chapter, primaryBibleLanguage]);
 
   const selectVerseReference = useCallback((entry: LocalizedVerseReference, options: ReferenceSelectionOptions) => {
     const chooseOptions = {
@@ -303,10 +334,11 @@ export function AwmpcBibleApp() {
       <div className="reader-layer" inert={activeFeature !== null}>
         <a className="skip-link" href="#reading-pane">Skip to text</a>
         <div className="workspace">
+          <ReadingLocationEmboss book={book} secondaryBook={secondaryBook} secondaryLanguage={secondaryBibleLanguage} chapter={chapter} visible={!chromeVisible && activeFeature === null} />
           <ReaderPassageView readingPaneRef={readingPaneRef} chapterRef={chapterRef} chapterSwipeLoading={chapterSwipe.loading} primaryStatus={primaryLibrary.status} primaryError={primaryLibrary.error} primaryLanguage={primaryBibleLanguage} book={book} chapter={chapter} verses={verses} secondaryLanguage={secondaryBibleLanguage} secondaryStatus={secondary.status} secondaryBook={secondary.passage?.book} secondaryChapter={secondary.passage?.chapter} secondaryVerses={secondaryVerses} languageLabels={languageLabels} verseActionTarget={verseActionTarget} onToggleChrome={toggleChromeVisibility} onVerseActions={openVerseActions} />
         </div>
       </div>
-      <ReadingLocationControls book={book} secondaryBook={secondaryBook} secondaryLanguage={secondaryBibleLanguage} chapter={chapter} visible={chromeVisible && activeFeature === null} activeSection={activeFeature === "navigation" ? navigationSectionRequest?.section ?? null : null} obscured={activeFeature !== null} dockRef={dockRef} onNavigate={openNavigationAt} />
+      <ReadingLocationControls book={book} secondaryBook={secondaryBook} secondaryLanguage={secondaryBibleLanguage} chapter={chapter} visible={chromeVisible && activeFeature === null} activeSection={activeFeature === "navigation" ? navigationSectionRequest?.section ?? null : null} obscured={activeFeature !== null} dockRef={dockRef} canNavigatePrevious={chapterSwipe.canNavigate(-1)} canNavigateNext={chapterSwipe.canNavigate(1)} onNavigate={openNavigationAt} onChapterNavigate={chapterSwipe.navigate} />
       <FloatingDock ref={dockRef} activeFeature={activeFeature} visible={chromeVisible} onOpen={openFeature} />
       <p className="visually-hidden" role="status" aria-live="polite">{readerStatus || (activeFeature ? `${featureTitle(activeFeature)} overlay open` : "")}</p>
       <VerseActionsMenu target={verseActionTarget} onClose={closeVerseActions} onStatus={setReaderStatus} />

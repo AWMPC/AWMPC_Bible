@@ -47,6 +47,87 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
 });
 
+test("refresh restores the last validated reading chapter", async ({ page }) => {
+  await page.getByRole("button", { name: "Next chapter" }).click();
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+
+  await page.reload();
+
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+});
+
+test("reader arrows and the chapter floater navigate across Bible book boundaries without focusing verses", async ({ page }) => {
+  const firstVerse = page.locator("#verse-1-1");
+  await firstVerse.click();
+  await expect(firstVerse).not.toHaveAttribute("tabindex");
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+  await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
+
+  const previous = page.getByRole("button", { name: "Previous chapter" });
+  const next = page.getByRole("button", { name: "Next chapter" });
+  await expect(previous).toBeEnabled();
+  await expect(next).toBeEnabled();
+  await previous.click();
+  await expect(page.locator('article[aria-label="Genesis chapter 1"]')).toBeVisible();
+  await expect(previous).toBeDisabled();
+  await next.click();
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+});
+
+test("focused floater keys and rapid chapter requests continue through the Bible", async ({ page }) => {
+  const next = page.getByRole("button", { name: "Next chapter" });
+  await next.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(next).toBeEnabled();
+  await next.click();
+  await next.click();
+  await expect(page.locator('article[aria-label="Matthew chapter 3"]')).toBeVisible();
+});
+
+test("reader arrows navigate while a dock control holds focus", async ({ page }) => {
+  const profile = page.getByRole("button", { name: "Profile and preferences" });
+  await profile.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+});
+
+test("chapter floater centers lined arrow controls and divides its three sections", async ({ page }) => {
+  const previous = page.getByRole("button", { name: "Previous chapter" });
+  const current = page.getByRole("button", { name: "Choose chapter, currently chapter 1" });
+  const next = page.getByRole("button", { name: "Next chapter" });
+  await expect(previous.locator("svg path")).toHaveCount(1);
+  await expect(next.locator("svg path")).toHaveCount(1);
+  const geometry = await Promise.all([previous, current, next].map((button) => button.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return { centerY: box.y + box.height / 2, borderLeft: style.borderLeftWidth, borderRight: style.borderRightWidth };
+  })));
+  expect(geometry.map(({ centerY }) => centerY)).toEqual([geometry[1].centerY, geometry[1].centerY, geometry[1].centerY]);
+  expect(geometry[1].borderLeft).toBe("1px");
+  expect(geometry[1].borderRight).toBe("1px");
+});
+
+test("hidden reader chrome reveals an embossed bilingual location header without floater focus borders", async ({ page }) => {
+  const emboss = page.locator(".reading-location-emboss");
+  const currentChapter = page.getByRole("button", { name: "Choose chapter, currently chapter 1" });
+  const profile = page.getByRole("button", { name: "Profile and preferences" });
+  await currentChapter.focus();
+  await expect.poll(() => currentChapter.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe("none");
+  await profile.focus();
+  await expect.poll(() => profile.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe("none");
+  await profile.click();
+  await page.getByRole("combobox", { name: "Secondary language" }).selectOption("ko");
+  await page.locator(".overlay-close").click();
+  await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
+  await expect(emboss).toHaveCSS("opacity", "1");
+  await expect(emboss).toContainText("Genesis");
+  await expect(emboss).toContainText("창세기");
+  await expect(emboss).toContainText("Chapter 1");
+  await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
+  await expect(emboss).toHaveCSS("opacity", "0");
+});
+
 test("switches between the local English and Korean datasets", async ({ page }) => {
   await page.locator("#verse-1-40").scrollIntoViewIfNeeded();
   await page.evaluate(() => document.getElementById("verse-1-40")?.scrollIntoView({ block: "center" }));
@@ -362,17 +443,17 @@ test("repeated trackpad gestures switch adjacent chapters without pointer moveme
   await expect(page.getByRole("button", { name: "Choose book, currently Matthew, 마태복음" })).toBeVisible();
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
   await expect(pane).not.toHaveAttribute("aria-busy", "true");
-  await page.waitForTimeout(220);
+  await page.waitForTimeout(520);
 
   await page.mouse.wheel(90, 1);
   await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
   await expect(pane).not.toHaveAttribute("aria-busy", "true");
-  await page.waitForTimeout(220);
+  await page.waitForTimeout(520);
 
   await page.mouse.wheel(90, 1);
   await expect(page.locator('article[aria-label="Matthew chapter 3"]')).toBeVisible();
   await expect(pane).not.toHaveAttribute("aria-busy", "true");
-  await page.waitForTimeout(220);
+  await page.waitForTimeout(520);
 
   await page.mouse.wheel(-80, 2);
   await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
@@ -383,9 +464,52 @@ test("repeated trackpad gestures switch adjacent chapters without pointer moveme
   await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
   await expect.poll(() => page.evaluate((before) => scrollY > before, beforeVertical)).toBe(true);
 
-  await page.waitForTimeout(220);
+  await page.waitForTimeout(520);
   await page.mouse.wheel(-90, 1);
   await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+});
+
+test("one horizontal trackpad gesture cannot advance twice after its first chapter render", async ({ page }) => {
+  const pane = page.locator(".reading-pane");
+  await pane.hover({ position: { x: 320, y: 220 } });
+
+  await page.mouse.wheel(90, 1);
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+  await page.waitForTimeout(80);
+  await page.mouse.wheel(90, 1);
+  await page.waitForTimeout(300);
+
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+  await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeHidden();
+});
+
+test("vertical scrolling does not keep the horizontal swipe lock alive", async ({ page }) => {
+  const pane = page.locator(".reading-pane");
+  await pane.hover({ position: { x: 320, y: 220 } });
+
+  await page.mouse.wheel(90, 1);
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+  await page.mouse.wheel(0, 160);
+  await page.waitForTimeout(300);
+  await page.mouse.wheel(0, 160);
+  await page.waitForTimeout(300);
+  await page.mouse.wheel(90, 1);
+
+  await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
+});
+
+test("an ignored horizontal retry does not extend the chapter-swipe lock", async ({ page }) => {
+  const pane = page.locator(".reading-pane");
+  await pane.hover({ position: { x: 320, y: 220 } });
+
+  await page.mouse.wheel(90, 1);
+  await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
+  await page.waitForTimeout(80);
+  await page.mouse.wheel(90, 1);
+  await page.waitForTimeout(350);
+  await page.mouse.wheel(90, 1);
+
+  await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeVisible();
 });
 
 test("trusted mobile swipes switch chapters while vertical touch movement remains native", async ({ page, context }) => {
@@ -465,6 +589,7 @@ test("profile shade close does not keep a focused dock visible after scrolling",
   await page.getByRole("combobox", { name: "Secondary language" }).selectOption("ko");
   await page.locator(".overlay-shade").click({ position: { x: 16, y: 16 } });
   await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Profile and preferences" })).toBeFocused();
   await page.mouse.wheel(0, 700);
   await expect(dock).toHaveClass(/is-hidden/);
   await expect(dock).toHaveCSS("opacity", "0");
