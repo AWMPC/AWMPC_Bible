@@ -55,7 +55,8 @@ test("floating glass chrome keeps an adaptive gleam with forced-color restraint"
   assert.match(styles, /--day-glass-gleam:/);
   assert.match(styles, /--night-glass-gleam:/);
   assert.match(styles, /--glass-gleam:\s*light-dark\(var\(--day-glass-gleam\), var\(--night-glass-gleam\)\)/);
-  assert.match(styles, /\.reading-location-button\s*\{[^}]*box-shadow:[^;}]*var\(--glass-gleam\)/);
+  assert.match(styles, /\.reading-location-floater\s*\{[^}]*box-shadow:[^;}]*var\(--glass-gleam\)/);
+  assert.match(styles, /\.reading-location-floater\s*\{[^}]*border-radius:\s*22px[^}]*backdrop-filter:\s*blur\(28px\) saturate\(140%\)/);
   assert.match(styles, /\.floating-dock\s*\{[^}]*box-shadow:[^;}]*var\(--glass-gleam\)/);
   assert.match(styles, /\.overlay-close\s*\{[^}]*box-shadow:[^;}]*var\(--glass-gleam\)/);
   assert.match(styles, /@media \(forced-colors: active\)[\s\S]*?\.overlay-close\s*\{[^}]*box-shadow:\s*none/);
@@ -83,12 +84,13 @@ test("page edge exposes chapter progress through a quiet rail", async () => {
 
 test("touch reader controls do not retain desktop hover highlights", async () => {
   const styles = await read("../src/styles.css");
-  assert.match(styles, /@media \(hover: hover\)\s*\{[\s\S]*?\.chapter-floater-arrow:hover:not\(:disabled\)/);
-  assert.match(styles, /@media \(hover: hover\)\s*\{[\s\S]*?\.reading-location-button:hover/);
-  assert.match(styles, /@media \(hover: hover\)\s*\{[\s\S]*?\.dock-button:hover/);
+  assert.match(styles, /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.chapter-floater-arrow:hover:not\(:disabled\)/);
+  assert.match(styles, /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.reading-location-button:hover/);
+  assert.match(styles, /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.dock-button:hover/);
   assert.match(styles, /\.chapter-floater-current\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
   assert.match(styles, /\.reading-location-button\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
   assert.match(styles, /\.dock-button\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
+  assert.match(styles, /\.reading-location-floater > :is\([^}]*\):not\(:last-child\)::after\s*\{[^}]*top:\s*22%[^}]*bottom:\s*22%[^}]*width:\s*1px/);
 });
 
 test("book floater centers its labels like the chapter floater", async () => {
@@ -139,7 +141,7 @@ test("panels retain semantic native controls", async () => {
   assert.match(styles, /\.feature-overlay\[data-feature="search"\], \.feature-overlay\[data-feature="profile"\]\s*\{[^}]*--overlay-desktop-width:\s*max\(50vw, 46rem\)/);
   assert.match(styles, /\.overlay-surface\s*\{[^}]*width:\s*100%[^}]*height:\s*100%/);
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.feature-overlay\s*\{[^}]*left:\s*var\(--edge-inset-left\)[^}]*width:\s*auto[^}]*min-width:\s*0/);
-  assert.match(styles, /\.reading-location-controls\.is-hidden \.reading-location-button\s*\{[^}]*translate:\s*0 calc\(-100%/);
+  assert.match(styles, /\.reading-location-controls\.is-hidden \.reading-location-floater\s*\{[^}]*translate:\s*-50% calc\(-100%/);
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
   assert.match(profile, /className="scale-marks" aria-hidden="true"/);
