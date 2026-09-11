@@ -15,14 +15,14 @@ icons, and same-origin service worker.
 - The main thread receives only navigation metadata and the selected chapter.
 - A focused Liquid Glass interface uses native CSS effects with graceful fallbacks.
 - A data-driven bottom dock scales to additional AWMPC Bible tools without duplicating overlay infrastructure.
-- A floating Book control opens Navigation at Books, while a three-part Chapter floater provides whole-Bible previous/next navigation and opens Navigation at Chapters from its center.
+- One four-part top location bar combines previous/next chapter arrows with book and chapter navigation segments, sharing the bottom dock's Liquid Glass shell and inset separators.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
 - Browser Back dismisses an open feature sheet before its normal navigation behavior continues.
 - Verse selections create bounded history entries containing only references and timestamps; the History sheet resolves a transient local verse preview for each entry without persisting Bible text.
 - Profile offers five meaningful, snapping text scales for every verse and verse number.
 - Navigation keeps Books, Chapters, and Verses vertically ordered in one contained scroll view.
-- The top reading controls and bottom dock hide together only for recent user-invoked scrolling or reader taps.
+- The top location bar and bottom dock hide together for recent user-invoked scrolling; an explicit tap that hides them locks them hidden until the next explicit tap.
 - Touch actions on reading controls and the dock clear their temporary highlight after the action; only open menus remain highlighted.
 - Overflowing floater labels use a brisk, short-pause marquee while retaining the reduced-motion fallback.
 - One shared reader-chrome visibility controller keeps the top reading controls and bottom dock coordinated through reader interactions and verse changes.

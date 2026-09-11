@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.31.50 - 2026-09-11
+
+- Match the top location bar's Liquid Glass shell to the bottom dock and use inset partial-height segment dividers.
+
+## 0.31.49 - 2026-09-10
+
+- Restrict hover highlights to fine-pointer devices so mobile button presses do not leave a completed action visually highlighted.
+
+## 0.31.48 - 2026-09-10
+
+- Combine the book and chapter controls into one four-segment top location bar with whole-Bible previous/next chapter arrows.
+- Lock the shared reader chrome hidden after an explicit reader tap until another explicit tap releases the lock; swipe-based auto-hide remains available otherwise.
+
 ## 0.31.46 - 2026-08-19
 
 - Replace standalone chapter control with a three-part floater for whole-Bible previous/next chapter navigation, including held-key and repeated-press queuing.
