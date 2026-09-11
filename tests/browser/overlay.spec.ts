@@ -92,20 +92,22 @@ test("reader arrows navigate while a dock control holds focus", async ({ page })
   await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
 });
 
-test("chapter floater centers lined arrow controls and divides its three sections", async ({ page }) => {
+test("top location bar centers four lined segments and divides book from chapter", async ({ page }) => {
   const previous = page.getByRole("button", { name: "Previous chapter" });
+  const book = page.getByRole("button", { name: "Choose book, currently Genesis" });
   const current = page.getByRole("button", { name: "Choose chapter, currently chapter 1" });
   const next = page.getByRole("button", { name: "Next chapter" });
+  await expect(page.locator(".reading-location-floater")).toHaveCount(1);
   await expect(previous.locator("svg path")).toHaveCount(1);
   await expect(next.locator("svg path")).toHaveCount(1);
-  const geometry = await Promise.all([previous, current, next].map((button) => button.evaluate((element) => {
+  const geometry = await Promise.all([previous, book, current, next].map((button) => button.evaluate((element) => {
     const box = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    return { centerY: box.y + box.height / 2, borderLeft: style.borderLeftWidth, borderRight: style.borderRightWidth };
+    const divider = getComputedStyle(element, "::after");
+    return { centerY: box.y + box.height / 2, dividerWidth: divider.width, dividerTop: divider.top, dividerBottom: divider.bottom };
   })));
-  expect(geometry.map(({ centerY }) => centerY)).toEqual([geometry[1].centerY, geometry[1].centerY, geometry[1].centerY]);
-  expect(geometry[1].borderLeft).toBe("1px");
-  expect(geometry[1].borderRight).toBe("1px");
+  expect(geometry.map(({ centerY }) => centerY)).toEqual(geometry.map(() => geometry[1].centerY));
+  expect(geometry.slice(0, 3).map(({ dividerWidth }) => dividerWidth)).toEqual(["1px", "1px", "1px"]);
+  expect(geometry.slice(0, 3).every(({ dividerTop, dividerBottom }) => dividerTop === dividerBottom)).toBe(true);
 });
 
 test("hidden reader chrome reveals an embossed bilingual location header without floater focus borders", async ({ page }) => {
@@ -581,6 +583,14 @@ test("top reading controls and bottom dock share hide and tap visibility", async
   await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
   await expect(controls).toHaveClass(/is-hidden/);
   await expect(dock).toHaveClass(/is-hidden/);
+
+  await page.mouse.wheel(0, -700);
+  await expect(controls).toHaveClass(/is-hidden/);
+  await expect(dock).toHaveClass(/is-hidden/);
+
+  await page.locator(".reading-pane").click({ position: { x: 300, y: 300 } });
+  await expect(controls).not.toHaveClass(/is-hidden/);
+  await expect(dock).not.toHaveClass(/is-hidden/);
 });
 
 test("profile shade close does not keep a focused dock visible after scrolling", async ({ page }) => {

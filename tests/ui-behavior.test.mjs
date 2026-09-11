@@ -188,6 +188,8 @@ test("reader chrome responds only to fresh matching user intent", () => {
   assert.equal(nextReaderChromeVisibility("visible", 100, 180, down, 1100), "hidden");
   assert.equal(nextReaderChromeVisibility("hidden", 180, 90, up, 1100), "visible");
   assert.equal(nextReaderChromeVisibility("hidden", 180, 90, up, 1800), "hidden");
+  assert.equal(nextReaderChromeVisibility("hidden", 180, 90, up, 1100, true), "hidden");
+  assert.equal(nextReaderChromeVisibility("hidden", 180, 260, down, 1100, true), "hidden");
 });
 
 test("reader chrome retains its hidden state while overlays suppress scroll tracking", () => {

@@ -34,6 +34,7 @@ export function useUserScrollChromeVisibility(active: boolean): ChromeVisibility
   const previousY = useRef(0);
   const touchY = useRef<number | null>(null);
   const intent = useRef<ScrollIntent | null>(null);
+  const tapLocked = useRef(false);
   const activeRef = useRef(active);
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export function useUserScrollChromeVisibility(active: boolean): ChromeVisibility
     const onScroll = () => {
       if (!activeRef.current) return;
       const currentY = window.scrollY;
-      const next = nextReaderChromeVisibility(visibilityRef.current, previousY.current, currentY, intent.current, performance.now());
+      const next = nextReaderChromeVisibility(visibilityRef.current, previousY.current, currentY, intent.current, performance.now(), tapLocked.current);
       previousY.current = currentY;
       if (next !== visibilityRef.current) {
         visibilityRef.current = next;
@@ -108,6 +109,9 @@ export function useUserScrollChromeVisibility(active: boolean): ChromeVisibility
   const toggle = useCallback(() => {
     setVisibility((current) => {
       const next = toggleReaderChromeVisibility(current);
+      tapLocked.current = current === "visible";
+      intent.current = null;
+      previousY.current = window.scrollY;
       visibilityRef.current = next;
       return next;
     });

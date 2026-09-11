@@ -56,7 +56,7 @@ button, input, select, a { -webkit-tap-highlight-color: transparent; }
 button:focus:not(:focus-visible), input:focus:not(:focus-visible), select:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
-.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --edge-inset-left: max(var(--screen-edge-inset), env(safe-area-inset-left)); --edge-inset-right: max(var(--screen-edge-inset), env(safe-area-inset-right)); --location-controls-clearance: calc(max(var(--screen-edge-inset), env(safe-area-inset-top)) + 44px + 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: var(--bg); font-family: var(--verse-font-family); }
+.awmpc-bible-shell { --verse-text-size: clamp(1.12rem, 1.8vw, 1.34rem); --verse-number-size: .7rem; --verse-line-height: 1.5; --verse-font-family: ui-serif, Georgia, "Times New Roman", serif; --verse-number-gutter: max(2rem, calc(var(--verse-number-size) * 2.1)); --verse-column-gap: .4rem; --reader-inline-padding: clamp(1rem, 3vw, 2.5rem); --edge-inset-left: max(var(--screen-edge-inset), env(safe-area-inset-left)); --edge-inset-right: max(var(--screen-edge-inset), env(safe-area-inset-right)); --location-controls-clearance: calc(max(var(--screen-edge-inset), env(safe-area-inset-top)) + 52px + 1rem); position: relative; isolation: isolate; min-height: 100vh; overflow: clip; background: var(--bg); font-family: var(--verse-font-family); }
 .awmpc-bible-shell[data-text-scale="compact"] { --verse-text-size: .96rem; --verse-number-size: .58rem; --verse-line-height: 1.46; }
 .awmpc-bible-shell[data-text-scale="standard"] { --verse-text-size: 1.08rem; --verse-number-size: .65rem; --verse-line-height: 1.5; }
 .awmpc-bible-shell[data-text-scale="comfortable"] { --verse-text-size: 1.2rem; --verse-number-size: .72rem; --verse-line-height: 1.5; }
@@ -131,15 +131,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .reading-location-emboss { display: grid; min-height: var(--location-controls-clearance); place-content: center; justify-items: center; gap: .12rem; max-width: 100%; margin: calc(-1 * var(--location-controls-clearance)) 0 0; padding: max(var(--screen-edge-inset), env(safe-area-inset-top)) 1rem 1rem; color: color-mix(in srgb, var(--ink) 32%, transparent); font: 760 clamp(1.45rem, calc(var(--verse-text-size) * 1.65), 2.3rem)/1.08 var(--verse-font-family); letter-spacing: -.025em; pointer-events: none; text-align: center; text-shadow: 0 1px color-mix(in srgb, var(--surface-strong) 62%, transparent), 0 -1px color-mix(in srgb, var(--ink) 12%, transparent); translate: 0 -.45rem; opacity: 0; transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
 .reading-location-emboss.is-visible { translate: 0 0; opacity: 1; }
 .reading-location-emboss small { color: color-mix(in srgb, var(--muted) 58%, transparent); font: 650 .62em/1.1 var(--verse-font-family); letter-spacing: 0; }
-.reading-location-button { position: absolute; top: max(var(--screen-edge-inset), env(safe-area-inset-top)); width: max-content; max-width: calc(50vw - 1.5rem); min-height: 44px; padding: .65rem .9rem; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; opacity: 1; color: var(--ink); background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 12px 34px rgba(0, 0, 0, .14); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); cursor: pointer; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; translate: 0 0; transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing), background-color 140ms ease, transform 140ms ease; }
-.book-location-button { left: var(--edge-inset-left); }
-.chapter-location-floater { position: absolute; top: max(var(--screen-edge-inset), env(safe-area-inset-top)); right: var(--edge-inset-right); display: grid; grid-template-columns: auto minmax(0, auto) auto; min-height: 44px; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; opacity: 1; color: var(--ink); background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 12px 34px rgba(0, 0, 0, .14); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); pointer-events: auto; translate: 0 0; transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
-.chapter-floater-arrow, .chapter-floater-current { display: grid; min-height: 44px; place-items: center; align-content: center; border: 0; color: var(--ink); background: transparent; cursor: pointer; font-weight: 720; line-height: 1; }
+.reading-location-floater { position: absolute; top: max(var(--screen-edge-inset), env(safe-area-inset-top)); left: 50%; display: grid; width: min(34rem, calc(100vw - var(--edge-inset-left) - var(--edge-inset-right))); grid-template-columns: 2.5rem minmax(0, 1fr) minmax(6.5rem, auto) 2.5rem; min-height: 52px; padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; color: var(--ink); background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 16px 44px rgba(0, 0, 0, .16); -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%); pointer-events: auto; translate: -50% 0; transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
+.reading-location-button { position: relative; min-width: 0; min-height: 52px; padding: .65rem .9rem; overflow: hidden; border: 0; border-radius: 16px; color: var(--ink); background: transparent; cursor: pointer; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; transition: background-color 140ms ease, transform 140ms ease; }
+.chapter-floater-arrow, .chapter-floater-current { position: relative; display: grid; min-height: 52px; place-items: center; align-content: center; border: 0; color: var(--ink); background: transparent; cursor: pointer; font-weight: 720; line-height: 1; }
 .chapter-floater-arrow { width: 2.5rem; padding: 0; }
 .chapter-floater-arrow svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
-.chapter-floater-current { min-width: 6.5rem; padding: .65rem .75rem; border-inline: 1px solid color-mix(in srgb, var(--border) 82%, var(--muted)); white-space: nowrap; }
+.chapter-floater-current { min-width: 6.5rem; padding: .65rem .75rem; white-space: nowrap; }
+.reading-location-floater > :is(.chapter-floater-arrow, .book-location-button, .chapter-floater-current):not(:last-child)::after { position: absolute; top: 22%; right: 0; bottom: 22%; width: 1px; background: color-mix(in srgb, var(--border) 82%, var(--muted)); content: ""; }
 .chapter-floater-current[aria-expanded="true"] { background: var(--surface-strong); }
-.chapter-floater-arrow:active:not(:disabled), .chapter-floater-current:active { transform: scale(.96); }
+.chapter-floater-arrow:active:not(:disabled), .chapter-floater-current:active, .reading-location-button:active { transform: scale(.96); }
 .chapter-floater-arrow:disabled { color: var(--muted); cursor: not-allowed; opacity: .45; }
 .chapter-floater-arrow:focus-visible, .chapter-floater-current:focus-visible { outline: none; }
 .reading-location-button:focus-visible, .dock-button:focus-visible { outline: none; }
@@ -147,10 +147,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .book-location-button { display: grid; align-content: center; justify-items: start; line-height: 1.05; }
 .book-location-button > .overflow-marquee, .book-location-button > small { width: 100%; max-width: 100%; }
 .book-location-button small { margin-top: .2rem; color: var(--muted); font-size: .68rem; font-weight: 650; }
-.reading-location-button:active { transform: scale(.96); }
-.reading-location-controls.is-hidden .reading-location-button { opacity: 0; translate: 0 calc(-100% - max(var(--screen-edge-inset), env(safe-area-inset-top)) - 1rem); pointer-events: none; }
-.reading-location-controls.is-hidden .chapter-location-floater { opacity: 0; translate: 0 calc(-100% - max(var(--screen-edge-inset), env(safe-area-inset-top)) - 1rem); pointer-events: none; }
-.reading-location-controls.is-obscured .reading-location-button, .reading-location-controls.is-obscured .chapter-location-floater { pointer-events: none; }
+.reading-location-controls.is-hidden .reading-location-floater { opacity: 0; translate: -50% calc(-100% - max(var(--screen-edge-inset), env(safe-area-inset-top)) - 1rem); pointer-events: none; }
+.reading-location-controls.is-hidden .book-location-button { opacity: 0; }
+.reading-location-controls.is-obscured .reading-location-floater { pointer-events: none; }
 
 .floating-dock { position: fixed; z-index: 12; right: var(--edge-inset-right); bottom: max(var(--screen-edge-inset), env(safe-area-inset-bottom)); max-width: calc(100vw - 2rem); padding: .38rem; overflow: hidden; border: 1px solid var(--border); border-radius: 22px; opacity: 1; translate: 0 0; background: var(--glass); box-shadow: var(--inner-highlight), var(--glass-gleam), 0 16px 44px rgba(0, 0, 0, .16); -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%); transition: translate var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
 .floating-dock.is-hidden { opacity: 0; translate: 0 calc(100% + max(var(--screen-edge-inset), env(safe-area-inset-bottom)) + 1rem); pointer-events: none; }
@@ -307,7 +306,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .skeleton span, .secondary-verse-skeleton .verse-rail::before, .secondary-verse-skeleton .verse-content::before, .history-preview-skeleton { animation: none; }
   .verses > li.verse-selected-indicator::before, .verses > li.verse-selected-indicator::after { animation: none; opacity: 1; transform: none; }
   .dock-button { transition: none; }
-  .reading-location-button, .chapter-location-floater, .reading-location-emboss { transition: none; }
+  .reading-location-button, .reading-location-floater, .reading-location-emboss { transition: none; }
   .footnote-marker-reveal, .footnotes-toggle, .footnotes-reveal { transition: none; }
   .verse-actions-menu.is-opening, .verse-actions-menu.is-closing { animation: none; }
   .floating-dock { transition: none; }
@@ -320,12 +319,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .reading-pane, .reading-location-button, .chapter-location-floater, .floating-dock, .feature-overlay { background: var(--surface-solid); }
+  .reading-pane, .reading-location-button, .reading-location-floater, .floating-dock, .feature-overlay { background: var(--surface-solid); }
 }
 
 @media (forced-colors: active) {
   html, body, .awmpc-bible-shell { background: Canvas; }
-  .reading-pane, .reading-location-button, .chapter-location-floater, .floating-dock, .feature-overlay, .overlay-close { border: 1px solid CanvasText; box-shadow: none; }
+  .reading-pane, .reading-location-button, .reading-location-floater, .floating-dock, .feature-overlay, .overlay-close { border: 1px solid CanvasText; box-shadow: none; }
   .footnotes-toggle { border: 0; color: ButtonText; }
   .footnotes-toggle[aria-expanded="true"] { color: Highlight; background: transparent; }
   .dock-button[aria-expanded="true"], .choice-grid button[aria-current="page"] { color: HighlightText; background: Highlight; }

@@ -15,7 +15,9 @@ export function nextReaderChromeVisibility(
   currentY: number,
   intent: ReaderChromeScrollIntent | null,
   now: number,
+  tapLocked = false,
 ): ReaderChromeVisibility {
+  if (tapLocked) return visibility;
   if (!intent || now - intent.recordedAt > INTENT_TIMEOUT_MS) return visibility;
 
   const delta = currentY - previousY;
