@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.52 - 2026-09-13
+
+- Pass the Firebase client settings from repository Actions secrets into the GitHub Pages build so Google SSO remains available.
+
 ## 0.31.51 - 2026-09-13
 
 - Support loading translation catalogs and datasets from a configured public R2 origin for GitHub Pages deployments.

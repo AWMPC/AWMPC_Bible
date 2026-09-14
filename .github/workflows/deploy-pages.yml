@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_BIBLE_DATA_BASE_URL: ${{ vars.BIBLE_DATA_BASE_URL }}
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,8 +32,13 @@ jobs:
           node-version: "22.13.0"
           cache: npm
 
-      - name: Require configured R2 data origin
-        run: test -n "$VITE_BIBLE_DATA_BASE_URL"
+      - name: Require configured public data and Firebase client settings
+        run: |
+          test -n "$VITE_BIBLE_DATA_BASE_URL"
+          test -n "$VITE_FIREBASE_API_KEY"
+          test -n "$VITE_FIREBASE_AUTH_DOMAIN"
+          test -n "$VITE_FIREBASE_PROJECT_ID"
+          test -n "$VITE_FIREBASE_APP_ID"
 
       - run: npm ci
       - run: npm run build
