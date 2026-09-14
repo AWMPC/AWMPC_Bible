@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.55 - 2026-09-13
+
+- Use the installed app icon as the browser tab favicon.
+
 ## 0.31.54 - 2026-09-13
 
 - Use the Vite-prefixed Bible data setting consistently in Pages configuration.

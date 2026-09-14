@@ -3,7 +3,6 @@ const CACHE_NAME = `awmpc-bible-shell-${APP_VERSION}`;
 const SHELL_ASSETS = [
   "./",
   "./index.html",
-  "./favicon.svg",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
