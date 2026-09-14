@@ -78,10 +78,7 @@ test("native dataset fetches persist a bounded JSON response for offline reuse",
   globalThis.fetch = async () => {
     networkCalls += 1;
     return new Response(body, {
-      headers: {
-        "content-length": String(new TextEncoder().encode(body).byteLength),
-        "content-type": "application/json; charset=utf-8",
-      },
+      headers: { "content-type": "application/json; charset=utf-8" },
     });
   };
   try {

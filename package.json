@@ -1,6 +1,6 @@
 {
   "name": "awmpc-bible",
-  "version": "0.31.58",
+  "version": "0.31.59",
   "private": true,
   "engines": {
     "node": ">=22.13.0"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.59 - 2026-09-14
+
+- Cache bounded JSON responses when cross-origin headers do not expose `Content-Length`.
+
 ## 0.31.58 - 2026-09-14
 
 - Show translation cache status in Profile, including cached datasets discovered while offline.

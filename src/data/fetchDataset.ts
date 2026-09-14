@@ -96,11 +96,12 @@ async function removeCachedDataset(url: string): Promise<void> {
 }
 
 async function cacheDatasetResponse(url: string, response: Response): Promise<void> {
-  const declaredLength = Number(response.headers.get("content-length") || 0);
+  const declaredLength = Number(response.headers.get("content-length"));
   const mediaType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
   if (!response.ok || (mediaType !== "application/json" && !mediaType?.endsWith("+json"))
-    || !Number.isFinite(declaredLength) || declaredLength <= 0 || declaredLength > LIMITS.bytes || !response.body) return;
+    || (response.headers.has("content-length") && (!Number.isFinite(declaredLength) || declaredLength <= 0 || declaredLength > LIMITS.bytes)) || !response.body) return;
   try {
+    await readBoundedBody(response.clone(), new AbortController().signal);
     await (await caches.open(BIBLE_DATA_CACHE_NAME)).put(url, response.clone());
   } catch {
     // Cache storage is best effort; a successful network response still serves.

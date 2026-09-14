@@ -36,14 +36,35 @@ function isBibleDataRequest(url) {
 
 function isJsonResponse(response) {
   const mediaType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
-  const declaredLength = Number(response.headers.get("content-length") || 0);
+  const contentLength = response.headers.get("content-length");
+  const declaredLength = Number(contentLength);
   return response.ok && (mediaType === "application/json" || mediaType?.endsWith("+json"))
-    && Number.isFinite(declaredLength) && declaredLength > 0 && declaredLength <= 8 * 1024 * 1024;
+    && (!contentLength || (Number.isFinite(declaredLength) && declaredLength > 0 && declaredLength <= 8 * 1024 * 1024));
+}
+
+async function responseFitsDataLimit(response) {
+  if (!response.body) return false;
+  const reader = response.clone().body.getReader();
+  let bytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return true;
+      bytes += value.byteLength;
+      if (bytes > 8 * 1024 * 1024) {
+        await reader.cancel();
+        return false;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 async function cacheBibleData(request, response) {
   if (!isJsonResponse(response) || !response.body) return response;
   try {
+    if (!await responseFitsDataLimit(response)) return response;
     const cache = await caches.open(DATA_CACHE_NAME);
     await cache.put(request, response.clone());
   } catch {
