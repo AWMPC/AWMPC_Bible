@@ -5,6 +5,7 @@ import type { BibleLanguage, BibleLanguageOption } from "../data/languages";
 import type { CloudAccountState } from "../cloud/contracts";
 import { Skeleton } from "./Skeleton";
 import { CloudAccountCard } from "./CloudAccountCard";
+import { OfflineCachePanel } from "./OfflineCachePanel";
 
 type ProfilePanelProps = {
   textScale: TextScale;
@@ -28,6 +29,7 @@ export function ProfilePanel({ textScale, onTextScaleChange, verseFont, onVerseF
   return (
     <div className="profile-panel">
       <CloudAccountCard account={account} onSignIn={onSignIn} onSignOut={onSignOut} />
+      <OfflineCachePanel languages={bibleLanguageOptions} />
       {account.status === "loading" ? <div className="profile-settings-loading" aria-label="Loading reader settings"><Skeleton rows={5} /></div> : <>
       <section className="setting-group" aria-labelledby="reading-size-title">
         <div className="setting-heading">

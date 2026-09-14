@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.31.58 - 2026-09-14
+
+- Show translation cache status in Profile, including cached datasets discovered while offline.
+- Add a manual action to populate the catalog and all available translations for offline reading.
+
 ## 0.31.57 - 2026-09-14
 
 - Warm all catalog-listed translations into the offline cache when the service worker activates.

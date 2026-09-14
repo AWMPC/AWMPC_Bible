@@ -51,6 +51,9 @@ icons, and same-origin service worker.
   validated Bible catalogs and translations in a persistent data cache with
   stale-while-revalidate behavior and offline fallback. Worker activation also
   best-effort warms every catalog-listed translation.
+- Profile shows which catalog and translations are currently cached, reports
+  the browser storage estimate, and can manually cache every catalog-listed
+  translation before leaving a connected network.
 - The acceleration boundary leaves room for WASM search acceleration and optional
   WebGPU effects without making either necessary for correct reading.
 
