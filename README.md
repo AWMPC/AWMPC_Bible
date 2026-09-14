@@ -83,11 +83,11 @@ the domain root or beneath any VM directory path.
 
 For GitHub Pages, `.github/workflows/deploy-pages.yml` builds and uploads only
 the contents of `dist/` to the Pages artifact. Set the repository Actions
-variable `BIBLE_DATA_BASE_URL` (or repository secret with that name) to the
-HTTPS origin of the public R2 data endpoint. The Pages build then skips local
-dataset staging and the browser loads `bibles.json` and each `bible-*.json`
-file from that endpoint. Keep the translation sources out of Git; update the
-R2 objects through the separate controlled data-upload process.
+variable or secret `VITE_BIBLE_DATA_BASE_URL` to the HTTPS origin of the public
+R2 data endpoint. The Pages build then skips local dataset staging and the
+browser loads `bibles.json` and each `bible-*.json` file from that endpoint.
+Keep the translation sources out of Git; update the R2 objects through the
+separate controlled data-upload process.
 
 The Pages workflow reads `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
 `VITE_FIREBASE_PROJECT_ID`, and `VITE_FIREBASE_APP_ID` from repository Actions

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.54 - 2026-09-13
+
+- Use the Vite-prefixed Bible data setting consistently in Pages configuration.
+
 ## 0.31.53 - 2026-09-13
 
 - Accept the public Bible data base URL from either an Actions variable or secret.
