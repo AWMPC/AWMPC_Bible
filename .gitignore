@@ -27,3 +27,4 @@ npm-debug.log*
 
 # Local structured-text datasets (never commit source content)
 **/bible-*.json
+public/data/

@@ -1,8 +1,8 @@
 import { isRetryableStatus, LIMITS } from "./library.ts";
+import { BIBLE_DATA_CACHE_NAME } from "./cacheConstants.ts";
 
 const ATTEMPTS = 4;
 const TIMEOUT_MS = 15_000;
-const DATA_CACHE_NAME = "awmpc-bible-data-v1";
 
 type FetchDatasetOptions = {
   fetcher?: typeof fetch;
@@ -81,7 +81,7 @@ function canUseDatasetCache(fetcher: typeof fetch): boolean {
 async function readCachedDataset(url: string, signal?: AbortSignal): Promise<Response | null> {
   if (signal?.aborted) throw signal.reason;
   try {
-    return await (await caches.open(DATA_CACHE_NAME)).match(url) ?? null;
+    return await (await caches.open(BIBLE_DATA_CACHE_NAME)).match(url) ?? null;
   } catch {
     return null;
   }
@@ -89,7 +89,7 @@ async function readCachedDataset(url: string, signal?: AbortSignal): Promise<Res
 
 async function removeCachedDataset(url: string): Promise<void> {
   try {
-    await (await caches.open(DATA_CACHE_NAME)).delete(url);
+    await (await caches.open(BIBLE_DATA_CACHE_NAME)).delete(url);
   } catch {
     // Cache storage is best effort; the network path remains authoritative.
   }
@@ -101,7 +101,7 @@ async function cacheDatasetResponse(url: string, response: Response): Promise<vo
   if (!response.ok || (mediaType !== "application/json" && !mediaType?.endsWith("+json"))
     || !Number.isFinite(declaredLength) || declaredLength <= 0 || declaredLength > LIMITS.bytes || !response.body) return;
   try {
-    await (await caches.open(DATA_CACHE_NAME)).put(url, response.clone());
+    await (await caches.open(BIBLE_DATA_CACHE_NAME)).put(url, response.clone());
   } catch {
     // Cache storage is best effort; a successful network response still serves.
   }
