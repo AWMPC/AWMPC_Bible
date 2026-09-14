@@ -47,8 +47,9 @@ icons, and same-origin service worker.
 - Verse actions stay attached to their exact translation, so copied text and links retain the selected verse language.
 - Verse-number menus copy plain verse text or a bounded, deployable deep link to that verse.
 - The static shell registers a same-origin service worker for browser
-  installability, uses the app semver in its cache name, and excludes Bible
-  datasets from runtime caching.
+  installability, uses the app semver in its shell cache name, and keeps
+  validated Bible catalogs and translations in a persistent data cache with
+  stale-while-revalidate behavior and offline fallback.
 - The acceleration boundary leaves room for WASM search acceleration and optional
   WebGPU effects without making either necessary for correct reading.
 
@@ -107,9 +108,16 @@ Referrer-Policy: no-referrer
 Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
 
-Keep the dataset response same-origin and serve it with the correct JSON content
-type. Tighten endpoint wildcards after confirming the selected Firebase
-project's observed Auth and Firestore requests.
+Keep the dataset response same-origin to the application data origin and serve
+it with the correct JSON content type. The first online visit populates the
+browser's Cache Storage; later opens can restore the shell, catalog, and
+translations without network access. Cached translations are served
+immediately while an online service worker refreshes them in the background.
+Browser or OS storage pressure may still evict caches, so the app cannot
+guarantee offline availability after an explicit cache eviction.
+
+Tighten endpoint wildcards after confirming the selected Firebase project's
+observed Auth and Firestore requests.
 
 For VM-hosted static deployments, prefer synchronizing the contents of `dist/`
 over manually deleting and re-copying the remote web root:

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.56 - 2026-09-13
+
+- Cache validated Bible catalogs and translations for fast offline startup and background refresh.
+
 ## 0.31.55 - 2026-09-13
 
 - Use the installed app icon as the browser tab favicon.

@@ -47,7 +47,10 @@ function serviceWorkerVersionPlugin(): Plugin {
       const outDir = options.dir ?? resolve(import.meta.dirname, "dist");
       const swPath = resolve(outDir, "sw.js");
       const source = await readFile(swPath, "utf8");
-      await writeFile(swPath, source.replaceAll("__APP_VERSION__", packageMetadata.version));
+      const dataBaseUrl = process.env.VITE_BIBLE_DATA_BASE_URL?.trim() ?? "";
+      await writeFile(swPath, source
+        .replaceAll("__APP_VERSION__", packageMetadata.version)
+        .replaceAll("__BIBLE_DATA_BASE_URL__", JSON.stringify(dataBaseUrl)));
     },
   };
 }

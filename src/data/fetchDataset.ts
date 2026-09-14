@@ -2,6 +2,7 @@ import { isRetryableStatus, LIMITS } from "./library.ts";
 
 const ATTEMPTS = 4;
 const TIMEOUT_MS = 15_000;
+const DATA_CACHE_NAME = "awmpc-bible-data-v1";
 
 type FetchDatasetOptions = {
   fetcher?: typeof fetch;
@@ -73,10 +74,60 @@ async function readBoundedBody(response: Response, signal: AbortSignal): Promise
   }
 }
 
+function canUseDatasetCache(fetcher: typeof fetch): boolean {
+  return fetcher === fetch && typeof caches !== "undefined";
+}
+
+async function readCachedDataset(url: string, signal?: AbortSignal): Promise<Response | null> {
+  if (signal?.aborted) throw signal.reason;
+  try {
+    return await (await caches.open(DATA_CACHE_NAME)).match(url) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function removeCachedDataset(url: string): Promise<void> {
+  try {
+    await (await caches.open(DATA_CACHE_NAME)).delete(url);
+  } catch {
+    // Cache storage is best effort; the network path remains authoritative.
+  }
+}
+
+async function cacheDatasetResponse(url: string, response: Response): Promise<void> {
+  const declaredLength = Number(response.headers.get("content-length") || 0);
+  const mediaType = response.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+  if (!response.ok || (mediaType !== "application/json" && !mediaType?.endsWith("+json"))
+    || !Number.isFinite(declaredLength) || declaredLength <= 0 || declaredLength > LIMITS.bytes || !response.body) return;
+  try {
+    await (await caches.open(DATA_CACHE_NAME)).put(url, response.clone());
+  } catch {
+    // Cache storage is best effort; a successful network response still serves.
+  }
+}
+
 export async function fetchDatasetText(url: string, options: FetchDatasetOptions = {}): Promise<string> {
   const fetcher = options.fetcher ?? fetch;
   const wait = options.wait ?? waitForDatasetRetry;
   let lastError: unknown = new DatasetLoadError("The library could not be loaded.");
+
+  if (canUseDatasetCache(fetcher)) {
+    const cached = await readCachedDataset(url, options.signal);
+    if (cached) {
+      try {
+        const mediaType = cached.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase();
+        if (!cached.ok || (mediaType !== "application/json" && !mediaType?.endsWith("+json"))) {
+          throw new DatasetLoadError("The cached Bible data file is invalid.");
+        }
+        return await readBoundedBody(cached, options.signal ?? new AbortController().signal);
+      } catch (error) {
+        if (options.signal?.aborted) throw options.signal.reason;
+        await removeCachedDataset(url);
+        lastError = error;
+      }
+    }
+  }
 
   for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
     if (options.signal?.aborted) throw options.signal.reason;
@@ -102,6 +153,7 @@ export async function fetchDatasetText(url: string, options: FetchDatasetOptions
         await response.body?.cancel().catch(() => undefined);
         throw new DatasetLoadError("The Bible data file is missing or is not served as JSON.");
       }
+      if (canUseDatasetCache(fetcher)) await cacheDatasetResponse(url, response);
       return await readBoundedBody(response, controller.signal);
     } catch (error) {
       const cause = controller.signal.aborted ? controller.signal.reason : error;

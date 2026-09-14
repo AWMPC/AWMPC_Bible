@@ -63,6 +63,40 @@ test("dataset fetch bypasses stale cache entries and rejects an HTML fallback", 
   assert.equal(requestInit.credentials, "omit");
 });
 
+test("native dataset fetches persist a bounded JSON response for offline reuse", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalCaches = globalThis.caches;
+  const entries = new Map();
+  const body = '{"Genesis":{"1":{"1":"In the beginning."}}}';
+  const cache = {
+    match: async (key) => entries.get(String(key)) ?? null,
+    put: async (key, response) => entries.set(String(key), response),
+    delete: async (key) => entries.delete(String(key)),
+  };
+  globalThis.caches = { open: async () => cache };
+  let networkCalls = 0;
+  globalThis.fetch = async () => {
+    networkCalls += 1;
+    return new Response(body, {
+      headers: {
+        "content-length": String(new TextEncoder().encode(body).byteLength),
+        "content-type": "application/json; charset=utf-8",
+      },
+    });
+  };
+  try {
+    const url = "https://data.example/bible/bible-en.json";
+    assert.equal(await fetchDatasetText(url, { wait: noWait }), body);
+    globalThis.fetch = async () => { throw new TypeError("offline"); };
+    assert.equal(await fetchDatasetText(url, { wait: noWait }), body);
+    assert.equal(networkCalls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalCaches === undefined) delete globalThis.caches;
+    else globalThis.caches = originalCaches;
+  }
+});
+
 test("chapter requests settle when the worker is unavailable or not ready", async () => {
   const pending = new Map();
   assert.equal(await dispatchChapterRequest(null, true, pending, 1, "selection", "Genesis", "1"), null);
