@@ -90,7 +90,7 @@ export async function fetchDatasetText(url: string, options: FetchDatasetOptions
     try {
       const response = await fetcher(url, {
         cache: "no-cache",
-        credentials: "same-origin",
+        credentials: "omit",
         signal: controller.signal,
       });
       if (!response.ok) {

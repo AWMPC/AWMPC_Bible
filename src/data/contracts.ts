@@ -9,7 +9,7 @@ export type SearchResult = Readonly<{ book: string; chapter: string; verse: stri
 export type ChapterTarget = "reader" | "navigation" | "selection" | "gesture";
 
 export type WorkerRequest =
-  | { type: "load"; language: BibleLanguage; datasetUrl: string; baseUrl: string }
+  | { type: "load"; language: BibleLanguage; datasetUrl: string; baseUrl: string; dataBaseUrl: string }
   | { type: "chapter"; requestId: number; target: ChapterTarget; book: string; chapter: string }
   | { type: "search"; requestId: number; query: string; limit: number };
 

@@ -24,7 +24,7 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
     library = null;
     searchIndex = null;
     try {
-      if (!isAllowedBibleDatasetUrl(data.language, data.datasetUrl, data.baseUrl, self.location.origin)) {
+      if (!isAllowedBibleDatasetUrl(data.language, data.datasetUrl, data.baseUrl, self.location.origin, data.dataBaseUrl)) {
         throw new Error("The requested Bible dataset is not allowed.");
       }
       const loaded = parseLibrary(await fetchDatasetText(data.datasetUrl, { signal: controller.signal }));

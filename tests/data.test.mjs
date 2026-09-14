@@ -4,7 +4,7 @@ import { fetchDatasetText, waitForDatasetRetry } from "../src/data/fetchDataset.
 import { LIMITS, parseInlineFootnotes, parseLibrary, readChapter } from "../src/data/library.ts";
 import { dispatchChapterRequest } from "../src/data/chapterRequests.ts";
 import { dispatchSearchRequest } from "../src/data/searchRequests.ts";
-import { bibleDatasetUrl, isAllowedBibleDatasetUrl, isBibleLanguage } from "../src/data/languages.ts";
+import { bibleCatalogUrl, bibleDataBaseUrl, bibleDatasetUrl, isAllowedBibleDatasetUrl, isBibleLanguage } from "../src/data/languages.ts";
 import { resolveHistoryVersePreview } from "../src/history/useHistoryVersePreviews.ts";
 
 const noWait = async () => {};
@@ -16,6 +16,17 @@ test("maps only supported languages to local dataset files", () => {
   assert.equal(isBibleLanguage("en"), true);
   assert.equal(isBibleLanguage("ko"), true);
   assert.equal(isBibleLanguage("../private"), false);
+});
+
+test("maps an explicit remote data origin without weakening the URL allowlist", () => {
+  const appBase = "https://bible.example/";
+  const dataBase = bibleDataBaseUrl(appBase, { VITE_BIBLE_DATA_BASE_URL: "https://data.example/" });
+  assert.equal(dataBase, "https://data.example/");
+  assert.equal(bibleCatalogUrl(dataBase), "https://data.example/bibles.json");
+  assert.equal(bibleDatasetUrl("ko", appBase, dataBase), "https://data.example/bible-ko.json");
+  assert.equal(isAllowedBibleDatasetUrl("ko", "https://data.example/bible-ko.json", appBase, "https://bible.example", dataBase), true);
+  assert.equal(isAllowedBibleDatasetUrl("ko", "https://evil.example/bible-ko.json", appBase, "https://bible.example", dataBase), false);
+  assert.equal(isAllowedBibleDatasetUrl("ko", "https://data.example/bible-en.json", appBase, "https://bible.example", dataBase), false);
 });
 
 test("allows only the exact same-origin language dataset below the deployed base", () => {
@@ -49,6 +60,7 @@ test("dataset fetch bypasses stale cache entries and rejects an HTML fallback", 
   };
   await assert.rejects(fetchDatasetText("/data/bible-ko.json", { fetcher, wait: noWait }), /missing or is not served as JSON/);
   assert.equal(requestInit.cache, "no-cache");
+  assert.equal(requestInit.credentials, "omit");
 });
 
 test("chapter requests settle when the worker is unavailable or not ready", async () => {

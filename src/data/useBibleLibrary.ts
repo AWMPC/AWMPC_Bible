@@ -3,7 +3,7 @@ import DataWorker from "./data.worker?worker";
 import { dispatchChapterRequest, type PendingChapter } from "./chapterRequests";
 import { dispatchSearchRequest, type PendingSearch } from "./searchRequests";
 import type { Book, ChapterTarget, SearchResult, Verse, WorkerRequest, WorkerResponse } from "./contracts";
-import { bibleDatasetUrl, DEFAULT_BIBLE_LANGUAGE, type BibleLanguage } from "./languages";
+import { bibleDataBaseUrl, bibleDatasetUrl, DEFAULT_BIBLE_LANGUAGE, type BibleLanguage } from "./languages";
 
 export type Passage = Readonly<{ book: string; chapter: string; verses: Verse[] }>;
 export type LibraryStatus = "idle" | "loading" | "ready" | "error";
@@ -104,7 +104,8 @@ export function useBibleLibrary(language: BibleLanguage | null = DEFAULT_BIBLE_L
       setStatus("error");
     };
     const baseUrl = new URL(import.meta.env.BASE_URL, document.baseURI).href;
-    worker.postMessage({ type: "load", language, baseUrl, datasetUrl: bibleDatasetUrl(language, baseUrl) } satisfies WorkerRequest);
+    const dataBaseUrl = bibleDataBaseUrl(baseUrl);
+    worker.postMessage({ type: "load", language, baseUrl, dataBaseUrl, datasetUrl: bibleDatasetUrl(language, baseUrl, dataBaseUrl) } satisfies WorkerRequest);
     return () => {
       if (loadGeneration === loadGenerationRef.current) loadGenerationRef.current += 1;
       readyRef.current = false;
