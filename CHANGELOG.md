@@ -51,6 +51,10 @@
 - Combine the book and chapter controls into one four-segment top location bar with whole-Bible previous/next chapter arrows.
 - Lock the shared reader chrome hidden after an explicit reader tap until another explicit tap releases the lock; swipe-based auto-hide remains available otherwise.
 
+## 0.31.47 - 2026-08-28
+
+- Add the red cross app icon assets for installed PWA launches and home-screen shortcuts.
+
 ## 0.31.46 - 2026-08-19
 
 - Replace standalone chapter control with a three-part floater for whole-Bible previous/next chapter navigation, including held-key and repeated-press queuing.
