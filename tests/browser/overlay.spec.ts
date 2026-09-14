@@ -243,6 +243,7 @@ test("offers only Sans, Serif, and Mono fonts in that order", async ({ page }) =
 test("updates the text-scale control at every supported setting", async ({ page }) => {
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   const slider = page.getByRole("slider", { name: "Verse text size" });
+  const textScaleOutput = page.locator('section[aria-labelledby="reading-size-title"] .setting-heading output strong');
   const labels = ["Compact", "Standard", "Comfortable", "Large", "Extra large"];
   const markers = ["80%", "90%", "100%", "110%", "120%"];
   await expect(page.locator(".scale-mark")).toHaveCount(labels.length);
@@ -252,7 +253,7 @@ test("updates the text-scale control at every supported setting", async ({ page 
   for (let index = 0; index < labels.length; index += 1) {
     await slider.fill(String(index));
     await expect(slider).toHaveAttribute("aria-valuetext", labels[index]);
-    await expect(page.locator(".setting-heading output strong")).toHaveText(labels[index]);
+    await expect(textScaleOutput).toHaveText(labels[index]);
   }
 
 });
