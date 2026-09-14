@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.31.51 - 2026-09-13
+
+- Support loading translation catalogs and datasets from a configured public R2 origin for GitHub Pages deployments.
+- Add a GitHub Pages Actions workflow that builds and publishes only the generated `dist/` artifact.
+
 ## 0.31.50 - 2026-09-11
 
 - Match the top location bar's Liquid Glass shell to the bottom dock and use inset partial-height segment dividers.

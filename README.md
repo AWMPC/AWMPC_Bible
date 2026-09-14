@@ -81,6 +81,14 @@ only for local previewing of a completed build. All generated asset and dataset
 references are relative, so the unchanged `dist/` directory may be hosted at
 the domain root or beneath any VM directory path.
 
+For GitHub Pages, `.github/workflows/deploy-pages.yml` builds and uploads only
+the contents of `dist/` to the Pages artifact. Set the repository Actions
+variable `BIBLE_DATA_BASE_URL` to the HTTPS origin of the public R2 data
+endpoint. The Pages build then skips local dataset staging and the browser
+loads `bibles.json` and each `bible-*.json` file from that endpoint. Keep the
+translation sources out of Git; update the R2 objects through the separate
+controlled data-upload process.
+
 The production host should send restrictive security headers. A Firebase-enabled
 deployment can begin with this CSP, replacing `AUTH_DOMAIN` with the exact
 `VITE_FIREBASE_AUTH_DOMAIN` value:
@@ -130,6 +138,12 @@ disabled. `npm run build` validates and stages every matching file under
 `dist/` directory without moving either the catalog or datasets relative to
 `index.html`. The source and staged JSON files remain ignored and must never be
 committed.
+
+When using R2, upload the catalog and translation objects to the root of the
+configured data endpoint rather than committing or copying them into `dist/`.
+The browser requests them cross-origin with bounded retry, timeout, response
+size, and URL-origin checks. Configure R2 CORS for the exact Pages origin and
+the local development origin, with read-only `GET` and `HEAD` access.
 
 ### Footnotes
 
