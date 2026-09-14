@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      VITE_BIBLE_DATA_BASE_URL: ${{ vars.BIBLE_DATA_BASE_URL }}
+      VITE_BIBLE_DATA_BASE_URL: ${{ vars.BIBLE_DATA_BASE_URL || secrets.BIBLE_DATA_BASE_URL }}
       VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
       VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
       VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -34,7 +34,7 @@ jobs:
 
       - name: Require configured public data and Firebase client settings
         run: |
-          test -n "$VITE_BIBLE_DATA_BASE_URL"
+          test -n "$VITE_BIBLE_DATA_BASE_URL" || { echo "Configure BIBLE_DATA_BASE_URL as an Actions variable or secret." >&2; exit 1; }
           test -n "$VITE_FIREBASE_API_KEY"
           test -n "$VITE_FIREBASE_AUTH_DOMAIN"
           test -n "$VITE_FIREBASE_PROJECT_ID"

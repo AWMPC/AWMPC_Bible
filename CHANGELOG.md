@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.53 - 2026-09-13
+
+- Accept the public Bible data base URL from either an Actions variable or secret.
+
 ## 0.31.52 - 2026-09-13
 
 - Pass the Firebase client settings from repository Actions secrets into the GitHub Pages build so Google SSO remains available.
