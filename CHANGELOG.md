@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.57 - 2026-09-14
+
+- Warm all catalog-listed translations into the offline cache when the service worker activates.
+
 ## 0.31.56 - 2026-09-13
 
 - Cache validated Bible catalogs and translations for fast offline startup and background refresh.

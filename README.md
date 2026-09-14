@@ -49,7 +49,8 @@ icons, and same-origin service worker.
 - The static shell registers a same-origin service worker for browser
   installability, uses the app semver in its shell cache name, and keeps
   validated Bible catalogs and translations in a persistent data cache with
-  stale-while-revalidate behavior and offline fallback.
+  stale-while-revalidate behavior and offline fallback. Worker activation also
+  best-effort warms every catalog-listed translation.
 - The acceleration boundary leaves room for WASM search acceleration and optional
   WebGPU effects without making either necessary for correct reading.
 
@@ -110,7 +111,8 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 
 Keep the dataset response same-origin to the application data origin and serve
 it with the correct JSON content type. The first online visit populates the
-browser's Cache Storage; later opens can restore the shell, catalog, and
+browser's Cache Storage; worker activation also best-effort warms every
+catalog-listed translation. Later opens can restore the shell, catalog, and
 translations without network access. Cached translations are served
 immediately while an online service worker refreshes them in the background.
 Browser or OS storage pressure may still evict caches, so the app cannot
