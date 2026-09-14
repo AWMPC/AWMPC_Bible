@@ -89,6 +89,13 @@ loads `bibles.json` and each `bible-*.json` file from that endpoint. Keep the
 translation sources out of Git; update the R2 objects through the separate
 controlled data-upload process.
 
+The Pages workflow reads `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
+`VITE_FIREBASE_PROJECT_ID`, and `VITE_FIREBASE_APP_ID` from repository Actions
+secrets with those exact names. These values are compiled into the public web
+bundle because they are Firebase client configuration, not server credentials;
+Firebase Authentication must also list every served hostname as an authorized
+domain.
+
 The production host should send restrictive security headers. A Firebase-enabled
 deployment can begin with this CSP, replacing `AUTH_DOMAIN` with the exact
 `VITE_FIREBASE_AUTH_DOMAIN` value:
