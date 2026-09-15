@@ -3,6 +3,7 @@
 ## 0.31.72 - 2026-09-15
 
 - Automate green-push semver tagging and GitHub releases with curated changelog text.
+- Correct the Actions API pagination query used by the release gate.
 
 ## 0.31.71 - 2026-09-15
 

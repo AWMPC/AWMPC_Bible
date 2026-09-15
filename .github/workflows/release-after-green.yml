@@ -34,7 +34,7 @@ jobs:
 
           expected_workflows=("Quality" "Deploy GitHub Pages")
           for attempt in $(seq 1 40); do
-            runs="$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&event=push&per_page=100" --jq 'add | .workflow_runs[] | [.name, .status, (.conclusion // ""), (.id | tostring)] | @tsv')"
+            runs="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&event=push&per_page=100" | jq -r '.workflow_runs[] | [.name, .status, (.conclusion // ""), (.id | tostring)] | @tsv')"
             if [ -z "$runs" ]; then
               echo "No push workflow runs found for ${HEAD_SHA}; waiting (${attempt}/40)."
               sleep 15
@@ -101,10 +101,6 @@ jobs:
               echo "${tag} already points to ${tagged_sha}, not ${HEAD_SHA}." >&2
               exit 1
             fi
-          elif [ "$previous_version" = "$version" ]; then
-            echo "package.json remains at ${version}; no new release is needed."
-            echo "release_needed=false" >> "$GITHUB_OUTPUT"
-            exit 0
           fi
 
           awk -v version="$version" '

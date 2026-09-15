@@ -44,6 +44,8 @@ test("green pushes gate semver tags and releases on every push workflow", async 
   assert.match(workflow, /head_sha/);
   assert.match(workflow, /fetch-depth: 2/);
   assert.match(workflow, /event=push/);
+  assert.match(workflow, /gh api --paginate[\s\S]*\| jq -r/);
+  assert.doesNotMatch(workflow, /--slurp[\s\S]*--jq/);
   assert.match(workflow, /conclusion/);
   assert.match(workflow, /previous_version/);
   assert.match(workflow, /release_needed=false/);
