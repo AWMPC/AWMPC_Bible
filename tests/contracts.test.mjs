@@ -58,6 +58,7 @@ test("green pushes gate semver tags and releases on every push workflow", async 
   assert.match(workflow, /--generate-notes/);
   assert.match(workflow, /--title "\$RELEASE_TAG"/);
   assert.doesNotMatch(workflow, /--title "AWMPC Bible/);
+  assert.match(workflow, /gh release edit "\$RELEASE_TAG" --title "\$RELEASE_TAG"/);
   assert.match(workflow, /CHANGELOG\.md/);
   assert.match(workflow, /gh release edit/);
   assert.match(workflow, /awmpc-changelog-entry/);
