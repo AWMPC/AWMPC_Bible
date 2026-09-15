@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.63 - 2026-09-15
+
+- Keep the book segment readable on mobile while retaining content-sized location controls.
+
 ## 0.31.62 - 2026-09-15
 
 - Match the location bar's default and active text intensity with the bottom dock.
