@@ -17,6 +17,20 @@ test("runtime remains a lean text-only Vite worker application", async () => {
   assert.match(app, /useReaderPersistence/);
 });
 
+test("published GitHub releases preserve curated changelog entries", async () => {
+  const [releaseConfig, releaseWorkflow] = await Promise.all([
+    read("../.github/release.yml"),
+    read("../.github/workflows/sync-release-notes.yml"),
+  ]);
+  assert.match(releaseConfig, /categories:/);
+  assert.match(releaseConfig, /labels:\s*\n\s+- "\*"/);
+  assert.match(releaseWorkflow, /types:\s*\[published\]/);
+  assert.match(releaseWorkflow, /CHANGELOG\.md/);
+  assert.match(releaseWorkflow, /gh release edit/);
+  assert.match(releaseWorkflow, /GH_TOKEN:\s*\$\{\{ github\.token \}\}/);
+  assert.match(releaseWorkflow, /awmpc-changelog-entry/);
+});
+
 test("Liquid Glass accessibility and motion fallbacks remain present", async () => {
   const [styles, overlay, motion] = await Promise.all([read("../src/styles.css"), read("../src/ui/FeatureOverlay.tsx"), read("../src/ui/motion.ts")]);
   assert.match(styles, /backdrop-filter:/);

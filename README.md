@@ -80,6 +80,13 @@ npm run test:browser
 
 The browser suite uses Playwright Chromium and starts its own local Vite server.
 
+When a GitHub release is published with a semver tag such as `v0.31.64`,
+`sync-release-notes.yml` prepends the matching version section from
+`CHANGELOG.md` to GitHub's generated pull-request notes. `.github/release.yml`
+organizes those generated notes by pull-request label. Keep each release's
+curated entry headed as `## X.Y.Z - YYYY-MM-DD` (an optional `v` is also
+accepted).
+
 The deployable static output is written to `dist/`. In production, serve that
 directory with a static server such as Caddy or nginx. `npm start` is intended
 only for local previewing of a completed build. All generated asset and dataset

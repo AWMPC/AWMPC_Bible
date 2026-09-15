@@ -1,0 +1,24 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: "Features"
+      labels:
+        - feature
+        - enhancement
+    - title: "Fixes"
+      labels:
+        - bug
+        - bugfix
+    - title: "Performance and Accessibility"
+      labels:
+        - performance
+        - accessibility
+    - title: "Documentation and Tests"
+      labels:
+        - documentation
+        - tests
+    - title: "Other Changes"
+      labels:
+        - "*"

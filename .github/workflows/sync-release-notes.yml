@@ -1,0 +1,63 @@
+name: Sync release notes
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Prepend the matching changelog entry
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+
+          version="${RELEASE_TAG#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must be a semver tag such as v0.31.64." >&2
+            exit 1
+          fi
+
+          marker="<!-- awmpc-changelog-entry:$version -->"
+          gh release view "$RELEASE_TAG" --json body --jq '.body // ""' > /tmp/generated-release-notes.md
+          if grep -Fq "$marker" /tmp/generated-release-notes.md; then
+            echo "Changelog entry for $version is already present."
+            exit 0
+          fi
+
+          awk -v version="$version" '
+            BEGIN { heading = "## " version; versionHeading = "## v" version }
+            index($0, heading) == 1 || index($0, versionHeading) == 1 {
+              in_entry = 1
+              print
+              next
+            }
+            in_entry && /^## / { exit }
+            in_entry { print }
+          ' CHANGELOG.md > /tmp/changelog-entry.md
+
+          test -s /tmp/changelog-entry.md || {
+            echo "No CHANGELOG.md entry found for $version." >&2
+            exit 1
+          }
+
+          {
+            printf '%s\n' "$marker"
+            cat /tmp/changelog-entry.md
+            if [ -s /tmp/generated-release-notes.md ]; then
+              printf '\n'
+              cat /tmp/generated-release-notes.md
+            fi
+          } > /tmp/release-notes.md
+
+          gh release edit "$RELEASE_TAG" --notes-file /tmp/release-notes.md
