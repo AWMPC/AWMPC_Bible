@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.72 - 2026-09-15
+
+- Automate green-push semver tagging and GitHub releases with curated changelog text.
+
 ## 0.31.71 - 2026-09-15
 
 - Keep browser navigation coverage aligned with the top location-bar navigation path.
