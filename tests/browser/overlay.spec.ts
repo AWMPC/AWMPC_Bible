@@ -117,8 +117,8 @@ test("location bar centers four lined segments and moves to the desktop lower-le
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => floater.evaluate((element) => {
     const box = element.getBoundingClientRect();
-    return { top: Math.round(box.top), centered: Math.abs(box.left + box.width / 2 - document.documentElement.clientWidth / 2) <= 1 };
-  })).toEqual({ centered: true, top: 16 });
+    return { top: Math.round(box.top), compact: box.width < innerWidth - 32, readable: box.left >= 0 && box.right <= innerWidth };
+  })).toEqual({ compact: true, readable: true, top: 16 });
   await expect.poll(() => floater.evaluate((element) => element.getBoundingClientRect().width < innerWidth - 32)).toBe(true);
   await expect.poll(() => book.evaluate((element) => element.getBoundingClientRect().width > 40)).toBe(true);
 });
@@ -622,7 +622,7 @@ test("profile shade close does not keep a focused dock visible after scrolling",
 test("top navigation shade close does not keep a focused location control visible after scrolling", async ({ page }) => {
   const controls = page.locator(".reading-location-controls");
   await page.getByRole("button", { name: /Choose book, currently Genesis/ }).click();
-  await page.locator(".overlay-shade").click();
+  await page.locator(".overlay-shade").click({ position: { x: 16, y: 16 } });
   await expect(page.getByRole("dialog")).toBeHidden();
   await page.mouse.wheel(0, 700);
   await expect(controls).toHaveClass(/is-hidden/);
