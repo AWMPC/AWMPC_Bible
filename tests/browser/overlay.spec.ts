@@ -117,8 +117,8 @@ test("location bar centers four lined segments and moves to the desktop lower-le
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => floater.evaluate((element) => {
     const box = element.getBoundingClientRect();
-    return { top: Math.round(box.top), centerX: Math.round(box.left + box.width / 2) };
-  })).toEqual({ centerX: 195, top: 16 });
+    return { top: Math.round(box.top), centered: Math.abs(box.left + box.width / 2 - document.documentElement.clientWidth / 2) <= 1 };
+  })).toEqual({ centered: true, top: 16 });
   await expect.poll(() => floater.evaluate((element) => element.getBoundingClientRect().width < innerWidth - 32)).toBe(true);
   await expect.poll(() => book.evaluate((element) => element.getBoundingClientRect().width > 40)).toBe(true);
 });
