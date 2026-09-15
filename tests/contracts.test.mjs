@@ -236,7 +236,7 @@ test("AWMPC Bible identity and plain Vite packaging are exact", async () => {
   assert.match(packageMetadata.version, /^\d+\.\d+\.\d+$/);
   assert.match(page, /<title>AWMPC Bible<\/title>/);
   assert.match(page, /rel="icon" type="image\/svg\+xml" href="\.\/favicon\.svg"/);
-  assert.match(favicon, /<rect[^>]*rx="4"[^>]*fill="#FFFFFF"\/>/);
+  assert.match(favicon, /<rect[^>]*rx="2"[^>]*fill="#FFFFFF"\/>/);
   assert.match(readme, /^# AWMPC Bible/m);
   assert.doesNotMatch(`${page}\n${readme}`, /Quiet Reader|awmpc-reader/i);
   assert.equal(JSON.parse(manifest).scripts.prebuild, "npm run stage:data");
