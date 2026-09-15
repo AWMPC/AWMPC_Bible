@@ -25,6 +25,11 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 2
 
+      - name: Configure release tag identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Wait for every push workflow to pass
         env:
           GH_TOKEN: ${{ github.token }}

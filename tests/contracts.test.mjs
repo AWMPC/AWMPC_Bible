@@ -43,6 +43,8 @@ test("green pushes gate semver tags and releases on every push workflow", async 
   assert.match(workflow, /contents:\s*write/);
   assert.match(workflow, /head_sha/);
   assert.match(workflow, /fetch-depth: 2/);
+  assert.match(workflow, /git config user\.name "github-actions\[bot\]"/);
+  assert.match(workflow, /git config user\.email "41898282\+github-actions\[bot\]@users\.noreply\.github\.com"/);
   assert.match(workflow, /event=push/);
   assert.match(workflow, /gh api --paginate[\s\S]*\| jq -r/);
   assert.doesNotMatch(workflow, /--slurp[\s\S]*--jq/);
