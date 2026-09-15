@@ -246,6 +246,14 @@ test("keeps sheets usable without horizontal overflow on desktop and mobile", as
   }
 });
 
+test("keeps navigation in the location bar instead of the bottom dock", async ({ page }) => {
+  await expect(page.locator('.floating-dock [data-feature="navigation"]')).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Choose book, currently Genesis" })).toBeVisible();
+  await page.getByRole("button", { name: "Choose book, currently Genesis" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Books", exact: true })).toBeVisible();
+});
+
 test("offers only Sans, Serif, and Mono fonts in that order", async ({ page }) => {
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   const font = page.getByRole("combobox", { name: "Verse font" });

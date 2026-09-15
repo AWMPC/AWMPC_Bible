@@ -132,7 +132,7 @@ test("selected verse font inherits across reader controls and feature sheets", a
 });
 
 test("panels retain semantic native controls", async () => {
-  const [app, navigation, history, search, overlay, overlayLifecycle, profile, account, verseActions, marquee, styles] = await Promise.all([
+  const [app, navigation, history, search, overlay, overlayLifecycle, profile, account, verseActions, marquee, styles, features] = await Promise.all([
     read("../src/AwmpcBibleApp.tsx"),
     read("../src/ui/NavigationPanel.tsx"),
     read("../src/ui/HistoryPanel.tsx"),
@@ -144,6 +144,7 @@ test("panels retain semantic native controls", async () => {
     read("../src/ui/VerseActionsMenu.tsx"),
     read("../src/ui/OverflowMarquee.tsx"),
     read("../src/styles.css"),
+    read("../src/ui/features.ts"),
   ]);
   assert.match(navigation, /Old Testament/);
   assert.match(navigation, /New Testament/);
@@ -184,6 +185,8 @@ test("panels retain semantic native controls", async () => {
   assert.match(profile, />Primary language</);
   assert.match(profile, />Secondary language</);
   assert.match(navigation, /book-choice-secondary/);
+  assert.match(features, /Object\.freeze\(FEATURES\.filter\(\(feature\) => feature\.id !== "navigation"\)\)/);
+  assert.match(features, /return FEATURES\.find\(\(feature\) => feature\.id === id\)/);
   assert.match(history, /history-language/);
   assert.match(search, /type="search"/);
   assert.match(search, /ref=\{inputRef\}/);
