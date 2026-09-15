@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.69 - 2026-09-15
+
+- Preserve the original app icon artwork with a subtle rounded-corner treatment.
+
 ## 0.31.68 - 2026-09-15
 
 - Remove the duplicate Navigate control from the bottom dock; navigation remains available in the top location bar.
