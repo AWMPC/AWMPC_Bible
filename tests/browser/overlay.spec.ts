@@ -787,6 +787,22 @@ test("user book and chapter choices advance the navigation scroll", async ({ pag
   await expect(selectedChapter).toBeInViewport();
 });
 
+test("navigation grids use at least three columns in multiples of three", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  const mobileColumns = await page.locator(".choice-grid").evaluateAll((grids) => grids.map((grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length));
+  expect(mobileColumns.length).toBeGreaterThan(0);
+  expect(mobileColumns.every((count) => count === 3)).toBe(true);
+
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  const desktopColumns = await page.locator(".choice-grid").evaluateAll((grids) => grids.map((grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length));
+  expect(desktopColumns.length).toBeGreaterThan(0);
+  expect(desktopColumns.every((count) => count >= 3 && count % 3 === 0)).toBe(true);
+  expect(desktopColumns).toContain(6);
+});
+
 test("toggles inline footnote numbers and their nested card together", async ({ page }) => {
   const toggle = page.locator(".footnotes-toggle").first();
   const marker = page.locator(".footnote-marker-reveal").first();
