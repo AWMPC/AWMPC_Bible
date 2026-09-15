@@ -34,6 +34,7 @@ test("published GitHub releases preserve curated changelog entries", async () =>
   assert.match(releaseWorkflow, /gh release edit/);
   assert.match(releaseWorkflow, /GH_TOKEN:\s*\$\{\{ github\.token \}\}/);
   assert.match(releaseWorkflow, /awmpc-changelog-range/);
+  assert.match(releaseWorkflow, /print "## What's New"/);
   assert.match(releaseWorkflow, /git describe --tags --abbrev=0/);
   assert.match(releaseWorkflow, /fetch-depth: 0/);
   assert.match(releaseWorkflow, /git log --no-merges/);
@@ -69,6 +70,7 @@ test("green pushes gate semver tags and releases on every push workflow", async 
   assert.match(workflow, /CHANGELOG\.md/);
   assert.match(workflow, /gh release edit/);
   assert.match(workflow, /awmpc-changelog-range/);
+  assert.match(workflow, /print "## What's New"/);
   assert.match(workflow, /git describe --tags --abbrev=0/);
   assert.match(workflow, /git log --no-merges/);
 });

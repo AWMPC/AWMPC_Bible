@@ -138,7 +138,7 @@ jobs:
 
           awk -v version="$version" -v previous="$previous_release_version" '
             function heading(value) { return "^## v?" value "([[:space:]]|$)" }
-            $0 ~ heading(version) { in_range = 1 }
+            $0 ~ heading(version) { in_range = 1; print "## What's New"; next }
             in_range && previous != "" && $0 ~ heading(previous) { exit }
             in_range { print }
           ' CHANGELOG.md > /tmp/changelog-range.md
