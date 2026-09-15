@@ -83,6 +83,14 @@ npm run test:browser
 
 The browser suite uses Playwright Chromium and starts its own local Vite server.
 
+After a push to `master`, `release-after-green.yml` waits for every
+push-triggered workflow at that exact commit to finish successfully. It then
+reads the semver in `package.json`, creates the matching `vX.Y.Z` tag, and
+publishes a GitHub release with GitHub-generated notes plus the matching
+`CHANGELOG.md` section. Pushes that do not bump the package version finish
+without creating a duplicate release. To publish a release, bump `package.json`
+and add its same-version changelog heading in the same push.
+
 When a GitHub release is published with a semver tag such as `v0.31.64`,
 `sync-release-notes.yml` prepends the matching version section from
 `CHANGELOG.md` to GitHub's generated pull-request notes. `.github/release.yml`

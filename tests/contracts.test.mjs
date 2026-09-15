@@ -34,6 +34,27 @@ test("published GitHub releases preserve curated changelog entries", async () =>
   assert.match(releaseWorkflow, /awmpc-changelog-entry/);
 });
 
+test("green pushes gate semver tags and releases on every push workflow", async () => {
+  const workflow = await read("../.github/workflows/release-after-green.yml");
+  assert.match(workflow, /workflow_run:/);
+  assert.match(workflow, /- Quality/);
+  assert.match(workflow, /- Deploy GitHub Pages/);
+  assert.match(workflow, /actions:\s*read/);
+  assert.match(workflow, /contents:\s*write/);
+  assert.match(workflow, /head_sha/);
+  assert.match(workflow, /fetch-depth: 2/);
+  assert.match(workflow, /event=push/);
+  assert.match(workflow, /conclusion/);
+  assert.match(workflow, /previous_version/);
+  assert.match(workflow, /release_needed=false/);
+  assert.match(workflow, /git tag --annotate/);
+  assert.match(workflow, /gh release create/);
+  assert.match(workflow, /--generate-notes/);
+  assert.match(workflow, /CHANGELOG\.md/);
+  assert.match(workflow, /gh release edit/);
+  assert.match(workflow, /awmpc-changelog-entry/);
+});
+
 test("Liquid Glass accessibility and motion fallbacks remain present", async () => {
   const [styles, overlay, motion] = await Promise.all([read("../src/styles.css"), read("../src/ui/FeatureOverlay.tsx"), read("../src/ui/motion.ts")]);
   assert.match(styles, /backdrop-filter:/);

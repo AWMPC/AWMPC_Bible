@@ -1,0 +1,183 @@
+name: Release after green push
+
+on:
+  workflow_run:
+    workflows:
+      - Quality
+      - Deploy GitHub Pages
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 2
+
+      - name: Wait for every push workflow to pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          expected_workflows=("Quality" "Deploy GitHub Pages")
+          for attempt in $(seq 1 40); do
+            runs="$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${HEAD_SHA}&event=push&per_page=100" --jq 'add | .workflow_runs[] | [.name, .status, (.conclusion // ""), (.id | tostring)] | @tsv')"
+            if [ -z "$runs" ]; then
+              echo "No push workflow runs found for ${HEAD_SHA}; waiting (${attempt}/40)."
+              sleep 15
+              continue
+            fi
+
+            missing=()
+            for workflow_name in "${expected_workflows[@]}"; do
+              if ! printf '%s\n' "$runs" | awk -F '\t' -v name="$workflow_name" '$1 == name { found = 1 } END { exit found ? 0 : 1 }'; then
+                missing+=("$workflow_name")
+              fi
+            done
+            if [ "${#missing[@]}" -gt 0 ]; then
+              printf 'Waiting for push workflow runs: %s (%s/40).\n' "${missing[*]}" "$attempt"
+              sleep 15
+              continue
+            fi
+
+            failed="$(printf '%s\n' "$runs" | awk -F '\t' '$2 == "completed" && $3 != "success"')"
+            if [ -n "$failed" ]; then
+              echo "A push-triggered workflow failed for ${HEAD_SHA}:" >&2
+              printf '%s\n' "$failed" >&2
+              exit 1
+            fi
+
+            pending="$(printf '%s\n' "$runs" | awk -F '\t' '$2 != "completed"')"
+            if [ -z "$pending" ]; then
+              echo "Every push-triggered workflow passed for ${HEAD_SHA}."
+              exit 0
+            fi
+
+            echo "Waiting for push-triggered workflows to finish (${attempt}/40):"
+            printf '%s\n' "$pending"
+            sleep 15
+          done
+
+          echo "Timed out waiting for push-triggered workflows at ${HEAD_SHA}." >&2
+          exit 1
+
+      - name: Decide whether this push is a release
+        id: release
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          version="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "package.json version must be a plain semver value." >&2
+            exit 1
+          fi
+
+          previous_version="$(git show "${HEAD_SHA}^:package.json" 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version" 2>/dev/null || true)"
+          tag="v${version}"
+          git fetch --tags --force
+          if git show-ref --tags --verify --quiet "refs/tags/${tag}"; then
+            tagged_sha="$(git rev-list -n 1 "${tag}")"
+            if [ "$tagged_sha" != "$HEAD_SHA" ]; then
+              if [ "$previous_version" = "$version" ]; then
+                echo "package.json remains at ${version}; no new release is needed."
+                echo "release_needed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "${tag} already points to ${tagged_sha}, not ${HEAD_SHA}." >&2
+              exit 1
+            fi
+          elif [ "$previous_version" = "$version" ]; then
+            echo "package.json remains at ${version}; no new release is needed."
+            echo "release_needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          awk -v version="$version" '
+            BEGIN { heading = "## " version; versionHeading = "## v" version }
+            index($0, heading) == 1 || index($0, versionHeading) == 1 {
+              in_entry = 1
+              print
+              next
+            }
+            in_entry && /^## / { exit }
+            in_entry { print }
+          ' CHANGELOG.md > /tmp/changelog-entry.md
+
+          test -s /tmp/changelog-entry.md || {
+            echo "No CHANGELOG.md entry found for ${version}." >&2
+            exit 1
+          }
+
+          echo "release_needed=true" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Create the release tag
+        if: steps.release.outputs.release_needed == 'true'
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          git fetch --tags --force
+          if git show-ref --tags --verify --quiet "refs/tags/${RELEASE_TAG}"; then
+            tagged_sha="$(git rev-list -n 1 "${RELEASE_TAG}")"
+            test "$tagged_sha" = "$HEAD_SHA" || {
+              echo "${RELEASE_TAG} already points to ${tagged_sha}, not ${HEAD_SHA}." >&2
+              exit 1
+            }
+            echo "${RELEASE_TAG} already points to ${HEAD_SHA}."
+          else
+            git tag --annotate "${RELEASE_TAG}" "${HEAD_SHA}" --message "Release ${RELEASE_TAG}"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          fi
+
+      - name: Create release and attach curated changelog text
+        if: steps.release.outputs.release_needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          marker="<!-- awmpc-changelog-entry:${RELEASE_VERSION} -->"
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --verify-tag \
+              --title "AWMPC Bible ${RELEASE_TAG}" \
+              --generate-notes
+          fi
+
+          gh release view "$RELEASE_TAG" --json body --jq '.body // ""' > /tmp/generated-release-notes.md
+          if grep -Fq "$marker" /tmp/generated-release-notes.md; then
+            echo "Changelog entry for ${RELEASE_VERSION} is already present."
+            exit 0
+          fi
+
+          {
+            printf '%s\n' "$marker"
+            cat /tmp/changelog-entry.md
+            if [ -s /tmp/generated-release-notes.md ]; then
+              printf '\n'
+              cat /tmp/generated-release-notes.md
+            fi
+          } > /tmp/release-notes.md
+
+          gh release edit "$RELEASE_TAG" --notes-file /tmp/release-notes.md
