@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.71 - 2026-09-15
+
+- Keep browser navigation coverage aligned with the top location-bar navigation path.
+
 ## 0.31.70 - 2026-09-15
 
 - Use the exact rounded app-icon artwork for the browser favicon, including its crucifix shape.
