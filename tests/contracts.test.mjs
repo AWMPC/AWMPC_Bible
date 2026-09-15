@@ -37,8 +37,10 @@ test("published GitHub releases preserve curated changelog entries", async () =>
 test("green pushes gate semver tags and releases on every push workflow", async () => {
   const workflow = await read("../.github/workflows/release-after-green.yml");
   assert.match(workflow, /workflow_run:/);
-  assert.match(workflow, /- Quality/);
+  assert.match(workflow, /workflows:\s*\n\s+- Deploy GitHub Pages/);
+  assert.doesNotMatch(workflow, /workflows:\s*[\s\S]*?- Quality/);
   assert.match(workflow, /- Deploy GitHub Pages/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
   assert.match(workflow, /actions:\s*read/);
   assert.match(workflow, /contents:\s*write/);
   assert.match(workflow, /head_sha/);

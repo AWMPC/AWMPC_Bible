@@ -3,7 +3,6 @@ name: Release after green push
 on:
   workflow_run:
     workflows:
-      - Quality
       - Deploy GitHub Pages
     types: [completed]
 
@@ -13,7 +12,7 @@ permissions:
 
 concurrency:
   group: release-${{ github.event.workflow_run.head_sha }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   release:
