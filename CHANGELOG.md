@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.64 - 2026-09-15
+
+- Round the chapter and arrow segments to match the book segment's glass treatment.
+
 ## 0.31.63 - 2026-09-15
 
 - Keep the book segment readable on mobile while retaining content-sized location controls.

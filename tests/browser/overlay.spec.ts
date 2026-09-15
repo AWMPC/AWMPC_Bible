@@ -108,9 +108,10 @@ test("location bar centers four lined segments and moves to the desktop lower-le
   const geometry = await Promise.all([previous, book, current, next].map((button) => button.evaluate((element) => {
     const box = element.getBoundingClientRect();
     const divider = getComputedStyle(element, "::after");
-    return { centerY: box.y + box.height / 2, dividerWidth: divider.width, dividerTop: divider.top, dividerBottom: divider.bottom };
+    return { centerY: box.y + box.height / 2, borderRadius: getComputedStyle(element).borderRadius, dividerWidth: divider.width, dividerTop: divider.top, dividerBottom: divider.bottom };
   })));
   expect(geometry.map(({ centerY }) => centerY)).toEqual(geometry.map(() => geometry[1].centerY));
+  expect(geometry.map(({ borderRadius }) => borderRadius)).toEqual(["16px", "16px", "16px", "16px"]);
   expect(geometry.slice(0, 3).map(({ dividerWidth }) => dividerWidth)).toEqual(["1px", "1px", "1px"]);
   expect(geometry.slice(0, 3).every(({ dividerTop, dividerBottom }) => dividerTop === dividerBottom)).toBe(true);
 
