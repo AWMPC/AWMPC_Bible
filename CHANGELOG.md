@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.68 - 2026-09-15
+
+- Remove the duplicate Navigate control from the bottom dock; navigation remains available in the top location bar.
+
 ## 0.31.67 - 2026-09-15
 
 - Keep navigation grids at three or more columns in multiples of three as the sheet expands.
