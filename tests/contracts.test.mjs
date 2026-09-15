@@ -15,6 +15,9 @@ test("runtime remains a lean text-only Vite worker application", async () => {
   assert.match(libraryHook, /worker\.terminate\(\)/);
   assert.deepEqual(Object.keys(JSON.parse(manifest).dependencies), ["firebase", "react", "react-dom"]);
   assert.match(app, /useReaderPersistence/);
+  assert.match(app, /className="reader-layer" inert={activeFeature !== null} onClick={handleReaderLayerClick}/);
+  assert.match(app, /isTrustedReadingTap\(event\.nativeEvent\.isTrusted, event\.detail, interactive\)/);
+  assert.doesNotMatch(app, /<ReaderPassageView[^>]*onToggleChrome/);
 });
 
 test("published GitHub releases preserve curated changelog entries", async () => {

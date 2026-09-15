@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.65 - 2026-09-15
+
+- Let taps outside the verses container toggle the shared reader chrome.
+
 ## 0.31.64 - 2026-09-15
 
 - Round the chapter and arrow segments to match the book segment's glass treatment.

@@ -3,7 +3,6 @@ import type { Verse } from "../data/contracts";
 import type { LibraryStatus } from "../data/useBibleLibrary";
 import type { BibleLanguage } from "../settings/bibleLanguage";
 import { verseElementId } from "./transitionVerseView";
-import { isTrustedReadingTap } from "./useUserScrollChromeVisibility";
 import { Skeleton } from "./Skeleton";
 import { VerseWithFootnotes } from "./VerseWithFootnotes";
 import type { VerseActionTarget } from "./VerseActionsMenu";
@@ -25,11 +24,10 @@ type ReaderPassageViewProps = {
   secondaryVerses: ReadonlyMap<string, Verse>;
   languageLabels: ReadonlyMap<BibleLanguage, string>;
   verseActionTarget: VerseActionTarget | null;
-  onToggleChrome: () => void;
   onVerseActions: (verse: Verse, trigger: HTMLButtonElement, language: BibleLanguage, book: string, chapter: string) => void;
 };
 
-export function ReaderPassageView({ readingPaneRef, chapterRef, chapterSwipeLoading, primaryStatus, primaryError, primaryLanguage, book, chapter, verses, secondaryLanguage, secondaryStatus, secondaryBook, secondaryChapter, secondaryVerses, languageLabels, verseActionTarget, onToggleChrome, onVerseActions }: ReaderPassageViewProps) {
+export function ReaderPassageView({ readingPaneRef, chapterRef, chapterSwipeLoading, primaryStatus, primaryError, primaryLanguage, book, chapter, verses, secondaryLanguage, secondaryStatus, secondaryBook, secondaryChapter, secondaryVerses, languageLabels, verseActionTarget, onVerseActions }: ReaderPassageViewProps) {
   const dualLanguage = secondaryLanguage !== null;
   return (
     <main
@@ -38,10 +36,6 @@ export function ReaderPassageView({ readingPaneRef, chapterRef, chapterSwipeLoad
       className="reading-pane"
       tabIndex={-1}
       aria-busy={chapterSwipeLoading || undefined}
-      onClick={(event) => {
-        const interactive = event.target instanceof Element && Boolean(event.target.closest("a, button, input, select, textarea, [contenteditable='true']"));
-        if (isTrustedReadingTap(event.nativeEvent.isTrusted, event.detail, interactive)) onToggleChrome();
-      }}
     >
       {primaryStatus === "error" ? <section className="error-card" role="alert"><h1>Unable to open the text</h1><p>{primaryError}</p></section> : (
         primaryStatus === "loading" || verses.length === 0 ? <Skeleton rows={8} text /> : (

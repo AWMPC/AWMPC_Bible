@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useBibleLibrary, type Passage } from "./data/useBibleLibrary";
 import type { Verse } from "./data/contracts";
 import { pairedBookName, versesByNumber } from "./data/dualLanguage";
@@ -17,7 +17,7 @@ import { ReadingLocationControls, ReadingLocationEmboss } from "./ui/ReadingLoca
 import { ReaderPassageView } from "./ui/ReaderPassageView";
 import { createOverlayOrigin, featureTitle, type FeatureId, type OverlayOrigin } from "./ui/features";
 import { verseElementId } from "./ui/transitionVerseView";
-import { useUserScrollChromeVisibility } from "./ui/useUserScrollChromeVisibility";
+import { isTrustedReadingTap, useUserScrollChromeVisibility } from "./ui/useUserScrollChromeVisibility";
 import { useChapterScrollProgress } from "./ui/useChapterScrollProgress";
 import { useChapterSwipe } from "./ui/useChapterSwipe";
 import { useOverlayHistory } from "./ui/useOverlayHistory";
@@ -329,13 +329,18 @@ export function AwmpcBibleApp() {
     }, 0);
   }
 
+  const handleReaderLayerClick = (event: MouseEvent<HTMLDivElement>) => {
+    const interactive = event.target instanceof Element && Boolean(event.target.closest("a, button, input, select, textarea, [contenteditable='true']"));
+    if (isTrustedReadingTap(event.nativeEvent.isTrusted, event.detail, interactive)) toggleChromeVisibility();
+  };
+
   return (
     <div ref={shellRef} className="awmpc-bible-shell" data-text-scale={textScale} data-verse-font={verseFont} data-dual-language={dualLanguage || undefined}>
-      <div className="reader-layer" inert={activeFeature !== null}>
+      <div className="reader-layer" inert={activeFeature !== null} onClick={handleReaderLayerClick}>
         <a className="skip-link" href="#reading-pane">Skip to text</a>
         <div className="workspace">
           <ReadingLocationEmboss book={book} secondaryBook={secondaryBook} secondaryLanguage={secondaryBibleLanguage} chapter={chapter} visible={!chromeVisible && activeFeature === null} />
-          <ReaderPassageView readingPaneRef={readingPaneRef} chapterRef={chapterRef} chapterSwipeLoading={chapterSwipe.loading} primaryStatus={primaryLibrary.status} primaryError={primaryLibrary.error} primaryLanguage={primaryBibleLanguage} book={book} chapter={chapter} verses={verses} secondaryLanguage={secondaryBibleLanguage} secondaryStatus={secondary.status} secondaryBook={secondary.passage?.book} secondaryChapter={secondary.passage?.chapter} secondaryVerses={secondaryVerses} languageLabels={languageLabels} verseActionTarget={verseActionTarget} onToggleChrome={toggleChromeVisibility} onVerseActions={openVerseActions} />
+          <ReaderPassageView readingPaneRef={readingPaneRef} chapterRef={chapterRef} chapterSwipeLoading={chapterSwipe.loading} primaryStatus={primaryLibrary.status} primaryError={primaryLibrary.error} primaryLanguage={primaryBibleLanguage} book={book} chapter={chapter} verses={verses} secondaryLanguage={secondaryBibleLanguage} secondaryStatus={secondary.status} secondaryBook={secondary.passage?.book} secondaryChapter={secondary.passage?.chapter} secondaryVerses={secondaryVerses} languageLabels={languageLabels} verseActionTarget={verseActionTarget} onVerseActions={openVerseActions} />
         </div>
       </div>
       <ReadingLocationControls book={book} secondaryBook={secondaryBook} secondaryLanguage={secondaryBibleLanguage} chapter={chapter} visible={chromeVisible && activeFeature === null} activeSection={activeFeature === "navigation" ? navigationSectionRequest?.section ?? null : null} obscured={activeFeature !== null} dockRef={dockRef} canNavigatePrevious={chapterSwipe.canNavigate(-1)} canNavigateNext={chapterSwipe.canNavigate(1)} onNavigate={openNavigationAt} onChapterNavigate={chapterSwipe.navigate} />

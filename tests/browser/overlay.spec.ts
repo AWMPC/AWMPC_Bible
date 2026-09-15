@@ -608,6 +608,18 @@ test("top reading controls and bottom dock share hide and tap visibility", async
   await expect(dock).not.toHaveClass(/is-hidden/);
 });
 
+test("a tap outside the verses container toggles shared reader chrome", async ({ page }) => {
+  const shell = page.locator(".awmpc-bible-shell");
+  const controls = page.locator(".reading-location-controls");
+  const dock = page.locator(".floating-dock");
+  await shell.click({ position: { x: 40, y: 500 } });
+  await expect(controls).toHaveClass(/is-hidden/);
+  await expect(dock).toHaveClass(/is-hidden/);
+  await shell.click({ position: { x: 40, y: 500 } });
+  await expect(controls).not.toHaveClass(/is-hidden/);
+  await expect(dock).not.toHaveClass(/is-hidden/);
+});
+
 test("profile shade close does not keep a focused dock visible after scrolling", async ({ page }) => {
   const dock = page.locator(".floating-dock");
   await page.getByRole("button", { name: "Profile and preferences" }).click();
