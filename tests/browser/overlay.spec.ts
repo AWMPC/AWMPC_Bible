@@ -25,6 +25,10 @@ async function revealDock(page: import("@playwright/test").Page) {
   await expect(page.locator(".floating-dock")).not.toHaveClass(/is-hidden/);
 }
 
+async function openNavigation(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: /^Choose book, currently/ }).click();
+}
+
 const dataset = {
   Genesis: {
     "1": Object.fromEntries(Array.from({ length: 80 }, (_, index) => [String(index + 1), index === 0 ? "Verse 1 {First note} text with {Second note} details." : `Verse ${index + 1} text for browser testing.`])),
@@ -237,7 +241,7 @@ test("ordinary close restores one switched-sheet entry before normal Back", asyn
 test("keeps sheets usable without horizontal overflow on desktop and mobile", async ({ page }) => {
   for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
-    await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+    await openNavigation(page);
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Books", exact: true })).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -394,12 +398,12 @@ test("search queries only languages active in Profile", async ({ page }) => {
 });
 
 test("history remains global and routes an inactive language without duplication", async ({ page }) => {
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await openNavigation(page);
   await page.locator('section[aria-labelledby="verses-title"] button').filter({ hasText: /^50$/ }).click();
   await page.getByRole("button", { name: "Profile and preferences" }).click();
   await page.getByRole("combobox", { name: "Primary language" }).selectOption("ko");
   await page.locator(".overlay-close").click();
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await openNavigation(page);
   await page.locator('section[aria-labelledby="verses-title"] button').filter({ hasText: /^40$/ }).click();
 
   await page.getByRole("button", { name: "Reading history" }).click();
@@ -659,8 +663,8 @@ test("top navigation resumes shared auto-hide after selecting a verse", async ({
   await expect(page.locator(".floating-dock")).toHaveClass(/is-hidden/);
 });
 
-test("dock navigation resumes shared auto-hide after selecting a verse", async ({ page }) => {
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+test("location-bar navigation resumes shared auto-hide after selecting a verse", async ({ page }) => {
+  await openNavigation(page);
   await page.getByRole("button", { name: "50", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await page.mouse.wheel(0, 700);
@@ -673,7 +677,7 @@ test("switches and closes overlays without moving the reader", async ({ page }) 
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500);
   const before = await page.evaluate(() => window.scrollY);
 
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await openNavigation(page);
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.locator(".overlay-close")).toBeFocused();
   await page.getByRole("button", { name: "Profile and preferences" }).click();
@@ -685,7 +689,7 @@ test("switches and closes overlays without moving the reader", async ({ page }) 
 });
 
 test("selecting a verse centers it and records one removable history entry", async ({ page }) => {
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await openNavigation(page);
   await page.getByRole("button", { name: "50", exact: true }).click();
   const verse = page.locator("#verse-1-50");
   await expect(verse).toBeInViewport({ ratio: 1 });
@@ -756,7 +760,7 @@ test("verse actions remove motion when reduced motion is requested", async ({ pa
 
 test("user book and chapter choices advance the navigation scroll", async ({ page }) => {
   const beforeReaderScroll = await page.evaluate(() => window.scrollY);
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await openNavigation(page);
   const content = page.locator(".overlay-content");
   expect(await content.evaluate((element) => element.scrollTop)).toBe(0);
 
@@ -797,14 +801,14 @@ test("user book and chapter choices advance the navigation scroll", async ({ pag
 
 test("navigation grids use at least three columns in multiples of three", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await openNavigation(page);
   const mobileColumns = await page.locator(".choice-grid").evaluateAll((grids) => grids.map((grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length));
   expect(mobileColumns.length).toBeGreaterThan(0);
   expect(mobileColumns.every((count) => count === 3)).toBe(true);
 
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.getByRole("button", { name: "Navigate books and chapters" }).click();
+  await openNavigation(page);
   const desktopColumns = await page.locator(".choice-grid").evaluateAll((grids) => grids.map((grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length));
   expect(desktopColumns.length).toBeGreaterThan(0);
   expect(desktopColumns.every((count) => count >= 3 && count % 3 === 0)).toBe(true);
