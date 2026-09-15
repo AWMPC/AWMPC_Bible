@@ -100,9 +100,9 @@ test("location bar centers four lined segments and moves to the desktop lower-le
   const floater = page.locator(".reading-location-floater");
   await expect(floater).toHaveCount(1);
   await expect.poll(() => floater.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return { right: style.right, bottom: style.bottom, left: style.left };
-  })).toEqual({ right: "auto", bottom: "16px", left: "16px" });
+    const box = element.getBoundingClientRect();
+    return { left: Math.round(box.left), bottom: Math.round(innerHeight - box.bottom) };
+  })).toEqual({ bottom: 16, left: 16 });
   await expect(previous.locator("svg path")).toHaveCount(1);
   await expect(next.locator("svg path")).toHaveCount(1);
   const geometry = await Promise.all([previous, book, current, next].map((button) => button.evaluate((element) => {
@@ -116,9 +116,9 @@ test("location bar centers four lined segments and moves to the desktop lower-le
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => floater.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return { top: style.top, right: style.right, bottom: style.bottom, left: style.left };
-  })).toEqual({ top: "16px", right: "auto", bottom: "auto", left: "50%" });
+    const box = element.getBoundingClientRect();
+    return { top: Math.round(box.top), centerX: Math.round(box.left + box.width / 2) };
+  })).toEqual({ centerX: 195, top: 16 });
   await expect.poll(() => floater.evaluate((element) => element.getBoundingClientRect().width < innerWidth - 32)).toBe(true);
   await expect.poll(() => book.evaluate((element) => element.getBoundingClientRect().width > 40)).toBe(true);
 });
