@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Configure release tag identity
         run: |
@@ -94,6 +94,8 @@ jobs:
           previous_version="$(git show "${HEAD_SHA}^:package.json" 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version" 2>/dev/null || true)"
           tag="v${version}"
           git fetch --tags --force
+          previous_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' "${HEAD_SHA}^" 2>/dev/null || true)"
+          previous_release_version="${previous_tag#v}"
           if git show-ref --tags --verify --quiet "refs/tags/${tag}"; then
             tagged_sha="$(git rev-list -n 1 "${tag}")"
             if [ "$tagged_sha" != "$HEAD_SHA" ]; then
@@ -107,25 +109,22 @@ jobs:
             fi
           fi
 
-          awk -v version="$version" '
-            BEGIN { heading = "## " version; versionHeading = "## v" version }
-            index($0, heading) == 1 || index($0, versionHeading) == 1 {
-              in_entry = 1
-              print
-              next
-            }
-            in_entry && /^## / { exit }
-            in_entry { print }
-          ' CHANGELOG.md > /tmp/changelog-entry.md
+          awk -v version="$version" -v previous="$previous_release_version" '
+            function heading(value) { return "^## v?" value "([[:space:]]|$)" }
+            $0 ~ heading(version) { in_range = 1 }
+            in_range && previous != "" && $0 ~ heading(previous) { exit }
+            in_range { print }
+          ' CHANGELOG.md > /tmp/changelog-range.md
 
-          test -s /tmp/changelog-entry.md || {
-            echo "No CHANGELOG.md entry found for ${version}." >&2
+          test -s /tmp/changelog-range.md || {
+            echo "No CHANGELOG.md range found for ${version}." >&2
             exit 1
           }
 
           echo "release_needed=true" >> "$GITHUB_OUTPUT"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=${previous_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Create the release tag
         if: steps.release.outputs.release_needed == 'true'
@@ -152,12 +151,15 @@ jobs:
         if: steps.release.outputs.release_needed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
+          PREVIOUS_TAG: ${{ steps.release.outputs.previous_tag }}
         run: |
           set -euo pipefail
 
-          marker="<!-- awmpc-changelog-entry:${RELEASE_VERSION} -->"
+          marker="<!-- awmpc-changelog-range:${RELEASE_VERSION} -->"
+          legacy_marker="<!-- awmpc-changelog-entry:${RELEASE_VERSION} -->"
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG" \
               --verify-tag \
@@ -167,16 +169,36 @@ jobs:
 
           gh release view "$RELEASE_TAG" --json body --jq '.body // ""' > /tmp/generated-release-notes.md
           if grep -Fq "$marker" /tmp/generated-release-notes.md; then
-            echo "Changelog entry for ${RELEASE_VERSION} is already present."
+            echo "Changelog range for ${RELEASE_VERSION} is already present."
             exit 0
+          fi
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            git log --no-merges --format='- %s (%h)' "${PREVIOUS_TAG}..${HEAD_SHA}" > /tmp/commit-changes.md
+          else
+            git log --no-merges --format='- %s (%h)' "$HEAD_SHA" > /tmp/commit-changes.md
+          fi
+
+          if grep -Fq "$legacy_marker" /tmp/generated-release-notes.md; then
+            awk -v marker="$legacy_marker" '
+              $0 == marker { skip = 1; next }
+              skip && /^## / { skip = 0 }
+              !skip { print }
+            ' /tmp/generated-release-notes.md > /tmp/base-release-notes.md
+          else
+            cp /tmp/generated-release-notes.md /tmp/base-release-notes.md
           fi
 
           {
             printf '%s\n' "$marker"
-            cat /tmp/changelog-entry.md
-            if [ -s /tmp/generated-release-notes.md ]; then
+            cat /tmp/changelog-range.md
+            if [ -s /tmp/commit-changes.md ]; then
+              printf '\n## Commits since %s\n\n' "${PREVIOUS_TAG:-the project start}"
+              cat /tmp/commit-changes.md
+            fi
+            if [ -s /tmp/base-release-notes.md ]; then
               printf '\n'
-              cat /tmp/generated-release-notes.md
+              cat /tmp/base-release-notes.md
             fi
           } > /tmp/release-notes.md
 

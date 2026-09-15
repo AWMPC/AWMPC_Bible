@@ -31,7 +31,10 @@ test("published GitHub releases preserve curated changelog entries", async () =>
   assert.match(releaseWorkflow, /CHANGELOG\.md/);
   assert.match(releaseWorkflow, /gh release edit/);
   assert.match(releaseWorkflow, /GH_TOKEN:\s*\$\{\{ github\.token \}\}/);
-  assert.match(releaseWorkflow, /awmpc-changelog-entry/);
+  assert.match(releaseWorkflow, /awmpc-changelog-range/);
+  assert.match(releaseWorkflow, /git describe --tags --abbrev=0/);
+  assert.match(releaseWorkflow, /fetch-depth: 0/);
+  assert.match(releaseWorkflow, /git log --no-merges/);
 });
 
 test("green pushes gate semver tags and releases on every push workflow", async () => {
@@ -44,7 +47,7 @@ test("green pushes gate semver tags and releases on every push workflow", async 
   assert.match(workflow, /actions:\s*read/);
   assert.match(workflow, /contents:\s*write/);
   assert.match(workflow, /head_sha/);
-  assert.match(workflow, /fetch-depth: 2/);
+  assert.match(workflow, /fetch-depth: 0/);
   assert.match(workflow, /git config user\.name "github-actions\[bot\]"/);
   assert.match(workflow, /git config user\.email "41898282\+github-actions\[bot\]@users\.noreply\.github\.com"/);
   assert.match(workflow, /event=push/);
@@ -61,7 +64,9 @@ test("green pushes gate semver tags and releases on every push workflow", async 
   assert.match(workflow, /gh release edit "\$RELEASE_TAG" --title "\$RELEASE_TAG"/);
   assert.match(workflow, /CHANGELOG\.md/);
   assert.match(workflow, /gh release edit/);
-  assert.match(workflow, /awmpc-changelog-entry/);
+  assert.match(workflow, /awmpc-changelog-range/);
+  assert.match(workflow, /git describe --tags --abbrev=0/);
+  assert.match(workflow, /git log --no-merges/);
 });
 
 test("Liquid Glass accessibility and motion fallbacks remain present", async () => {

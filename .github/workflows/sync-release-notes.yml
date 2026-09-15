@@ -14,8 +14,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
 
-      - name: Prepend the matching changelog entry
+      - name: Sync the full changelog range
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
@@ -28,36 +29,50 @@ jobs:
             exit 1
           fi
 
-          marker="<!-- awmpc-changelog-entry:$version -->"
+          git fetch --tags --force
+          previous_tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' "${RELEASE_TAG}^" 2>/dev/null || true)"
+          previous_release_version="${previous_tag#v}"
+          marker="<!-- awmpc-changelog-range:$version -->"
+          legacy_marker="<!-- awmpc-changelog-entry:$version -->"
           gh release view "$RELEASE_TAG" --json body --jq '.body // ""' > /tmp/generated-release-notes.md
           if grep -Fq "$marker" /tmp/generated-release-notes.md; then
-            echo "Changelog entry for $version is already present."
+            echo "Changelog range for $version is already present."
             exit 0
           fi
 
-          awk -v version="$version" '
-            BEGIN { heading = "## " version; versionHeading = "## v" version }
-            index($0, heading) == 1 || index($0, versionHeading) == 1 {
-              in_entry = 1
-              print
-              next
-            }
-            in_entry && /^## / { exit }
-            in_entry { print }
-          ' CHANGELOG.md > /tmp/changelog-entry.md
+          awk -v version="$version" -v previous="$previous_release_version" '
+            function heading(value) { return "^## v?" value "([[:space:]]|$)" }
+            $0 ~ heading(version) { in_range = 1 }
+            in_range && previous != "" && $0 ~ heading(previous) { exit }
+            in_range { print }
+          ' CHANGELOG.md > /tmp/changelog-range.md
 
-          test -s /tmp/changelog-entry.md || {
-            echo "No CHANGELOG.md entry found for $version." >&2
+          test -s /tmp/changelog-range.md || {
+            echo "No CHANGELOG.md range found for $version." >&2
             exit 1
           }
 
+          if grep -Fq "$legacy_marker" /tmp/generated-release-notes.md; then
+            awk -v marker="$legacy_marker" '
+              $0 == marker { skip = 1; next }
+              skip && /^## / { skip = 0 }
+              !skip { print }
+            ' /tmp/generated-release-notes.md > /tmp/base-release-notes.md
+          else
+            cp /tmp/generated-release-notes.md /tmp/base-release-notes.md
+          fi
+
           {
             printf '%s\n' "$marker"
-            cat /tmp/changelog-entry.md
-            if [ -s /tmp/generated-release-notes.md ]; then
+            cat /tmp/changelog-range.md
+            if [ -n "$previous_tag" ]; then
+              printf '\n## Commits since %s\n\n' "$previous_tag"
+              git log --no-merges --format='- %s (%h)' "${previous_tag}..${RELEASE_TAG}"
+            fi
+            if [ -s /tmp/base-release-notes.md ]; then
               printf '\n'
-              cat /tmp/generated-release-notes.md
+              cat /tmp/base-release-notes.md
             fi
           } > /tmp/release-notes.md
 
-          gh release edit "$RELEASE_TAG" --notes-file /tmp/release-notes.md
+          gh release edit "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file /tmp/release-notes.md
