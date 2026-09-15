@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.70 - 2026-09-15
+
+- Use the exact rounded app-icon artwork for the browser favicon, including its crucifix shape.
+
 ## 0.31.69 - 2026-09-15
 
 - Preserve the original app icon artwork with a subtle rounded-corner treatment.
