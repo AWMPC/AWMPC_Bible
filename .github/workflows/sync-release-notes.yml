@@ -54,8 +54,10 @@ jobs:
 
           if grep -Fq "$legacy_marker" /tmp/generated-release-notes.md; then
             awk -v marker="$legacy_marker" '
-              $0 == marker { skip = 1; next }
-              skip && /^## / { skip = 0 }
+              { line = $0; sub(/\r$/, "", line) }
+              line == marker { skip = 1; in_entry = 0; next }
+              skip && !in_entry && /^## / { in_entry = 1; next }
+              skip && in_entry && (/^## / || /^<!-- Release notes generated/) { skip = 0 }
               !skip { print }
             ' /tmp/generated-release-notes.md > /tmp/base-release-notes.md
           else
