@@ -119,6 +119,7 @@ test("location bar centers four lined segments and moves to the desktop lower-le
     const style = getComputedStyle(element);
     return { top: style.top, right: style.right, bottom: style.bottom, left: style.left };
   })).toEqual({ top: "16px", right: "auto", bottom: "auto", left: "50%" });
+  await expect.poll(() => floater.evaluate((element) => element.getBoundingClientRect().width < innerWidth - 32)).toBe(true);
 });
 
 test("hidden reader chrome reveals an embossed bilingual location header without floater focus borders", async ({ page }) => {

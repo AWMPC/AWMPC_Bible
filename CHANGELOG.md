@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.61 - 2026-09-15
+
+- Shrink-wrap the location bar and let its book and chapter segments use only their required width.
+
 ## 0.31.60 - 2026-09-15
 
 - Move the location bar to the lower-left on desktop and add more compact-screen clearance above the reader.
