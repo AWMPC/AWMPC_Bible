@@ -51,6 +51,8 @@ icons, and same-origin service worker.
   validated Bible catalogs and translations in a persistent data cache with
   stale-while-revalidate behavior and offline fallback. Worker activation also
   best-effort warms every catalog-listed translation.
+- Installed-app icons and the browser favicon share the red cross on a rounded
+  white tile.
 - Profile shows which catalog and translations are currently cached, reports
   the browser storage estimate, and can manually cache every catalog-listed
   translation before leaving a connected network.

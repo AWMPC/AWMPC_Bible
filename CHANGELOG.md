@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.66 - 2026-09-15
+
+- Round the white corners of the installed app and browser favicon icons.
+
 ## 0.31.65 - 2026-09-15
 
 - Let taps outside the verses container toggle the shared reader chrome.
