@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.60 - 2026-09-15
+
+- Move the location bar to the lower-left on desktop and add more compact-screen clearance above the reader.
+
 ## 0.31.59 - 2026-09-14
 
 - Cache bounded JSON responses when cross-origin headers do not expose `Content-Length`.

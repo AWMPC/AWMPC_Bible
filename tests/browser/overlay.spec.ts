@@ -92,12 +92,17 @@ test("reader arrows navigate while a dock control holds focus", async ({ page })
   await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
 });
 
-test("top location bar centers four lined segments and divides book from chapter", async ({ page }) => {
+test("location bar centers four lined segments and moves to the desktop lower-left", async ({ page }) => {
   const previous = page.getByRole("button", { name: "Previous chapter" });
   const book = page.getByRole("button", { name: "Choose book, currently Genesis" });
   const current = page.getByRole("button", { name: "Choose chapter, currently chapter 1" });
   const next = page.getByRole("button", { name: "Next chapter" });
-  await expect(page.locator(".reading-location-floater")).toHaveCount(1);
+  const floater = page.locator(".reading-location-floater");
+  await expect(floater).toHaveCount(1);
+  await expect.poll(() => floater.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { right: style.right, bottom: style.bottom, left: style.left };
+  })).toEqual({ right: "auto", bottom: "16px", left: "16px" });
   await expect(previous.locator("svg path")).toHaveCount(1);
   await expect(next.locator("svg path")).toHaveCount(1);
   const geometry = await Promise.all([previous, book, current, next].map((button) => button.evaluate((element) => {
@@ -108,6 +113,12 @@ test("top location bar centers four lined segments and divides book from chapter
   expect(geometry.map(({ centerY }) => centerY)).toEqual(geometry.map(() => geometry[1].centerY));
   expect(geometry.slice(0, 3).map(({ dividerWidth }) => dividerWidth)).toEqual(["1px", "1px", "1px"]);
   expect(geometry.slice(0, 3).every(({ dividerTop, dividerBottom }) => dividerTop === dividerBottom)).toBe(true);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => floater.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { top: style.top, right: style.right, bottom: style.bottom, left: style.left };
+  })).toEqual({ top: "16px", right: "auto", bottom: "auto", left: "50%" });
 });
 
 test("hidden reader chrome reveals an embossed bilingual location header without floater focus borders", async ({ page }) => {

@@ -142,6 +142,7 @@ test("panels retain semantic native controls", async () => {
   assert.match(styles, /\.overlay-surface\s*\{[^}]*width:\s*100%[^}]*height:\s*100%/);
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.feature-overlay\s*\{[^}]*left:\s*var\(--edge-inset-left\)[^}]*width:\s*auto[^}]*min-width:\s*0/);
   assert.match(styles, /\.reading-location-controls\.is-hidden \.reading-location-floater\s*\{[^}]*translate:\s*-50% calc\(-100%/);
+  assert.match(styles, /@media \(min-width: 721px\)[\s\S]*?\.reading-location-floater\s*\{[^}]*top:\s*auto[^}]*bottom:\s*max\([^}]*left:\s*var\(--edge-inset-left\)/);
   assert.match(history, /<button type="button"/);
   assert.match(profile, /type="range"/);
   assert.match(profile, /className="scale-marks" aria-hidden="true"/);

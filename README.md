@@ -15,7 +15,7 @@ icons, and same-origin service worker.
 - The main thread receives only navigation metadata and the selected chapter.
 - A focused Liquid Glass interface uses native CSS effects with graceful fallbacks.
 - A data-driven bottom dock scales to additional AWMPC Bible tools without duplicating overlay infrastructure.
-- One four-part top location bar combines previous/next chapter arrows with book and chapter navigation segments, sharing the bottom dock's Liquid Glass shell and inset separators.
+- One four-part location bar combines previous/next chapter arrows with book and chapter navigation segments, sharing the bottom dock's Liquid Glass shell and inset separators; it is centered above the reader on compact screens and rests at the bottom-left on desktop.
 - One native dialog expands from the pressed dock button into the edge-to-edge space above the dock.
 - Overlay dismissal reverses into the same originating control.
 - Browser Back dismisses an open feature sheet before its normal navigation behavior continues.
