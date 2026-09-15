@@ -97,7 +97,8 @@ When a GitHub release is published with a semver tag such as `v0.31.64`,
 semver tag through the release version. `.github/release.yml`
 organizes those generated notes by pull-request label. Keep each release's
 curated entry headed as `## X.Y.Z - YYYY-MM-DD` (an optional `v` is also
-accepted).
+accepted). An existing release can be repaired from the Actions tab by running
+`Sync release notes` with its `release_tag`.
 
 The deployable static output is written to `dist/`. In production, serve that
 directory with a static server such as Caddy or nginx. `npm start` is intended

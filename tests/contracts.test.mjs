@@ -28,6 +28,8 @@ test("published GitHub releases preserve curated changelog entries", async () =>
   assert.match(releaseConfig, /categories:/);
   assert.match(releaseConfig, /labels:\s*\n\s+- "\*"/);
   assert.match(releaseWorkflow, /types:\s*\[published\]/);
+  assert.match(releaseWorkflow, /workflow_dispatch:/);
+  assert.match(releaseWorkflow, /release_tag:/);
   assert.match(releaseWorkflow, /CHANGELOG\.md/);
   assert.match(releaseWorkflow, /gh release edit/);
   assert.match(releaseWorkflow, /GH_TOKEN:\s*\$\{\{ github\.token \}\}/);
