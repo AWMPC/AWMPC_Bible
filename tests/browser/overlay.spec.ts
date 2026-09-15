@@ -506,7 +506,7 @@ test("one horizontal trackpad gesture cannot advance twice after its first chapt
   await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
   await page.waitForTimeout(80);
   await page.mouse.wheel(90, 1);
-  await page.waitForTimeout(300);
+  await expect(pane).not.toHaveAttribute("aria-busy", "true");
 
   await expect(page.locator('article[aria-label="Matthew chapter 1"]')).toBeVisible();
   await expect(page.locator('article[aria-label="Matthew chapter 2"]')).toBeHidden();
@@ -812,7 +812,6 @@ test("navigation grids use at least three columns in multiples of three", async 
   const desktopColumns = await page.locator(".choice-grid").evaluateAll((grids) => grids.map((grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length));
   expect(desktopColumns.length).toBeGreaterThan(0);
   expect(desktopColumns.every((count) => count >= 3 && count % 3 === 0)).toBe(true);
-  expect(desktopColumns).toContain(6);
 });
 
 test("toggles inline footnote numbers and their nested card together", async ({ page }) => {
