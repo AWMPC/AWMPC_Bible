@@ -90,6 +90,9 @@ test("touch reader controls do not retain desktop hover highlights", async () =>
   assert.match(styles, /\.chapter-floater-current\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
   assert.match(styles, /\.reading-location-button\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
   assert.match(styles, /\.dock-button\[aria-expanded="true"\]\s*\{[^}]*background:\s*var\(--surface-strong\)/);
+  assert.match(styles, /\.reading-location-button\s*\{[^}]*color:\s*var\(--muted\)/);
+  assert.match(styles, /\.chapter-floater-arrow, \.chapter-floater-current\s*\{[^}]*color:\s*var\(--muted\)/);
+  assert.match(styles, /\.chapter-floater-current\[aria-expanded="true"\], \.reading-location-button\[aria-expanded="true"\]\s*\{[^}]*color:\s*var\(--accent\)[^}]*box-shadow:\s*inset 0 1px 0 rgba\(255, 255, 255, \.24\)/);
   assert.match(styles, /\.reading-location-floater > :is\([^}]*\):not\(:last-child\)::after\s*\{[^}]*top:\s*22%[^}]*bottom:\s*22%[^}]*width:\s*1px/);
 });
 

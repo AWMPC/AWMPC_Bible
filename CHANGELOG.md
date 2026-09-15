@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.62 - 2026-09-15
+
+- Match the location bar's default and active text intensity with the bottom dock.
+
 ## 0.31.61 - 2026-09-15
 
 - Shrink-wrap the location bar and let its book and chapter segments use only their required width.
